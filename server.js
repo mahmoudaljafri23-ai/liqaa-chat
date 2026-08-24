@@ -430,10 +430,17 @@ io.on('connection', (socket) => {
 });
 
 // =============================================
+// Serve Main Page
+// =============================================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// =============================================
 // Start Server
 // =============================================
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ╔══════════════════════════════════════════╗
   ║     LiQaa - Video Chat Server           ║
