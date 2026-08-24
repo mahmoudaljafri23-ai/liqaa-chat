@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LiQaa - لقاء | دردشة فيديو عشوائية</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ============ Welcome Screen ============ -->
+  <div id="welcome-screen" class="screen active">
+    <div class="welcome-bg"></div>
+    <div class="welcome-content">
+      <!-- User Header Bar -->
+      <div id="user-header-bar" class="user-header-bar">
+        <div class="user-info-badge">
+          <span class="user-avatar-icon">👤</span>
+          <span id="user-display-name">مستخدم جديد</span>
+        </div>
+        <div class="gems-balance-badge" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
+          <span class="gem-icon">💎</span>
+          <span id="gems-balance-count">50</span>
+          <button class="add-gems-btn" onclick="document.getElementById('recharge-modal').classList.remove('hidden'); event.stopPropagation();">+</button>
+        </div>
+      </div>
+
+      <!-- Logo -->
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#FF6B6B"/>
+                <stop offset="100%" style="stop-color:#FF8E53"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#logoGrad)"/>
+            <path d="M35 35 L45 50 L35 65 M55 35 L65 50 L55 65" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="50" cy="50" r="8" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <h1 class="app-title">LiQaa</h1>
+        <p class="app-subtitle">دردشة فيديو عشوائية مع أشخاص من كل العالم</p>
+      </div>
+
+      <!-- Setup Form -->
+      <div class="setup-form">
+        <!-- User Profile Form -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <span class="title-icon">📝</span>
+            معلومات الحساب
+          </h3>
+          <div class="input-group">
+            <label for="username-input">الاسم / اسم المستخدم</label>
+            <input type="text" id="username-input" placeholder="أدخل اسمك..." dir="auto">
+          </div>
+          <div class="input-group" style="margin-top: 10px;">
+            <label for="phone-input">رقم الهاتف</label>
+            <input type="tel" id="phone-input" placeholder="07XXXXXXXX" dir="ltr">
+          </div>
+        </div>
+
+        <!-- Gender Selection -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <span class="title-icon">👤</span>
+            اختر جنسك
+          </h3>
+          <div class="gender-cards">
+            <div class="gender-card" data-gender="male" id="gender-male">
+              <div class="gender-icon">👨</div>
+              <span>ذكر</span>
+              <span class="gender-en">Male</span>
+            </div>
+            <div class="gender-card" data-gender="female" id="gender-female">
+              <div class="gender-icon">👩</div>
+              <span>أنثى</span>
+              <span class="gender-en">Female</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gender Filter -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <span class="title-icon">🔍</span>
+            أريد التحدث مع
+          </h3>
+          <div class="filter-cards">
+            <div class="filter-card active" data-filter="any" id="filter-any">
+              <span>الكل</span>
+              <span class="badge-free">مجانى ✨</span>
+            </div>
+            <div class="filter-card" data-filter="male" id="filter-male">
+              <span>ذكور</span>
+              <span class="badge-price">10 💎 / اتصال</span>
+            </div>
+            <div class="filter-card" data-filter="female" id="filter-female">
+              <span>إناث</span>
+              <span class="badge-price">10 💎 / اتصال</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Store Quick Button -->
+        <div class="form-section">
+          <button type="button" class="action-button" style="width: 100%; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; font-weight: 800; font-size: 16px; border: none; justify-content: center; gap: 8px;" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
+            <span>💎 متجر شحن الجواهر بالفيزا</span>
+          </button>
+        </div>
+
+        <!-- Country Detection -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <span class="title-icon">🌍</span>
+            بلدك
+          </h3>
+          <div id="country-detecting" class="country-auto">
+            <div class="detecting-spinner"></div>
+            <span>جاري تحديد موقعك...</span>
+          </div>
+          <div id="country-detected" class="country-auto hidden">
+            <span id="detected-flag" class="detected-flag"></span>
+            <span id="detected-name" class="detected-name"></span>
+            <button id="change-country-btn" class="change-country-btn">تغيير</button>
+          </div>
+          <div id="country-manual" class="hidden">
+          <div class="select-wrapper">
+            <select id="country-select">
+              <option value="" disabled selected>-- اختر بلدك / Select Country --</option>
+              <option value="AF" data-name="أفغانستان">🇦🇫 أفغانستان - Afghanistan</option>
+              <option value="AL" data-name="ألبانيا">🇦🇱 ألبانيا - Albania</option>
+              <option value="DZ" data-name="الجزائر">🇩🇿 الجزائر - Algeria</option>
+              <option value="AD" data-name="أندورا">🇦🇩 أندورا - Andorra</option>
+              <option value="AO" data-name="أنغولا">🇦🇴 أنغولا - Angola</option>
+              <option value="AG" data-name="أنتيغوا وبربودا">🇦🇬 أنتيغوا وبربودا - Antigua & Barbuda</option>
+              <option value="AR" data-name="الأرجنتين">🇦🇷 الأرجنتين - Argentina</option>
+              <option value="AM" data-name="أرمينيا">🇦🇲 أرمينيا - Armenia</option>
+              <option value="AU" data-name="أستراليا">🇦🇺 أستراليا - Australia</option>
+              <option value="AT" data-name="النمسا">🇦🇹 النمسا - Austria</option>
+              <option value="AZ" data-name="أذربيجان">🇦🇿 أذربيجان - Azerbaijan</option>
+              <option value="BS" data-name="الباهاما">🇧🇸 الباهاما - Bahamas</option>
+              <option value="BH" data-name="البحرين">🇧🇭 البحرين - Bahrain</option>
+              <option value="BD" data-name="بنغلاديش">🇧🇩 بنغلاديش - Bangladesh</option>
+              <option value="BB" data-name="باربادوس">🇧🇧 باربادوس - Barbados</option>
+              <option value="BY" data-name="بيلاروسيا">🇧🇾 بيلاروسيا - Belarus</option>
+              <option value="BE" data-name="بلجيكا">🇧🇪 بلجيكا - Belgium</option>
+              <option value="BZ" data-name="بليز">🇧🇿 بليز - Belize</option>
+              <option value="BJ" data-name="بنين">🇧🇯 بنين - Benin</option>
+              <option value="BT" data-name="بوتان">🇧🇹 بوتان - Bhutan</option>
+              <option value="BO" data-name="بوليفيا">🇧🇴 بوليفيا - Bolivia</option>
+              <option value="BA" data-name="البوسنة والهرسك">🇧🇦 البوسنة والهرسك - Bosnia & Herzegovina</option>
+              <option value="BW" data-name="بوتسوانا">🇧🇼 بوتسوانا - Botswana</option>
+              <option value="BR" data-name="البرازيل">🇧🇷 البرازيل - Brazil</option>
+              <option value="BN" data-name="بروناي">🇧🇳 بروناي - Brunei</option>
+              <option value="BG" data-name="بلغاريا">🇧🇬 بلغاريا - Bulgaria</option>
+              <option value="BF" data-name="بوركينا فاسو">🇧🇫 بوركينا فاسو - Burkina Faso</option>
+              <option value="BI" data-name="بوروندي">🇧🇮 بوروندي - Burundi</option>
+              <option value="KH" data-name="كمبوديا">🇰🇭 كمبوديا - Cambodia</option>
+              <option value="CM" data-name="الكاميرون">🇨🇲 الكاميرون - Cameroon</option>
+              <option value="CA" data-name="كندا">🇨🇦 كندا - Canada</option>
+              <option value="CV" data-name="الرأس الأخضر">🇨🇻 الرأس الأخضر - Cape Verde</option>
+              <option value="CF" data-name="أفريقيا الوسطى">🇨🇫 أفريقيا الوسطى - Central African Republic</option>
+              <option value="TD" data-name="تشاد">🇹🇩 تشاد - Chad</option>
+              <option value="CL" data-name="تشيلي">🇨🇱 تشيلي - Chile</option>
+              <option value="CN" data-name="الصين">🇨🇳 الصين - China</option>
+              <option value="CO" data-name="كولومبيا">🇨🇴 كولومبيا - Colombia</option>
+              <option value="KM" data-name="جزر القمر">🇰🇲 جزر القمر - Comoros</option>
+              <option value="CG" data-name="الكونغو">🇨🇬 الكونغو - Congo</option>
+              <option value="CD" data-name="الكونغو الديمقراطية">🇨🇩 الكونغو الديمقراطية - DR Congo</option>
+              <option value="CR" data-name="كوستاريكا">🇨🇷 كوستاريكا - Costa Rica</option>
+              <option value="HR" data-name="كرواتيا">🇭🇷 كرواتيا - Croatia</option>
+              <option value="CU" data-name="كوبا">🇨🇺 كوبا - Cuba</option>
+              <option value="CY" data-name="قبرص">🇨🇾 قبرص - Cyprus</option>
+              <option value="CZ" data-name="التشيك">🇨🇿 التشيك - Czech Republic</option>
+              <option value="DK" data-name="الدنمارك">🇩🇰 الدنمارك - Denmark</option>
+              <option value="DJ" data-name="جيبوتي">🇩🇯 جيبوتي - Djibouti</option>
+              <option value="DM" data-name="دومينيكا">🇩🇲 دومينيكا - Dominica</option>
+              <option value="DO" data-name="جمهورية الدومينيكان">🇩🇴 جمهورية الدومينيكان - Dominican Republic</option>
+              <option value="EC" data-name="الإكوادور">🇪🇨 الإكوادور - Ecuador</option>
+              <option value="EG" data-name="مصر">🇪🇬 مصر - Egypt</option>
+              <option value="SV" data-name="السلفادور">🇸🇻 السلفادور - El Salvador</option>
+              <option value="GQ" data-name="غينيا الاستوائية">🇬🇶 غينيا الاستوائية - Equatorial Guinea</option>
+              <option value="ER" data-name="إريتريا">🇪🇷 إريتريا - Eritrea</option>
+              <option value="EE" data-name="إستونيا">🇪🇪 إستونيا - Estonia</option>
+              <option value="SZ" data-name="إسواتيني">🇸🇿 إسواتيني - Eswatini</option>
+              <option value="ET" data-name="إثيوبيا">🇪🇹 إثيوبيا - Ethiopia</option>
+              <option value="FJ" data-name="فيجي">🇫🇯 فيجي - Fiji</option>
+              <option value="FI" data-name="فنلندا">🇫🇮 فنلندا - Finland</option>
+              <option value="FR" data-name="فرنسا">🇫🇷 فرنسا - France</option>
+              <option value="GA" data-name="الغابون">🇬🇦 الغابون - Gabon</option>
+              <option value="GM" data-name="غامبيا">🇬🇲 غامبيا - Gambia</option>
+              <option value="GE" data-name="جورجيا">🇬🇪 جورجيا - Georgia</option>
+              <option value="DE" data-name="ألمانيا">🇩🇪 ألمانيا - Germany</option>
+              <option value="GH" data-name="غانا">🇬🇭 غانا - Ghana</option>
+              <option value="GR" data-name="اليونان">🇬🇷 اليونان - Greece</option>
+              <option value="GD" data-name="غرينادا">🇬🇩 غرينادا - Grenada</option>
+              <option value="GT" data-name="غواتيمالا">🇬🇹 غواتيمالا - Guatemala</option>
+              <option value="GN" data-name="غينيا">🇬🇳 غينيا - Guinea</option>
+              <option value="GW" data-name="غينيا بيساو">🇬🇼 غينيا بيساو - Guinea-Bissau</option>
+              <option value="GY" data-name="غيانا">🇬🇾 غيانا - Guyana</option>
+              <option value="HT" data-name="هايتي">🇭🇹 هايتي - Haiti</option>
+              <option value="HN" data-name="هندوراس">🇭🇳 هندوراس - Honduras</option>
+              <option value="HU" data-name="المجر">🇭🇺 المجر - Hungary</option>
+              <option value="IS" data-name="آيسلندا">🇮🇸 آيسلندا - Iceland</option>
+              <option value="IN" data-name="الهند">🇮🇳 الهند - India</option>
+              <option value="ID" data-name="إندونيسيا">🇮🇩 إندونيسيا - Indonesia</option>
+              <option value="IR" data-name="إيران">🇮🇷 إيران - Iran</option>
+              <option value="IQ" data-name="العراق">🇮🇶 العراق - Iraq</option>
+              <option value="IE" data-name="أيرلندا">🇮🇪 أيرلندا - Ireland</option>
+              <option value="IL" data-name="إسرائيل">🇮🇱 إسرائيل - Israel</option>
+              <option value="IT" data-name="إيطاليا">🇮🇹 إيطاليا - Italy</option>
+              <option value="CI" data-name="ساحل العاج">🇨🇮 ساحل العاج - Ivory Coast</option>
+              <option value="JM" data-name="جامايكا">🇯🇲 جامايكا - Jamaica</option>
+              <option value="JP" data-name="اليابان">🇯🇵 اليابان - Japan</option>
+              <option value="JO" data-name="الأردن">🇯🇴 الأردن - Jordan</option>
+              <option value="KZ" data-name="كازاخستان">🇰🇿 كازاخستان - Kazakhstan</option>
+              <option value="KE" data-name="كينيا">🇰🇪 كينيا - Kenya</option>
+              <option value="KI" data-name="كيريباتي">🇰🇮 كيريباتي - Kiribati</option>
+              <option value="KW" data-name="الكويت">🇰🇼 الكويت - Kuwait</option>
+              <option value="KG" data-name="قيرغيزستان">🇰🇬 قيرغيزستان - Kyrgyzstan</option>
+              <option value="LA" data-name="لاوس">🇱🇦 لاوس - Laos</option>
+              <option value="LV" data-name="لاتفيا">🇱🇻 لاتفيا - Latvia</option>
+              <option value="LB" data-name="لبنان">🇱🇧 لبنان - Lebanon</option>
+              <option value="LS" data-name="ليسوتو">🇱🇸 ليسوتو - Lesotho</option>
+              <option value="LR" data-name="ليبيريا">🇱🇷 ليبيريا - Liberia</option>
+              <option value="LY" data-name="ليبيا">🇱🇾 ليبيا - Libya</option>
+              <option value="LI" data-name="ليختنشتاين">🇱🇮 ليختنشتاين - Liechtenstein</option>
+              <option value="LT" data-name="ليتوانيا">🇱🇹 ليتوانيا - Lithuania</option>
+              <option value="LU" data-name="لوكسمبورغ">🇱🇺 لوكسمبورغ - Luxembourg</option>
+              <option value="MG" data-name="مدغشقر">🇲🇬 مدغشقر - Madagascar</option>
+              <option value="MW" data-name="مالاوي">🇲🇼 مالاوي - Malawi</option>
+              <option value="MY" data-name="ماليزيا">🇲🇾 ماليزيا - Malaysia</option>
+              <option value="MV" data-name="المالديف">🇲🇻 المالديف - Maldives</option>
+              <option value="ML" data-name="مالي">🇲🇱 مالي - Mali</option>
+              <option value="MT" data-name="مالطا">🇲🇹 مالطا - Malta</option>
+              <option value="MH" data-name="جزر مارشال">🇲🇭 جزر مارشال - Marshall Islands</option>
+              <option value="MR" data-name="موريتانيا">🇲🇷 موريتانيا - Mauritania</option>
+              <option value="MU" data-name="موريشيوس">🇲🇺 موريشيوس - Mauritius</option>
+              <option value="MX" data-name="المكسيك">🇲🇽 المكسيك - Mexico</option>
+              <option value="FM" data-name="ميكرونيسيا">🇫🇲 ميكرونيسيا - Micronesia</option>
+              <option value="MD" data-name="مولدوفا">🇲🇩 مولدوفا - Moldova</option>
+              <option value="MC" data-name="موناكو">🇲🇨 موناكو - Monaco</option>
+              <option value="MN" data-name="منغوليا">🇲🇳 منغوليا - Mongolia</option>
+              <option value="ME" data-name="الجبل الأسود">🇲🇪 الجبل الأسود - Montenegro</option>
+              <option value="MA" data-name="المغرب">🇲🇦 المغرب - Morocco</option>
+              <option value="MZ" data-name="موزمبيق">🇲🇿 موزمبيق - Mozambique</option>
+              <option value="MM" data-name="ميانمار">🇲🇲 ميانمار - Myanmar</option>
+              <option value="NA" data-name="ناميبيا">🇳🇦 ناميبيا - Namibia</option>
+              <option value="NR" data-name="ناورو">🇳🇷 ناورو - Nauru</option>
+              <option value="NP" data-name="نيبال">🇳🇵 نيبال - Nepal</option>
+              <option value="NL" data-name="هولندا">🇳🇱 هولندا - Netherlands</option>
+              <option value="NZ" data-name="نيوزيلندا">🇳🇿 نيوزيلندا - New Zealand</option>
+              <option value="NI" data-name="نيكاراغوا">🇳🇮 نيكاراغوا - Nicaragua</option>
+              <option value="NE" data-name="النيجر">🇳🇪 النيجر - Niger</option>
+              <option value="NG" data-name="نيجيريا">🇳🇬 نيجيريا - Nigeria</option>
+              <option value="KP" data-name="كوريا الشمالية">🇰🇵 كوريا الشمالية - North Korea</option>
+              <option value="MK" data-name="مقدونيا الشمالية">🇲🇰 مقدونيا الشمالية - North Macedonia</option>
+              <option value="NO" data-name="النرويج">🇳🇴 النرويج - Norway</option>
+              <option value="OM" data-name="عمان">🇴🇲 عمان - Oman</option>
+              <option value="PK" data-name="باكستان">🇵🇰 باكستان - Pakistan</option>
+              <option value="PW" data-name="بالاو">🇵🇼 بالاو - Palau</option>
+              <option value="PS" data-name="فلسطين">🇵🇸 فلسطين - Palestine</option>
+              <option value="PA" data-name="بنما">🇵🇦 بنما - Panama</option>
+              <option value="PG" data-name="بابوا غينيا الجديدة">🇵🇬 بابوا غينيا الجديدة - Papua New Guinea</option>
+              <option value="PY" data-name="باراغواي">🇵🇾 باراغواي - Paraguay</option>
+              <option value="PE" data-name="بيرو">🇵🇪 بيرو - Peru</option>
+              <option value="PH" data-name="الفلبين">🇵🇭 الفلبين - Philippines</option>
+              <option value="PL" data-name="بولندا">🇵🇱 بولندا - Poland</option>
+              <option value="PT" data-name="البرتغال">🇵🇹 البرتغال - Portugal</option>
+              <option value="QA" data-name="قطر">🇶🇦 قطر - Qatar</option>
+              <option value="RO" data-name="رومانيا">🇷🇴 رومانيا - Romania</option>
+              <option value="RU" data-name="روسيا">🇷🇺 روسيا - Russia</option>
+              <option value="RW" data-name="رواندا">🇷🇼 رواندا - Rwanda</option>
+              <option value="KN" data-name="سانت كيتس ونيفيس">🇰🇳 سانت كيتس ونيفيس - Saint Kitts & Nevis</option>
+              <option value="LC" data-name="سانت لوسيا">🇱🇨 سانت لوسيا - Saint Lucia</option>
+              <option value="VC" data-name="سانت فنسنت">🇻🇨 سانت فنسنت - Saint Vincent</option>
+              <option value="WS" data-name="ساموا">🇼🇸 ساموا - Samoa</option>
+              <option value="SM" data-name="سان مارينو">🇸🇲 سان مارينو - San Marino</option>
+              <option value="ST" data-name="ساو تومي وبرينسيبي">🇸🇹 ساو تومي وبرينسيبي - São Tomé & Príncipe</option>
+              <option value="SA" data-name="السعودية">🇸🇦 السعودية - Saudi Arabia</option>
+              <option value="SN" data-name="السنغال">🇸🇳 السنغال - Senegal</option>
+              <option value="RS" data-name="صربيا">🇷🇸 صربيا - Serbia</option>
+              <option value="SC" data-name="سيشل">🇸🇨 سيشل - Seychelles</option>
+              <option value="SL" data-name="سيراليون">🇸🇱 سيراليون - Sierra Leone</option>
+              <option value="SG" data-name="سنغافورة">🇸🇬 سنغافورة - Singapore</option>
+              <option value="SK" data-name="سلوفاكيا">🇸🇰 سلوفاكيا - Slovakia</option>
+              <option value="SI" data-name="سلوفينيا">🇸🇮 سلوفينيا - Slovenia</option>
+              <option value="SB" data-name="جزر سليمان">🇸🇧 جزر سليمان - Solomon Islands</option>
+              <option value="SO" data-name="الصومال">🇸🇴 الصومال - Somalia</option>
+              <option value="ZA" data-name="جنوب أفريقيا">🇿🇦 جنوب أفريقيا - South Africa</option>
+              <option value="KR" data-name="كوريا الجنوبية">🇰🇷 كوريا الجنوبية - South Korea</option>
+              <option value="SS" data-name="جنوب السودان">🇸🇸 جنوب السودان - South Sudan</option>
+              <option value="ES" data-name="إسبانيا">🇪🇸 إسبانيا - Spain</option>
+              <option value="LK" data-name="سريلانكا">🇱🇰 سريلانكا - Sri Lanka</option>
+              <option value="SD" data-name="السودان">🇸🇩 السودان - Sudan</option>
+              <option value="SR" data-name="سورينام">🇸🇷 سورينام - Suriname</option>
+              <option value="SE" data-name="السويد">🇸🇪 السويد - Sweden</option>
+              <option value="CH" data-name="سويسرا">🇨🇭 سويسرا - Switzerland</option>
+              <option value="SY" data-name="سوريا">🇸🇾 سوريا - Syria</option>
+              <option value="TW" data-name="تايوان">🇹🇼 تايوان - Taiwan</option>
+              <option value="TJ" data-name="طاجيكستان">🇹🇯 طاجيكستان - Tajikistan</option>
+              <option value="TZ" data-name="تنزانيا">🇹🇿 تنزانيا - Tanzania</option>
+              <option value="TH" data-name="تايلاند">🇹🇭 تايلاند - Thailand</option>
+              <option value="TL" data-name="تيمور الشرقية">🇹🇱 تيمور الشرقية - Timor-Leste</option>
+              <option value="TG" data-name="توغو">🇹🇬 توغو - Togo</option>
+              <option value="TO" data-name="تونغا">🇹🇴 تونغا - Tonga</option>
+              <option value="TT" data-name="ترينيداد وتوباغو">🇹🇹 ترينيداد وتوباغو - Trinidad & Tobago</option>
+              <option value="TN" data-name="تونس">🇹🇳 تونس - Tunisia</option>
+              <option value="TR" data-name="تركيا">🇹🇷 تركيا - Turkey</option>
+              <option value="TM" data-name="تركمانستان">🇹🇲 تركمانستان - Turkmenistan</option>
+              <option value="TV" data-name="توفالو">🇹🇻 توفالو - Tuvalu</option>
+              <option value="UG" data-name="أوغندا">🇺🇬 أوغندا - Uganda</option>
+              <option value="UA" data-name="أوكرانيا">🇺🇦 أوكرانيا - Ukraine</option>
+              <option value="AE" data-name="الإمارات">🇦🇪 الإمارات - United Arab Emirates</option>
+              <option value="GB" data-name="المملكة المتحدة">🇬🇧 المملكة المتحدة - United Kingdom</option>
+              <option value="US" data-name="الولايات المتحدة">🇺🇸 الولايات المتحدة - United States</option>
+              <option value="UY" data-name="أوروغواي">🇺🇾 أوروغواي - Uruguay</option>
+              <option value="UZ" data-name="أوزبكستان">🇺🇿 أوزبكستان - Uzbekistan</option>
+              <option value="VU" data-name="فانواتو">🇻🇺 فانواتو - Vanuatu</option>
+              <option value="VA" data-name="الفاتيكان">🇻🇦 الفاتيكان - Vatican City</option>
+              <option value="VE" data-name="فنزويلا">🇻🇪 فنزويلا - Venezuela</option>
+              <option value="VN" data-name="فيتنام">🇻🇳 فيتنام - Vietnam</option>
+              <option value="YE" data-name="اليمن">🇾🇪 اليمن - Yemen</option>
+              <option value="ZM" data-name="زامبيا">🇿🇲 زامبيا - Zambia</option>
+              <option value="ZW" data-name="زيمبابوي">🇿🇼 زيمبابوي - Zimbabwe</option>
+            </select>
+          </div>
+          </div>
+        </div>
+
+        <!-- Start Button -->
+        <button id="start-btn" class="start-button" disabled>
+          <span class="btn-icon">🎥</span>
+          <span class="btn-text">ابدأ الدردشة</span>
+          <span class="btn-text-en">Start Chat</span>
+        </button>
+      </div>
+
+      <!-- Online Count -->
+      <div class="online-indicator">
+        <div class="online-dot"></div>
+        <span><span id="welcome-online-count">0</span> متصل الآن</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Chat Screen ============ -->
+  <div id="chat-screen" class="screen">
+    <!-- Video Container -->
+    <div id="videos-container">
+      <video id="remote-video" autoplay playsinline></video>
+      <div id="local-video-wrapper">
+        <video id="local-video" autoplay playsinline muted></video>
+      </div>
+
+      <!-- Partner Info Badge -->
+      <div id="partner-info" class="hidden">
+        <span id="partner-flag"></span>
+        <span id="partner-country-name"></span>
+        <span class="partner-divider">•</span>
+        <span id="partner-gender-icon"></span>
+      </div>
+
+      <!-- Connection Timer -->
+      <div id="call-timer" class="hidden">
+        <span id="timer-display">00:00</span>
+      </div>
+    </div>
+
+    <!-- Searching Overlay -->
+    <div id="searching-overlay" class="hidden">
+      <div class="searching-content">
+        <div class="searching-animation">
+          <div class="search-ring ring1"></div>
+          <div class="search-ring ring2"></div>
+          <div class="search-ring ring3"></div>
+          <div class="search-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="searching-text">جاري البحث عن شخص...</h2>
+        <p class="searching-subtext">Searching for someone...</p>
+        <div class="searching-online">
+          <div class="online-dot"></div>
+          <span><span id="search-online-count">0</span> متصل الآن</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Partner Left Overlay -->
+    <div id="partner-left-overlay" class="hidden">
+      <div class="partner-left-content">
+        <div class="partner-left-icon">👋</div>
+        <h2>انتهت المحادثة</h2>
+        <p>الشخص الآخر غادر</p>
+        <button id="find-new-btn" class="action-button">
+          <span>🔍</span> ابحث عن شخص جديد
+        </button>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div id="controls-bar">
+      <div class="controls-group">
+        <button id="end-btn" class="control-btn end-btn" title="إنهاء المكالمة">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.1-1.1a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.93 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2.5"/>
+          </svg>
+        </button>
+
+        <button id="mic-btn" class="control-btn" title="كتم/تشغيل الميكروفون">
+          <svg class="mic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          <svg class="mic-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.48-.36 2.15"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+
+        <button id="camera-btn" class="control-btn" title="إيقاف/تشغيل الكاميرا">
+          <svg class="cam-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <svg class="cam-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+
+        <button id="next-btn" class="control-btn next-btn" title="التالي / Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 4 15 12 5 20 5 4"/>
+            <line x1="19" y1="5" x2="19" y2="19"/>
+          </svg>
+          <span class="next-label">التالي</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera Permission Error -->
+  <div id="permission-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-icon">📷</div>
+      <h2 id="permission-title">نحتاج إذن الكاميرا والميكروفون</h2>
+      <p id="permission-message">يرجى السماح بالوصول للكاميرا والميكروفون لاستخدام دردشة الفيديو</p>
+      <div id="permission-steps" class="permission-steps">
+        <h4>كيف تسمح بالكاميرا؟</h4>
+        <div class="step">
+          <span class="step-num">1</span>
+          <span>اضغط على أيقونة 🔒 أو 📷 في شريط العنوان أعلى المتصفح</span>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span>اختر "السماح" أو "Allow" للكاميرا والميكروفون</span>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span>أعد تحميل الصفحة ثم اضغط "ابدأ الدردشة" مرة أخرى</span>
+        </div>
+      </div>
+      <div class="permission-buttons">
+        <button id="retry-permission-btn" class="action-button">🔄 حاول مرة أخرى</button>
+        <button id="close-permission-btn" class="action-button secondary-btn">رجوع</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recharge Gems Store Modal -->
+  <div id="recharge-modal" class="modal hidden">
+    <div class="modal-content gems-modal-content">
+      <div class="modal-icon">💎</div>
+      <h2>متجر الجواهر / الشحن الرسمي</h2>
+      <p>اختر العرض المناسب لك للشحن الفوري عبر وسائل الدفع الآمنة</p>
+      
+      <div class="gems-packages">
+        <div class="gem-package-card" data-gems="50" data-price="4.99">
+          <div class="package-icon">💎</div>
+          <div class="package-amount">50 جوهرة</div>
+          <div class="package-price">4.99 $</div>
+          <button class="buy-package-btn">شراء الآن</button>
+        </div>
+        <div class="gem-package-card featured" data-gems="150" data-price="9.99">
+          <div class="popular-badge">🔥 الأكثر مبيعاً (+50 مجاناً)</div>
+          <div class="package-icon">💎💎</div>
+          <div class="package-amount">200 جوهرة</div>
+          <div class="package-price">9.99 $</div>
+          <button class="buy-package-btn primary-buy">شراء الآن</button>
+        </div>
+        <div class="gem-package-card" data-gems="500" data-price="24.99">
+          <div class="popular-badge" style="background:#4ade80; color:#000;">👑 توفير 35%</div>
+          <div class="package-icon">👑💎</div>
+          <div class="package-amount">600 جوهرة</div>
+          <div class="package-price">24.99 $</div>
+          <button class="buy-package-btn">شراء الآن</button>
+        </div>
+      </div>
+
+      <div class="permission-buttons" style="margin-top: 15px;">
+        <button id="close-recharge-btn" class="action-button secondary-btn" style="width:100%;">إغلاق المتجر</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Checkout Payment Modal -->
+  <div id="checkout-modal" class="modal hidden">
+    <div class="modal-content checkout-modal-content">
+      <div class="modal-icon">💳</div>
+      <h2>إتمام عملية الدفع الآمن</h2>
+      <p>الباقة المختارة: <strong id="checkout-package-title">200 جوهرة (9.99$)</strong></p>
+
+      <!-- Payment Methods Tabs -->
+      <div class="payment-methods-tabs">
+        <div class="payment-tab active" data-method="card">
+          <span>💳 بطاقة بنكية (Visa/Mastercard)</span>
+        </div>
+        <div class="payment-tab" data-method="paypal">
+          <span>🅿️ PayPal</span>
+        </div>
+        <div class="payment-tab" data-method="wallet">
+          <span>📱 محفظة إلكترونية (Zain Cash/Paymob)</span>
+        </div>
+      </div>
+
+      <!-- Card Form -->
+      <form id="payment-card-form" class="payment-form">
+        <div class="input-group">
+          <label>اسم حامل البطاقة</label>
+          <input type="text" id="card-name" placeholder="Name on Card" required>
+        </div>
+        <div class="input-group" style="margin-top: 10px;">
+          <label>رقم البطاقة (16 رقم)</label>
+          <input type="text" id="card-number" placeholder="4532 •••• •••• 8890" maxlength="19" required>
+        </div>
+        <div class="form-row" style="display:flex; gap:10px; margin-top:10px;">
+          <div class="input-group" style="flex:1;">
+            <label>تاريخ الانتهاء</label>
+            <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" required>
+          </div>
+          <div class="input-group" style="flex:1;">
+            <label>رمز الأمان CVC</label>
+            <input type="password" id="card-cvc" placeholder="123" maxlength="4" required>
+          </div>
+        </div>
+        
+        <button type="submit" id="submit-payment-btn" class="start-button" style="margin-top:20px; width:100%;">
+          <span>🔒 تأكيد وتأمين الدفع</span>
+        </button>
+      </form>
+
+      <!-- PayPal Form -->
+      <div id="payment-paypal-container" class="payment-form hidden" style="text-align:center; padding:20px 0;">
+        <p>سيتم تحويلك بشكل آمن إلى موقع <strong>PayPal</strong> لاستكمال عملية الدفع وتحويل الأرباح.</p>
+        <button id="paypal-pay-btn" class="start-button" style="background:#0070ba; margin-top:15px; width:100%;">
+          <span>🅿️ الدفع السريع عبر PayPal</span>
+        </button>
+      </div>
+
+      <!-- Wallet Form -->
+      <div id="payment-wallet-container" class="payment-form hidden" style="text-align:center; padding:20px 0;">
+        <p>ادفع من خلال محفظتك الإلكترونية المحليّة (Zain Cash / Orange Money / Paymob)</p>
+        <div class="input-group" style="margin-top:10px; text-align:right;">
+          <label>رقم المحفظة / الهاتف</label>
+          <input type="tel" id="wallet-phone" placeholder="07XXXXXXXX">
+        </div>
+        <button id="wallet-pay-btn" class="start-button" style="background:#10b981; margin-top:15px; width:100%;">
+          <span>📱 تأكيد الدفع بالمحفظة</span>
+        </button>
+      </div>
+
+      <div class="permission-buttons" style="margin-top: 15px;">
+        <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%;">إلغاء العملية</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insufficient Gems Alert Modal -->
+  <div id="insufficient-gems-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-icon">⚠️💎</div>
+      <h2>الرصيد غير كافٍ!</h2>
+      <p>اخترت فلتر تحديد الجنس والذي يتطلب <strong>10 جواهر 💎</strong> لكل اتصال.</p>
+      <p>رصيدك الحالي غير كافٍ. يمكنك شحن الجواهر أو استخدام التصفية العشوائية <strong>"الكل (مجاني)"</strong>.</p>
+      <div class="permission-buttons" style="margin-top: 15px;">
+        <button id="go-to-recharge-btn" class="action-button">💎 اشحن الآن</button>
+        <button id="switch-to-any-btn" class="action-button secondary-btn">استخدم المجاني (الكل)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
