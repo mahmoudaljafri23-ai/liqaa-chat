@@ -306,23 +306,55 @@ function setupWelcomeUI() {
     });
   }
 
-  let selectedPackage = { gems: 200, price: 9.99 };
+  let selectedPackage = { gems: 1000, price: 2.49, paypalId: '6QC32E9TM4G26' };
 
-  // Gem packages -> open Checkout Modal
+  // Gem packages -> open Checkout Modal and render official PayPal Hosted Buttons
   $$('.gem-package-card').forEach(card => {
     card.addEventListener('click', () => {
-      const gems = parseInt(card.dataset.gems) || 50;
-      const price = parseFloat(card.dataset.price) || 4.99;
-      selectedPackage = { gems, price };
+      const gems = parseInt(card.dataset.gems) || 1000;
+      const price = parseFloat(card.dataset.price) || 2.49;
+      const paypalId = card.dataset.paypal || '6QC32E9TM4G26';
+      selectedPackage = { gems, price, paypalId };
 
       const packageTitle = $('#checkout-package-title');
-      if (packageTitle) packageTitle.textContent = `${gems} جوهرة (${price} $)`;
+      if (packageTitle) packageTitle.textContent = `${gems.toLocaleString()} جوهرة (${price} $)`;
 
-      rechargeModal.classList.add('hidden');
+      if (rechargeModal) rechargeModal.classList.add('hidden');
       const checkoutModal = $('#checkout-modal');
       if (checkoutModal) checkoutModal.classList.remove('hidden');
+
+      renderPayPalHostedButtons(paypalId);
     });
   });
+
+  function renderPayPalHostedButtons(buttonId) {
+    const container = $('#paypal-hosted-button-container');
+    if (!container) return;
+
+    container.innerHTML = '<div style="color:#aaa; font-size:14px; padding:10px;">جاري تحميل وسيلة الدفع الآمنة...</div>';
+
+    if (window.paypal && typeof paypal.HostedButtons === 'function') {
+      try {
+        container.innerHTML = '';
+        paypal.HostedButtons({
+          hostedButtonId: buttonId
+        }).render('#paypal-hosted-button-container');
+      } catch (err) {
+        console.error('[PayPal HostedButtons render error]', err);
+        renderFallbackPayButton(container, buttonId);
+      }
+    } else {
+      renderFallbackPayButton(container, buttonId);
+    }
+  }
+
+  function renderFallbackPayButton(container, buttonId) {
+    container.innerHTML = `
+      <a href="https://www.paypal.com/ncp/payment/${buttonId}" target="_blank" class="start-button" style="background:#ffd140; color:#000; text-decoration:none; display:inline-block; padding:14px 24px; font-weight:bold; border-radius:10px; width:100%; text-align:center; box-sizing:border-box;">
+        💳 الدفع بالفيزا / ماستركارد / PayPal
+      </a>
+    `;
+  }
 
   // Close Checkout Modal
   const closeCheckoutBtn = $('#close-checkout-btn');
@@ -330,65 +362,7 @@ function setupWelcomeUI() {
     closeCheckoutBtn.addEventListener('click', () => {
       const checkoutModal = $('#checkout-modal');
       if (checkoutModal) checkoutModal.classList.add('hidden');
-    });
-  }
-
-  // Payment Tabs Switcher
-  $$('.payment-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      $$('.payment-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const method = tab.dataset.method;
-
-      const cardForm = $('#payment-card-form');
-      const paypalContainer = $('#payment-paypal-container');
-      const walletContainer = $('#payment-wallet-container');
-
-      if (cardForm) cardForm.classList.toggle('hidden', method !== 'card');
-      if (paypalContainer) paypalContainer.classList.toggle('hidden', method !== 'paypal');
-      if (walletContainer) walletContainer.classList.toggle('hidden', method !== 'wallet');
-    });
-  });
-
-  // Handle Card Payment Submit
-  const paymentCardForm = $('#payment-card-form');
-  if (paymentCardForm) {
-    paymentCardForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      processSuccessfulPayment('بطاقة بنكية (Visa/Mastercard)');
-    });
-  }
-
-  // Handle PayPal Payment Submit
-  const paypalPayBtn = $('#paypal-pay-btn');
-  if (paypalPayBtn) {
-    paypalPayBtn.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/create-paypal-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: selectedPackage.price,
-            gems: selectedPackage.gems
-          })
-        });
-        const data = await res.json();
-        if (data.paypalUrl) {
-          window.location.href = data.paypalUrl;
-          return;
-        }
-      } catch (e) {
-        console.warn('[PayPal error]', e);
-      }
-      processSuccessfulPayment('PayPal');
-    });
-  }
-
-  // Handle Wallet Payment Submit
-  const walletPayBtn = $('#wallet-pay-btn');
-  if (walletPayBtn) {
-    walletPayBtn.addEventListener('click', () => {
-      processSuccessfulPayment('المحفظة الإلكترونية (Zain Cash / Paymob)');
+      if (rechargeModal) rechargeModal.classList.remove('hidden');
     });
   }
 

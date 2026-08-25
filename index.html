@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&components=hosted-buttons&disable-funding=venmo&currency=USD"></script>
 </head>
 <body>
   <!-- ============ Welcome Screen ============ -->
@@ -494,28 +495,28 @@
           <div class="package-icon">💎</div>
           <div class="package-amount">1,000 جوهرة</div>
           <div class="package-price">2.49 $</div>
-          <button class="buy-package-btn" onclick="window.open('https://www.paypal.com/ncp/payment/6QC32E9TM4G26', '_blank')">💳 شراء الآن</button>
+          <button class="buy-package-btn">💳 شراء الآن</button>
         </div>
         <div class="gem-package-card featured" data-gems="3000" data-price="4.99" data-paypal="CX2QMYDPBU3CA">
           <div class="popular-badge">🔥 الأكثر مبيعاً - وفّر 33%</div>
           <div class="package-icon">💎💎</div>
           <div class="package-amount">3,000 جوهرة</div>
           <div class="package-price"><span style="text-decoration:line-through;color:#888;font-size:13px;">7.47$</span> 4.99 $</div>
-          <button class="buy-package-btn primary-buy" onclick="window.open('https://www.paypal.com/ncp/payment/CX2QMYDPBU3CA', '_blank')">💳 شراء الآن</button>
+          <button class="buy-package-btn primary-buy">💳 شراء الآن</button>
         </div>
         <div class="gem-package-card" data-gems="7000" data-price="9.99" data-paypal="6H36UTYCDPFZ6">
           <div class="popular-badge" style="background:#a78bfa; color:#fff;">⭐ وفّر 43%</div>
           <div class="package-icon">👑💎</div>
           <div class="package-amount">7,000 جوهرة</div>
           <div class="package-price"><span style="text-decoration:line-through;color:#888;font-size:13px;">17.43$</span> 9.99 $</div>
-          <button class="buy-package-btn" onclick="window.open('https://www.paypal.com/ncp/payment/6H36UTYCDPFZ6', '_blank')">💳 شراء الآن</button>
+          <button class="buy-package-btn">💳 شراء الآن</button>
         </div>
         <div class="gem-package-card" data-gems="15000" data-price="19.99" data-paypal="C868YTZBEZXME">
           <div class="popular-badge" style="background:#4ade80; color:#000;">👑 وفّر 47%</div>
           <div class="package-icon">👑👑</div>
           <div class="package-amount">15,000 جوهرة</div>
           <div class="package-price"><span style="text-decoration:line-through;color:#888;font-size:13px;">37.35$</span> 19.99 $</div>
-          <button class="buy-package-btn" onclick="window.open('https://www.paypal.com/ncp/payment/C868YTZBEZXME', '_blank')">💳 شراء الآن</button>
+          <button class="buy-package-btn">💳 شراء الآن</button>
         </div>
       </div>
 
@@ -532,72 +533,23 @@
 
   <!-- Real Checkout Payment Modal -->
   <div id="checkout-modal" class="modal hidden">
-    <div class="modal-content checkout-modal-content">
+    <div class="modal-content checkout-modal-content" style="max-width: 420px; text-align: center;">
       <div class="modal-icon">💳</div>
       <h2>إتمام عملية الدفع الآمن</h2>
-      <p>الباقة المختارة: <strong id="checkout-package-title">200 جوهرة (9.99$)</strong></p>
+      <p style="margin-bottom: 15px; color: #ccc;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">1,000 جوهرة (2.49$)</strong></p>
 
-      <!-- Payment Methods Tabs -->
-      <div class="payment-methods-tabs">
-        <div class="payment-tab active" data-method="card">
-          <span>💳 بطاقة بنكية (Visa/Mastercard)</span>
-        </div>
-        <div class="payment-tab" data-method="paypal">
-          <span>🅿️ PayPal</span>
-        </div>
-        <div class="payment-tab" data-method="wallet">
-          <span>📱 محفظة إلكترونية (Zain Cash/Paymob)</span>
-        </div>
+      <!-- PayPal Hosted Buttons Container (Renders Visa/Mastercard & PayPal buttons directly) -->
+      <div id="paypal-hosted-button-container" style="margin: 20px 0; min-height: 120px; display: flex; justify-content: center; align-items: center;">
+        <div style="color:#888; font-size:14px;">جاري تحميل وسيلة الدفع الآمنة...</div>
       </div>
 
-      <!-- Card Form -->
-      <form id="payment-card-form" class="payment-form">
-        <div class="input-group">
-          <label>اسم حامل البطاقة</label>
-          <input type="text" id="card-name" placeholder="Name on Card" required>
-        </div>
-        <div class="input-group" style="margin-top: 10px;">
-          <label>رقم البطاقة (16 رقم)</label>
-          <input type="text" id="card-number" placeholder="4532 •••• •••• 8890" maxlength="19" required>
-        </div>
-        <div class="form-row" style="display:flex; gap:10px; margin-top:10px;">
-          <div class="input-group" style="flex:1;">
-            <label>تاريخ الانتهاء</label>
-            <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" required>
-          </div>
-          <div class="input-group" style="flex:1;">
-            <label>رمز الأمان CVC</label>
-            <input type="password" id="card-cvc" placeholder="123" maxlength="4" required>
-          </div>
-        </div>
-        
-        <button type="submit" id="submit-payment-btn" class="start-button" style="margin-top:20px; width:100%;">
-          <span>🔒 تأكيد وتأمين الدفع</span>
-        </button>
-      </form>
-
-      <!-- PayPal Form -->
-      <div id="payment-paypal-container" class="payment-form hidden" style="text-align:center; padding:20px 0;">
-        <p>سيتم تحويلك بشكل آمن إلى موقع <strong>PayPal</strong> لاستكمال عملية الدفع وتحويل الأرباح.</p>
-        <button id="paypal-pay-btn" class="start-button" style="background:#0070ba; margin-top:15px; width:100%;">
-          <span>🅿️ الدفع السريع عبر PayPal</span>
-        </button>
+      <div style="text-align:center; margin-top:10px;">
+        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:24px;" />
+        <p style="font-size:11px; color:#888; margin-top:5px;">ادفع ببطاقة Visa أو Mastercard أو حساب PayPal مباشرة بدون مغادرة الموقع</p>
       </div>
 
-      <!-- Wallet Form -->
-      <div id="payment-wallet-container" class="payment-form hidden" style="text-align:center; padding:20px 0;">
-        <p>ادفع من خلال محفظتك الإلكترونية المحليّة (Zain Cash / Orange Money / Paymob)</p>
-        <div class="input-group" style="margin-top:10px; text-align:right;">
-          <label>رقم المحفظة / الهاتف</label>
-          <input type="tel" id="wallet-phone" placeholder="07XXXXXXXX">
-        </div>
-        <button id="wallet-pay-btn" class="start-button" style="background:#10b981; margin-top:15px; width:100%;">
-          <span>📱 تأكيد الدفع بالمحفظة</span>
-        </button>
-      </div>
-
-      <div class="permission-buttons" style="margin-top: 15px;">
-        <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%;">إلغاء العملية</button>
+      <div class="permission-buttons" style="margin-top: 20px;">
+        <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%;">إلغاء العملية والعودة للمتجر</button>
       </div>
     </div>
   </div>
