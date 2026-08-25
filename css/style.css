@@ -1294,3 +1294,28 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* PayPal Hosted Buttons Container styling */
+#paypal-hosted-button-container {
+  width: 100% !important;
+  max-width: 320px !important;
+  margin: 15px auto !important;
+  box-sizing: border-box !important;
+}
+
+#paypal-hosted-button-container * {
+  white-space: normal !important;
+  word-break: normal !important;
+}
+
+#paypal-hosted-button-container form {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+#paypal-hosted-button-container iframe {
+  width: 100% !important;
+  min-width: 250px !important;
+}
