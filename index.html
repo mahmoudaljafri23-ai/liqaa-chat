@@ -366,10 +366,25 @@
         <video id="local-video" autoplay playsinline muted></video>
       </div>
 
+      <!-- Interactive Badges Bar on Video Call -->
+      <div id="call-badges-bar" class="hidden" style="position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 18; display: flex; gap: 6px; background: rgba(18, 18, 30, 0.85); backdrop-filter: blur(10px); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);">
+        <span style="font-size: 11px; color: #aaa; align-self: center; margin-left: 2px;">أوسمة:</span>
+        <button class="give-badge-btn" data-badge="awesome" style="background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; color: #ffd700; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
+          ⭐ رائع
+        </button>
+        <button class="give-badge-btn" data-badge="handsome" style="background: rgba(236, 72, 153, 0.2); border: 1px solid #ec4899; color: #f472b6; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
+          ✨ وسيم
+        </button>
+        <button class="give-badge-btn" data-badge="elegant" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #c084fc; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
+          🎩 أنيق
+        </button>
+      </div>
+
       <!-- Partner Info Badge -->
       <div id="partner-info" class="hidden">
         <span id="partner-flag"></span>
         <span id="partner-username" style="font-weight: 800; color: #fff; margin: 0 4px;">مستخدم</span>
+        <span id="partner-badges-display" style="font-size: 11px; color: #ffd700; margin: 0 4px;"></span>
         <span class="partner-divider">•</span>
         <span id="partner-gender-icon"></span>
         <button id="add-friend-btn" class="action-button" style="padding: 4px 10px; font-size: 11px; border-radius: 10px; margin-right: 8px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow: none;">
