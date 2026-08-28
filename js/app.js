@@ -545,8 +545,232 @@ function init() {
   setupAdminPinModal();
   setupWelcomeUI();
   setupSettingsUI();
+  setupFriendsSystem();
   connectSocket();
   autoDetectCountry();
+}
+
+// =============================================
+// Next Button 5-Second Cooldown
+// =============================================
+let nextCooldownTimer = null;
+
+function startNextButtonCooldown() {
+  if (!nextBtn) return;
+  
+  let remaining = 5;
+  nextBtn.disabled = true;
+  nextBtn.style.opacity = '0.5';
+  nextBtn.style.cursor = 'not-allowed';
+
+  function updateNextBtnText() {
+    const label = nextBtn.querySelector('.next-label');
+    if (remaining > 0) {
+      if (label) label.textContent = `التالي (${remaining}s)`;
+    } else {
+      if (label) label.textContent = 'التالي';
+      nextBtn.disabled = false;
+      nextBtn.style.opacity = '1';
+      nextBtn.style.cursor = 'pointer';
+      if (nextCooldownTimer) clearInterval(nextCooldownTimer);
+    }
+  }
+
+  updateNextBtnText();
+  if (nextCooldownTimer) clearInterval(nextCooldownTimer);
+  nextCooldownTimer = setInterval(() => {
+    remaining--;
+    updateNextBtnText();
+  }, 1000);
+}
+
+// =============================================
+// Friends & Private Direct Chat System
+// =============================================
+let currentPartner = null;
+let activeFriendChat = null;
+let friendsList = [];
+
+function loadFriendsList() {
+  try {
+    const saved = localStorage.getItem('liqaa_friends_list');
+    friendsList = saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    friendsList = [];
+  }
+}
+
+function saveFriendsList() {
+  localStorage.setItem('liqaa_friends_list', JSON.stringify(friendsList));
+}
+
+function setupFriendsSystem() {
+  loadFriendsList();
+
+  const openFriendsBtn = $('#open-friends-modal-btn');
+  const friendsModal = $('#friends-modal');
+  const closeFriendsBtn = $('#close-friends-btn');
+  const addFriendBtn = $('#add-friend-btn');
+  const backToFriendsListBtn = $('#back-to-friends-list-btn');
+
+  if (openFriendsBtn) {
+    openFriendsBtn.onclick = () => {
+      renderFriendsList();
+      if (friendsModal) friendsModal.classList.remove('hidden');
+    };
+  }
+
+  if (closeFriendsBtn) {
+    closeFriendsBtn.onclick = () => {
+      if (friendsModal) friendsModal.classList.add('hidden');
+    };
+  }
+
+  if (addFriendBtn) {
+    addFriendBtn.onclick = () => {
+      if (!currentPartner || !currentPartner.id) {
+        showGemToast('❌ لا يوجد شريك متصل الآن');
+        return;
+      }
+
+      const exists = friendsList.some(f => f.id === currentPartner.id);
+      if (exists) {
+        showGemToast('✨ هذا الشخص موجود في قائمة أصدقائك بالفعل');
+        return;
+      }
+
+      const newFriend = {
+        id: currentPartner.id,
+        socketId: currentPartner.socketId,
+        name: `صديق ${countryCodeToFlag(currentPartner.country)}`,
+        gender: currentPartner.gender,
+        country: currentPartner.country,
+        countryName: currentPartner.countryName,
+        addedAt: Date.now()
+      };
+
+      friendsList.unshift(newFriend);
+      saveFriendsList();
+      showGemToast('➕ تم إضافة الشريك إلى قائمة أصدقائك!');
+    };
+  }
+
+  if (backToFriendsListBtn) {
+    backToFriendsListBtn.onclick = () => {
+      $('#private-chat-view').classList.add('hidden');
+      $('#friends-list-view').classList.remove('hidden');
+      renderFriendsList();
+    };
+  }
+
+  const sendPrivateMsgBtn = $('#send-private-msg-btn');
+  const privateChatInput = $('#private-chat-input');
+
+  if (sendPrivateMsgBtn && privateChatInput) {
+    const handleSendMsg = () => {
+      const text = privateChatInput.value.trim();
+      if (!text || !activeFriendChat) return;
+
+      appendPrivateMessage(activeFriendChat.id, 'me', text);
+      
+      if (socket && socket.connected) {
+        socket.emit('private_message', {
+          targetSocketId: activeFriendChat.socketId || activeFriendChat.id,
+          targetUserId: activeFriendChat.id,
+          text: text
+        });
+      }
+
+      privateChatInput.value = '';
+    };
+
+    sendPrivateMsgBtn.onclick = handleSendMsg;
+    privateChatInput.onkeypress = (e) => {
+      if (e.key === 'Enter') handleSendMsg();
+    };
+  }
+}
+
+function renderFriendsList() {
+  const container = $('#friends-container');
+  const emptyMsg = $('#friends-empty-msg');
+  if (!container) return;
+
+  container.innerHTML = '';
+  if (friendsList.length === 0) {
+    if (emptyMsg) emptyMsg.classList.remove('hidden');
+    return;
+  }
+  if (emptyMsg) emptyMsg.classList.add('hidden');
+
+  friendsList.forEach(friend => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; border:1px solid var(--border);';
+    item.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:24px;">${friend.gender === 'female' ? '👩' : '👨'}</span>
+        <div style="text-align:right;">
+          <div style="font-weight:bold; color:#fff; font-size:14px;">${friend.name} ${countryCodeToFlag(friend.country)}</div>
+          <div style="font-size:11px; color:#aaa;">${friend.countryName || 'متصل'}</div>
+        </div>
+      </div>
+      <button class="action-button" style="padding:6px 14px; font-size:12px; border-radius:14px; margin:0;" onclick="openPrivateChat('${friend.id}')">
+        💬 دردشة خاصة
+      </button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function openPrivateChat(friendId) {
+  const friend = friendsList.find(f => f.id === friendId);
+  if (!friend) return;
+
+  activeFriendChat = friend;
+  $('#friends-list-view').classList.add('hidden');
+  $('#private-chat-view').classList.remove('hidden');
+  $('#private-chat-friend-name').textContent = `${friend.name} ${countryCodeToFlag(friend.country)}`;
+
+  renderPrivateMessages(friendId);
+}
+
+function getPrivateMessages(friendId) {
+  try {
+    const saved = localStorage.getItem(`liqaa_chat_${friendId}`);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function appendPrivateMessage(friendId, sender, text) {
+  const msgs = getPrivateMessages(friendId);
+  msgs.push({ sender, text, timestamp: Date.now() });
+  localStorage.setItem(`liqaa_chat_${friendId}`, JSON.stringify(msgs));
+  renderPrivateMessages(friendId);
+}
+
+function renderPrivateMessages(friendId) {
+  const container = $('#private-chat-messages');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const msgs = getPrivateMessages(friendId);
+
+  if (msgs.length === 0) {
+    container.innerHTML = '<div style="text-align:center; color:#666; font-size:12px; margin-top:80px;">بداية المحادثة الخاصة...</div>';
+    return;
+  }
+
+  msgs.forEach(msg => {
+    const bubble = document.createElement('div');
+    const isMe = msg.sender === 'me';
+    bubble.style.cssText = `max-width: 80%; padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 500; align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--gradient)' : 'rgba(255,255,255,0.1)'}; color: #fff; margin: 2px 0;`;
+    bubble.textContent = msg.text;
+    container.appendChild(bubble);
+  });
+
+  container.scrollTop = container.scrollHeight;
 }
 
 // =============================================
@@ -767,10 +991,24 @@ function connectSocket() {
     setState('searching');
   });
 
+  socket.on('private_message', (data) => {
+    if (data && data.senderSocketId) {
+      showGemToast(`💬 رسالة جديدة من ${data.senderUsername || 'صديق'}`);
+      appendPrivateMessage(data.senderSocketId, 'other', data.text);
+    }
+  });
+
   // Matched event -> Deduct 10 gems per connected match if gender filter active
   socket.on('matched', async (data) => {
     console.log('[Socket] Matched with:', data.partnerId);
     isInitiator = data.isInitiator;
+    currentPartner = {
+      id: data.partnerId,
+      socketId: data.partnerId,
+      gender: data.partnerGender,
+      country: data.partnerCountry,
+      countryName: data.partnerCountryName
+    };
 
     if (selectedGenderFilter !== 'any') {
       if (userProfile.gems < FILTER_COST) {
@@ -788,6 +1026,7 @@ function connectSocket() {
     }
 
     showPartnerInfo(data);
+    startNextButtonCooldown();
     await createPeerConnection();
 
     if (isInitiator) {
