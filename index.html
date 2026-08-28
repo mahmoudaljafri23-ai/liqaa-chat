@@ -49,38 +49,41 @@
 
       <!-- Setup Form -->
       <div class="setup-form">
-        <!-- User Profile Form -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <span class="title-icon">📝</span>
-            معلومات الحساب
-          </h3>
-          <div class="input-group">
-            <label for="username-input">الاسم / اسم المستخدم</label>
-            <input type="text" id="username-input" placeholder="أدخل اسمك..." dir="auto">
-          </div>
-          <div class="input-group" style="margin-top: 10px;">
-            <label for="phone-input">رقم الهاتف</label>
-            <input type="tel" id="phone-input" placeholder="07XXXXXXXX" dir="ltr">
-          </div>
-        </div>
-
-        <!-- Gender Selection -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <span class="title-icon">👤</span>
-            اختر جنسك
-          </h3>
-          <div class="gender-cards">
-            <div class="gender-card" data-gender="male" id="gender-male">
-              <div class="gender-icon">👨</div>
-              <span>ذكر</span>
-              <span class="gender-en">Male</span>
+        <!-- Initial Profile Setup Section (Hidden once user completes setup) -->
+        <div id="initial-profile-setup-section">
+          <!-- User Profile Form -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <span class="title-icon">📝</span>
+              معلومات الحساب
+            </h3>
+            <div class="input-group">
+              <label for="username-input">الاسم / اسم المستخدم</label>
+              <input type="text" id="username-input" placeholder="أدخل اسمك..." dir="auto">
             </div>
-            <div class="gender-card" data-gender="female" id="gender-female">
-              <div class="gender-icon">👩</div>
-              <span>أنثى</span>
-              <span class="gender-en">Female</span>
+            <div class="input-group" style="margin-top: 10px;">
+              <label for="phone-input">رقم الهاتف</label>
+              <input type="tel" id="phone-input" placeholder="07XXXXXXXX" dir="ltr">
+            </div>
+          </div>
+
+          <!-- Gender Selection -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <span class="title-icon">👤</span>
+              اختر جنسك
+            </h3>
+            <div class="gender-cards">
+              <div class="gender-card" data-gender="male" id="gender-male">
+                <div class="gender-icon">👨</div>
+                <span>ذكر</span>
+                <span class="gender-en">Male</span>
+              </div>
+              <div class="gender-card" data-gender="female" id="gender-female">
+                <div class="gender-icon">👩</div>
+                <span>أنثى</span>
+                <span class="gender-en">Female</span>
+              </div>
             </div>
           </div>
         </div>
@@ -588,6 +591,26 @@
         <button id="save-settings-btn" class="action-button" style="width:100%;">💾 حفظ التغيرات</button>
         <button id="close-settings-btn" class="action-button secondary-btn" style="width:100%; margin-top:8px;">إلغاء</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 24-Hour Automated Ban Modal -->
+  <div id="banned-modal" class="modal hidden" style="z-index: 10000; background: rgba(0,0,0,0.96);">
+    <div class="modal-content" style="max-width: 420px; text-align: center; border: 2px solid #ef4444; background: #12121e;">
+      <div class="modal-icon" style="font-size: 55px;">🚫</div>
+      <h2 style="color: #ef4444; margin-bottom: 10px; font-size: 22px;">تم حظر حسابك مؤقتاً!</h2>
+      <p style="color: #eee; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">
+        تم حظر حسابك وجهازك تلقائياً لمدة <strong>24 ساعة</strong> بسبب مخالفة شروط الاستخدام (ظهور محتوى عاري / غير لائق).
+      </p>
+
+      <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 15px; border-radius: 12px; margin: 15px 0;">
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">الوقت المتبقي لفك الحظر تلقائياً:</div>
+        <div id="ban-countdown-timer" style="font-size: 26px; font-weight: 800; color: #ffd700; letter-spacing: 2px;">23:59:59</div>
+      </div>
+
+      <p style="font-size: 11px; color: #888; margin-top: 15px;">
+        سيتم فك الحظر عن حسابك وتجهيز التطبيق تلقائياً بمجرد انتهاء العداد.
+      </p>
     </div>
   </div>
 
