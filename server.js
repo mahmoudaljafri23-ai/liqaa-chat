@@ -34,6 +34,29 @@ const MERCHANT_CONFIG = {
   CURRENCY: 'USD'
 };
 
+// Google Search Console Verification Routes
+app.get('/googled6651fade4f35860.html', (req, res) => {
+  res.send('google-site-verification: googled6651fade4f35860.html');
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send('User-agent: *\nAllow: /\n\nSitemap: https://liqaa-chat.onrender.com/sitemap.xml');
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://liqaa-chat.onrender.com/</loc>
+    <lastmod>2026-08-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`);
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
