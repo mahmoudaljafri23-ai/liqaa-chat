@@ -172,6 +172,11 @@ function findMatch(socketId) {
   const user = users.get(socketId);
   if (!user) return null;
 
+  if (!user.recentPartners) user.recentPartners = [];
+
+  let bestMatch = null;
+  let fallbackMatch = null;
+
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
     if (candidateId === socketId) continue;
@@ -195,10 +200,16 @@ function findMatch(socketId) {
       !candidate.targetCountry || candidate.targetCountry === 'ALL' || candidate.targetCountry === user.myCountry;
 
     if (userWantsCandidateGender && candidateWantsUserGender && userWantsCandidateCountry && candidateWantsUserCountry) {
-      return candidateId;
+      if (!user.recentPartners.includes(candidateId)) {
+        bestMatch = candidateId;
+        break;
+      } else if (!fallbackMatch) {
+        fallbackMatch = candidateId;
+      }
     }
   }
-  return null;
+
+  return bestMatch || fallbackMatch;
 }
 
 function broadcastOnlineCount() {
@@ -223,6 +234,15 @@ setInterval(() => {
 
         user.partnerId = matchId;
         matchUser.partnerId = socketId;
+
+        // Record recent partners to avoid re-matching loops
+        if (!user.recentPartners) user.recentPartners = [];
+        user.recentPartners.push(matchId);
+        if (user.recentPartners.length > 3) user.recentPartners.shift();
+
+        if (!matchUser.recentPartners) matchUser.recentPartners = [];
+        matchUser.recentPartners.push(socketId);
+        if (matchUser.recentPartners.length > 3) matchUser.recentPartners.shift();
 
         io.to(socketId).emit('matched', {
           partnerId: matchId,
