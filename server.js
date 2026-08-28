@@ -5,6 +5,14 @@ const path = require('path');
 
 const app = express();
 
+// Disable CDN caching for instant verification updates
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Google Search Console Verification Direct Route
 app.get('/googled6651fade4f35860.html', (req, res) => {
   res.type('text/html');
