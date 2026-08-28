@@ -4,6 +4,12 @@ const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
+
+// Google Search Console Verification Direct Route
+app.get('/googled6651fade4f35860.html', (req, res) => {
+  res.type('text/html');
+  res.status(200).send('google-site-verification: googled6651fade4f35860.html');
+});
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
