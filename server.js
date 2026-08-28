@@ -180,12 +180,18 @@ function findMatch(socketId) {
     if (!candidate) continue;
 
     // Check gender filter compatibility
-    const userWantsCandidate =
+    const userWantsCandidateGender =
       user.genderFilter === 'any' || user.genderFilter === candidate.gender;
-    const candidateWantsUser =
+    const candidateWantsUserGender =
       candidate.genderFilter === 'any' || candidate.genderFilter === user.gender;
 
-    if (userWantsCandidate && candidateWantsUser) {
+    // Check country filter compatibility
+    const userWantsCountry =
+      !user.country || user.country === 'ALL' || user.country === candidate.country;
+    const candidateWantsCountry =
+      !candidate.country || candidate.country === 'ALL' || candidate.country === user.country;
+
+    if (userWantsCandidateGender && candidateWantsUserGender && userWantsCountry && candidateWantsCountry) {
       return candidateId;
     }
   }
@@ -196,7 +202,7 @@ function broadcastOnlineCount() {
   io.emit('online_count', users.size);
 }
 
-// Automatic Queue Processor - runs every 2 seconds
+// Automatic Fast Queue Processor - runs every 500ms for instant matching
 setInterval(() => {
   if (waitingQueue.length < 2) return;
 
@@ -236,7 +242,7 @@ setInterval(() => {
       }
     }
   }
-}, 2000);
+}, 500);
 
 // =============================================
 // Socket.IO Events
