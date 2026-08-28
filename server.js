@@ -246,6 +246,7 @@ setInterval(() => {
 
         io.to(socketId).emit('matched', {
           partnerId: matchId,
+          partnerUsername: matchUser.username || 'مستخدم',
           partnerGender: matchUser.gender,
           partnerCountry: matchUser.myCountry || matchUser.country,
           partnerCountryName: matchUser.countryName,
@@ -254,6 +255,7 @@ setInterval(() => {
 
         io.to(matchId).emit('matched', {
           partnerId: socketId,
+          partnerUsername: user.username || 'مستخدم',
           partnerGender: user.gender,
           partnerCountry: user.myCountry || user.country,
           partnerCountryName: user.countryName,

@@ -642,7 +642,7 @@ function setupFriendsSystem() {
       const newFriend = {
         id: currentPartner.id,
         socketId: currentPartner.socketId,
-        name: `صديق ${countryCodeToFlag(currentPartner.country)}`,
+        name: currentPartner.username || `مستخدم ${countryCodeToFlag(currentPartner.country)}`,
         gender: currentPartner.gender,
         country: currentPartner.country,
         countryName: currentPartner.countryName,
@@ -1224,9 +1224,18 @@ function setupControls() {
 function toggleMic() {
   if (!localStream) return;
   isMicOn = !isMicOn;
+
   localStream.getAudioTracks().forEach(track => {
     track.enabled = isMicOn;
   });
+
+  if (peerConnection) {
+    peerConnection.getSenders().forEach(sender => {
+      if (sender.track && sender.track.kind === 'audio') {
+        sender.track.enabled = isMicOn;
+      }
+    });
+  }
 
   micBtn.classList.toggle('muted', !isMicOn);
   micBtn.querySelector('.mic-on').classList.toggle('hidden', !isMicOn);
@@ -1378,7 +1387,8 @@ function setState(state) {
 
 function showPartnerInfo(data) {
   partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
-  partnerCountryName.textContent = data.partnerCountryName || 'شريك جديد';
+  const nameEl = $('#partner-username');
+  if (nameEl) nameEl.textContent = data.partnerUsername || 'مستخدم';
   partnerGenderIcon.textContent = data.partnerGender === 'male' ? '👨' : '👩';
 }
 
