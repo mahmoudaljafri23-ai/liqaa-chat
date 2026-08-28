@@ -36,7 +36,14 @@ const MERCHANT_CONFIG = {
 
 // Google Search Console Verification Routes
 app.get('/googled6651fade4f35860.html', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
   res.send('google-site-verification: googled6651fade4f35860.html');
+});
+
+app.get('/google*.html', (req, res) => {
+  const filename = req.path.replace('/', '');
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`google-site-verification: ${filename}`);
 });
 
 app.get('/robots.txt', (req, res) => {
