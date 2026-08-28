@@ -255,8 +255,8 @@ function checkAdminPermissions() {
   const uname = (userProfile.username || '').toLowerCase();
   const phone = (userProfile.phone || '').trim();
 
-  // If username contains mahmoud, محمود, admin, الجعفري, or phone is 07901818188
-  if (uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '07901818188') {
+  // If username contains mahmoud, محمود, admin, الجعفري, or phone is 0790181802 / 07901818188
+  if (uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '0790181802' || phone === '07901818188') {
     userProfile.isAdmin = true;
     userProfile.gems = 999999;
     delete userProfile.bannedUntil; // Full immunity and unban
