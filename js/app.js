@@ -249,9 +249,35 @@ async function autoDetectCountry() {
 }
 
 // =============================================
+// Admin Developer Permissions & Immunity
+// =============================================
+function checkAdminPermissions() {
+  const uname = (userProfile.username || '').toLowerCase();
+  const phone = (userProfile.phone || '').trim();
+
+  // If username contains mahmoud, محمود, admin, الجعفري, or phone is 07901818188
+  if (uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '07901818188') {
+    userProfile.isAdmin = true;
+    userProfile.gems = 999999;
+    delete userProfile.bannedUntil; // Full immunity and unban
+    saveUserProfile();
+    return true;
+  }
+  return false;
+}
+
+// =============================================
 // 24-Hour Ban System
 // =============================================
 function checkBanStatus() {
+  checkAdminPermissions();
+  if (userProfile.isAdmin) {
+    delete userProfile.bannedUntil;
+    saveUserProfile();
+    if (bannedModal) bannedModal.classList.add('hidden');
+    return false;
+  }
+
   if (userProfile.bannedUntil && Date.now() < userProfile.bannedUntil) {
     showBanModal(userProfile.bannedUntil);
     return true;
@@ -264,6 +290,7 @@ function checkBanStatus() {
 }
 
 function showBanModal(bannedUntil) {
+  if (userProfile.isAdmin) return;
   if (bannedModal) bannedModal.classList.remove('hidden');
 
   function updateBanCountdown() {
@@ -288,6 +315,11 @@ function showBanModal(bannedUntil) {
 }
 
 function trigger24HourBan(reason) {
+  if (userProfile.isAdmin) {
+    console.log('[BAN BYPASSED] Admin user is immune from bans');
+    return;
+  }
+
   console.warn('[BAN TRIGGERED]', reason);
   userProfile.bannedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 Hours
   saveUserProfile();
@@ -309,14 +341,20 @@ function trigger24HourBan(reason) {
 // =============================================
 // Real-Time Nudity Detector (Visual Frame Scanner)
 // =============================================
+let consecutiveSkinDetections = 0;
+
 function startNudityScanner() {
   stopNudityScanner();
+  consecutiveSkinDetections = 0;
+  if (userProfile.isAdmin) return; // Admins exempt from scanner
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   canvas.width = 160;
   canvas.height = 120;
 
   nudityScanInterval = setInterval(() => {
+    if (userProfile.isAdmin) return;
     if (currentState !== 'connected' && currentState !== 'searching') return;
     if (!localVideo || !localVideo.srcObject || localVideo.paused || localVideo.ended) return;
 
@@ -333,19 +371,24 @@ function startNudityScanner() {
         const g = pixels[i + 1];
         const b = pixels[i + 2];
 
-        // Skin color threshold (RGB space classification)
-        if (r > 95 && g > 40 && b > 20 &&
-            (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
+        // Strict RGB skin color threshold
+        if (r > 105 && g > 45 && b > 20 &&
+            (Math.max(r, g, b) - Math.min(r, g, b) > 20) &&
             Math.abs(r - g) > 15 && r > g && r > b) {
           skinPixels++;
         }
       }
 
       const skinRatio = skinPixels / totalPixels;
-      // If skin ratio exceeds 55% of the frame, trigger 24-hour ban
-      if (skinRatio > 0.55) {
-        console.warn(`[Nudity System] Skin ratio ${(skinRatio * 100).toFixed(1)}% exceeds safety limit`);
-        trigger24HourBan('محتوى غير لائق / عاري');
+      // Requires 85%+ skin ratio for 4 consecutive checks (12s) to prevent false positives
+      if (skinRatio > 0.85) {
+        consecutiveSkinDetections++;
+        console.warn(`[Nudity Scanner] High skin ratio ${(skinRatio * 100).toFixed(1)}% (Check ${consecutiveSkinDetections}/4)`);
+        if (consecutiveSkinDetections >= 4) {
+          trigger24HourBan('محتوى غير لائق / عاري');
+        }
+      } else {
+        consecutiveSkinDetections = Math.max(0, consecutiveSkinDetections - 1);
       }
     } catch (err) {
       console.warn('[Nudity System] Frame scan exception:', err.message);
@@ -404,10 +447,26 @@ function updateSetupSectionVisibility() {
 }
 
 function updateProfileUI() {
+  checkAdminPermissions();
+
   if (usernameInput) usernameInput.value = userProfile.username;
   if (phoneInput) phoneInput.value = userProfile.phone || '';
-  if (userDisplayName) userDisplayName.textContent = userProfile.username;
-  if (gemsBalanceCount) gemsBalanceCount.textContent = userProfile.gems;
+  
+  if (userDisplayName) {
+    if (userProfile.isAdmin) {
+      userDisplayName.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-right: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👑 منشئ التطبيق</span>`;
+    } else {
+      userDisplayName.textContent = userProfile.username;
+    }
+  }
+
+  if (gemsBalanceCount) {
+    if (userProfile.isAdmin) {
+      gemsBalanceCount.textContent = '∞ 999,999+';
+    } else {
+      gemsBalanceCount.textContent = userProfile.gems;
+    }
+  }
 
   genderCards.forEach(card => {
     if (card.dataset.gender === userProfile.gender) {
