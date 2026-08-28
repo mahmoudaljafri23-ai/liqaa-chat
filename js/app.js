@@ -535,6 +535,26 @@ function updateProfileUI() {
   });
 
   validateForm();
+  updateOnlineDisplay();
+}
+
+let lastOnlineCount = 0;
+
+function updateOnlineDisplay(count) {
+  if (count !== undefined) lastOnlineCount = count;
+
+  const searchOnlineWrapper = $('.searching-online');
+  const welcomeOnlineWrapper = $('.welcome-online');
+
+  if (userProfile.isAdmin) {
+    if (welcomeOnlineCount) welcomeOnlineCount.textContent = lastOnlineCount;
+    if (searchOnlineCount) searchOnlineCount.textContent = lastOnlineCount;
+    if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'flex';
+    if (searchOnlineWrapper) searchOnlineWrapper.style.display = 'flex';
+  } else {
+    if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'none';
+    if (searchOnlineWrapper) searchOnlineWrapper.style.display = 'none';
+  }
 }
 
 // =============================================
@@ -993,8 +1013,7 @@ function connectSocket() {
   });
 
   socket.on('online_count', (count) => {
-    if (welcomeOnlineCount) welcomeOnlineCount.textContent = count;
-    if (searchOnlineCount) searchOnlineCount.textContent = count;
+    updateOnlineDisplay(count);
   });
 
   socket.on('waiting', () => {
