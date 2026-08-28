@@ -249,21 +249,79 @@ async function autoDetectCountry() {
 }
 
 // =============================================
-// Admin Developer Permissions & Immunity
+// Admin Developer Permissions & Security PIN
 // =============================================
 function checkAdminPermissions() {
   const uname = (userProfile.username || '').toLowerCase();
   const phone = (userProfile.phone || '').trim();
 
-  // If username contains mahmoud, محمود, admin, الجعفري, or phone is 0790181802 / 07901818188
-  if (uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '0790181802' || phone === '07901818188') {
-    userProfile.isAdmin = true;
-    userProfile.gems = 999999;
-    delete userProfile.bannedUntil; // Full immunity and unban
-    saveUserProfile();
-    return true;
+  // Ensure default admin PIN exists
+  if (!userProfile.adminPin) {
+    userProfile.adminPin = '2026';
+  }
+
+  // Check if username/phone matches Admin identity
+  const isAdminIdentity = uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '0790181802' || phone === '07901818188';
+
+  if (isAdminIdentity) {
+    if (userProfile.adminUnlocked) {
+      userProfile.isAdmin = true;
+      userProfile.gems = 999999;
+      delete userProfile.bannedUntil; // Full immunity and unban
+      saveUserProfile();
+      return true;
+    } else {
+      promptAdminPinModal();
+      return false;
+    }
+  } else {
+    userProfile.isAdmin = false;
+    userProfile.adminUnlocked = false;
   }
   return false;
+}
+
+function promptAdminPinModal() {
+  const adminPinModal = $('#admin-pin-modal');
+  const adminPinInput = $('#admin-pin-input');
+  if (adminPinModal) adminPinModal.classList.remove('hidden');
+  if (adminPinInput) adminPinInput.focus();
+}
+
+function setupAdminPinModal() {
+  const adminPinModal = $('#admin-pin-modal');
+  const adminPinInput = $('#admin-pin-input');
+  const submitAdminPinBtn = $('#submit-admin-pin-btn');
+  const cancelAdminPinBtn = $('#cancel-admin-pin-btn');
+
+  if (submitAdminPinBtn) {
+    submitAdminPinBtn.onclick = () => {
+      const enteredPin = adminPinInput ? adminPinInput.value.trim() : '';
+      const correctPin = userProfile.adminPin || '2026';
+
+      if (enteredPin === correctPin) {
+        userProfile.adminUnlocked = true;
+        userProfile.isAdmin = true;
+        userProfile.gems = 999999;
+        delete userProfile.bannedUntil;
+        saveUserProfile();
+        updateProfileUI();
+        if (adminPinModal) adminPinModal.classList.add('hidden');
+        showGemToast('🔓 تم تفعيل حساب منشئ التطبيق بنجاح!');
+      } else {
+        showGemToast('❌ الرمز السري غير صحيح!');
+      }
+    };
+  }
+
+  if (cancelAdminPinBtn) {
+    cancelAdminPinBtn.onclick = () => {
+      if (adminPinModal) adminPinModal.classList.add('hidden');
+      userProfile.isAdmin = false;
+      userProfile.adminUnlocked = false;
+      updateProfileUI();
+    };
+  }
 }
 
 // =============================================
@@ -484,6 +542,7 @@ function updateProfileUI() {
 // =============================================
 function init() {
   loadUserProfile();
+  setupAdminPinModal();
   setupWelcomeUI();
   setupSettingsUI();
   connectSocket();
@@ -494,12 +553,15 @@ function init() {
 // Settings Modal Logic
 // =============================================
 function setupSettingsUI() {
+  const settingsAdminPin = $('#settings-admin-pin');
+
   if (openSettingsModalBtn) {
     openSettingsModalBtn.addEventListener('click', () => {
       if (checkBanStatus()) return;
 
       if (settingsUsername) settingsUsername.value = userProfile.username || '';
       if (settingsPhone) settingsPhone.value = userProfile.phone || '';
+      if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
       
       let tempGender = userProfile.gender || 'male';
       if (settingsGenderMale && settingsGenderFemale) {
@@ -532,11 +594,13 @@ function setupSettingsUI() {
     saveSettingsBtn.addEventListener('click', () => {
       const newName = settingsUsername ? settingsUsername.value.trim() : '';
       const newPhone = settingsPhone ? settingsPhone.value.trim() : '';
+      const newPin = settingsAdminPin ? settingsAdminPin.value.trim() : '';
       const selectedCard = $('.gender-card[data-settings-gender].selected');
       const newGender = selectedCard ? selectedCard.dataset.settingsGender : userProfile.gender;
 
       if (newName) userProfile.username = newName;
       userProfile.phone = newPhone;
+      if (newPin) userProfile.adminPin = newPin;
       userProfile.gender = newGender;
       selectedGender = newGender;
       userProfile.hasCompletedSetup = true;

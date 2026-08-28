@@ -579,6 +579,10 @@
         <label for="settings-phone">رقم الهاتف</label>
         <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr">
       </div>
+      <div class="input-group" style="margin-top: 10px; text-align:right;">
+        <label for="settings-admin-pin" style="color:#ffd700;">🔐 الرمز السري لمنشئ التطبيق (Admin PIN)</label>
+        <input type="password" id="settings-admin-pin" placeholder="أدخل أو غير رمز الأمان..." dir="ltr">
+      </div>
       <div class="form-section" style="margin-top: 15px; text-align:right;">
         <label style="font-size:13px; font-weight:bold; color:#ccc;">الجنس:</label>
         <div class="gender-cards" style="margin-top:5px;">
@@ -596,6 +600,30 @@
       <div class="permission-buttons" style="margin-top: 20px;">
         <button id="save-settings-btn" class="action-button" style="width:100%;">💾 حفظ التغيرات</button>
         <button id="close-settings-btn" class="action-button secondary-btn" style="width:100%; margin-top:8px;">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Security PIN Modal -->
+  <div id="admin-pin-modal" class="modal hidden" style="z-index: 10001; background: rgba(0,0,0,0.92);">
+    <div class="modal-content" style="max-width: 380px; text-align: center; border: 2px solid #ffd700; background: #1a1a2e;">
+      <div class="modal-icon" style="font-size: 50px;">🔐</div>
+      <h2 style="color: #ffd700; margin-bottom: 8px;">رمز أمان منشئ التطبيق</h2>
+      <p style="color: #ccc; font-size: 13px; line-height: 1.5; margin-bottom: 15px;">
+        تم الكشف عن حساب المنشئ. يرجى إدخال الرمز السري لتفعيل كامل الصلاحيات والجواهر اللانهائية.
+      </p>
+
+      <div class="input-group" style="margin-bottom: 15px;">
+        <input type="password" id="admin-pin-input" placeholder="**** أدخل الرمز السري" style="text-align: center; font-size: 22px; letter-spacing: 6px; font-weight: 800;" dir="ltr">
+      </div>
+
+      <div class="permission-buttons" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <button id="submit-admin-pin-btn" class="action-button" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; font-weight: 800;">
+          🔓 تفعيل حساب المنشئ
+        </button>
+        <button id="cancel-admin-pin-btn" class="action-button secondary-btn" style="width: 100%; justify-content: center;">
+          متابعة كمستخدم عادي
+        </button>
       </div>
     </div>
   </div>
