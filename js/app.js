@@ -544,12 +544,12 @@ function updateOnlineDisplay(count) {
   if (count !== undefined) lastOnlineCount = count;
 
   const searchOnlineWrapper = $('.searching-online');
-  const welcomeOnlineWrapper = $('.welcome-online');
+  const welcomeOnlineWrapper = $('.online-indicator') || $('.welcome-online');
 
-  if (userProfile.isAdmin) {
+  if (userProfile && userProfile.isAdmin) {
     if (welcomeOnlineCount) welcomeOnlineCount.textContent = lastOnlineCount;
     if (searchOnlineCount) searchOnlineCount.textContent = lastOnlineCount;
-    if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'flex';
+    if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'inline-flex';
     if (searchOnlineWrapper) searchOnlineWrapper.style.display = 'flex';
   } else {
     if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'none';
@@ -562,6 +562,7 @@ function updateOnlineDisplay(count) {
 // =============================================
 function init() {
   loadUserProfile();
+  updateOnlineDisplay();
   setupAdminPinModal();
   setupWelcomeUI();
   setupSettingsUI();
