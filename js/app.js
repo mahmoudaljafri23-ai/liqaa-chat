@@ -4,7 +4,7 @@
    ============================================= */
 
 // =============================================
-// Configuration
+// Configuration - Fast WebRTC STUN & TURN
 // =============================================
 const ICE_SERVERS = {
   iceServers: [
@@ -13,8 +13,27 @@ const ICE_SERVERS = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:stun.stunprotocol.org:3478' }
-  ]
+    { urls: 'stun:stun.services.mozilla.com' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelay',
+      credential: 'openrelay'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelay',
+      credential: 'openrelay'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelay',
+      credential: 'openrelay'
+    }
+  ],
+  iceCandidatePoolSize: 10,
+  bundlePolicy: 'max-bundle',
+  rtcpMuxPolicy: 'require'
 };
 
 // Geolocation APIs (fallback chain)
@@ -33,10 +52,10 @@ let peerConnection = null;
 let currentState = 'idle'; // idle | searching | connected
 let isMicOn = true;
 let isCameraOn = true;
-let selectedGender = '';
+let selectedGender = 'male';
 let selectedGenderFilter = 'any';
-let selectedCountry = '';
-let selectedCountryName = '';
+let selectedCountry = 'ALL';
+let selectedCountryName = 'كل العالم';
 let callTimerInterval = null;
 let callSeconds = 0;
 let isInitiator = false;
@@ -46,7 +65,10 @@ let controlsSetup = false;
 let userProfile = {
   username: '',
   phone: '',
-  gems: 50
+  gender: '',
+  country: 'ALL',
+  gems: 50,
+  hasCompletedSetup: false
 };
 const FILTER_COST = 10; // cost in gems for gender filter
 
@@ -66,9 +88,19 @@ const gemsBalanceCount = $('#gems-balance-count');
 const usernameInput = $('#username-input');
 const phoneInput = $('#phone-input');
 const openRechargeModalBtn = $('#open-recharge-modal');
+const openSettingsModalBtn = $('#open-settings-modal-btn');
+
+// Settings Modal elements
+const settingsModal = $('#settings-modal');
+const settingsUsername = $('#settings-username');
+const settingsPhone = $('#settings-phone');
+const settingsGenderMale = $('#settings-gender-male');
+const settingsGenderFemale = $('#settings-gender-female');
+const saveSettingsBtn = $('#save-settings-btn');
+const closeSettingsBtn = $('#close-settings-btn');
 
 // Welcome elements
-const genderCards = $$('.gender-card');
+const genderCards = $$('.gender-card[data-gender]');
 const filterCards = $$('.filter-card');
 const countrySelect = $('#country-select');
 const startBtn = $('#start-btn');
@@ -87,7 +119,6 @@ const retryPermissionBtn = $('#retry-permission-btn');
 const closePermissionBtn = $('#close-permission-btn');
 
 const rechargeModal = $('#recharge-modal');
-const demoRechargeBtn = $('#demo-recharge-btn');
 const closeRechargeBtn = $('#close-recharge-btn');
 
 const insufficientGemsModal = $('#insufficient-gems-modal');
@@ -123,12 +154,27 @@ const findNewBtn = $('#find-new-btn');
 // Country code to flag emoji
 // =============================================
 function countryCodeToFlag(code) {
-  if (!code) return '🌍';
+  if (!code || code === 'ALL') return '🌍';
   return code
     .toUpperCase()
     .split('')
     .map(char => String.fromCodePoint(0x1F1E6 + char.charCodeAt(0) - 65))
     .join('');
+}
+
+// Toast notification helper
+function showGemToast(message) {
+  const container = $('#toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
 }
 
 // =============================================
@@ -138,7 +184,7 @@ async function detectCountry() {
   for (const apiUrl of GEO_APIS) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      const timeout = setTimeout(() => controller.abort(), 4000);
 
       const res = await fetch(apiUrl, { signal: controller.signal });
       clearTimeout(timeout);
@@ -146,7 +192,6 @@ async function detectCountry() {
       if (!res.ok) continue;
       const data = await res.json();
 
-      // Different APIs return data in different formats
       const countryCode = data.country_code || data.country || data.countryCode || '';
       const countryNameEn = data.country_name || data.country || data.countryName || '';
 
@@ -166,28 +211,20 @@ async function autoDetectCountry() {
     const result = await detectCountry();
 
     if (result && result.code) {
-      // Try to find matching option in the select
       const option = countrySelect.querySelector(`option[value="${result.code}"]`);
-
       if (option) {
-        // Found in our list - use Arabic name
         selectedCountry = result.code;
         selectedCountryName = option.dataset.name || option.textContent;
-        detectedFlag.textContent = countryCodeToFlag(result.code);
-        detectedName.textContent = selectedCountryName;
       } else {
-        // Not in list - use English name from API
         selectedCountry = result.code;
         selectedCountryName = result.name;
-        detectedFlag.textContent = countryCodeToFlag(result.code);
-        detectedName.textContent = result.name;
       }
+      detectedFlag.textContent = countryCodeToFlag(result.code);
+      detectedName.textContent = selectedCountryName;
 
-      // Show detected, hide detecting spinner
       countryDetecting.classList.add('hidden');
       countryDetected.classList.remove('hidden');
       countryManual.classList.add('hidden');
-
       validateForm();
       return;
     }
@@ -195,7 +232,7 @@ async function autoDetectCountry() {
     console.warn('[Geo] Auto-detect failed:', e);
   }
 
-  // Fallback: show manual selection
+  // Fallback to manual global country select
   countryDetecting.classList.add('hidden');
   countryDetected.classList.add('hidden');
   countryManual.classList.remove('hidden');
@@ -217,10 +254,14 @@ function loadUserProfile() {
   if (!userProfile.username) {
     userProfile.username = 'مستخدم ' + Math.floor(100 + Math.random() * 900);
   }
+  if (!userProfile.gender) {
+    userProfile.gender = 'male';
+  }
   if (userProfile.gems === undefined || userProfile.gems === null) {
     userProfile.gems = 50;
   }
 
+  selectedGender = userProfile.gender;
   saveUserProfile();
   updateProfileUI();
 }
@@ -234,20 +275,17 @@ function updateProfileUI() {
   if (phoneInput) phoneInput.value = userProfile.phone || '';
   if (userDisplayName) userDisplayName.textContent = userProfile.username;
   if (gemsBalanceCount) gemsBalanceCount.textContent = userProfile.gems;
-}
 
-function deductGemsForFilter() {
-  if (selectedGenderFilter === 'any') return true;
+  // Highlight gender card
+  genderCards.forEach(card => {
+    if (card.dataset.gender === userProfile.gender) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
 
-  if (userProfile.gems < FILTER_COST) {
-    insufficientGemsModal.classList.remove('hidden');
-    return false;
-  }
-
-  userProfile.gems -= FILTER_COST;
-  saveUserProfile();
-  updateProfileUI();
-  return true;
+  validateForm();
 }
 
 // =============================================
@@ -256,8 +294,67 @@ function deductGemsForFilter() {
 function init() {
   loadUserProfile();
   setupWelcomeUI();
+  setupSettingsUI();
   connectSocket();
   autoDetectCountry();
+}
+
+// =============================================
+// Settings Modal Logic
+// =============================================
+function setupSettingsUI() {
+  if (openSettingsModalBtn) {
+    openSettingsModalBtn.addEventListener('click', () => {
+      if (settingsUsername) settingsUsername.value = userProfile.username || '';
+      if (settingsPhone) settingsPhone.value = userProfile.phone || '';
+      
+      let tempGender = userProfile.gender || 'male';
+      if (settingsGenderMale && settingsGenderFemale) {
+        settingsGenderMale.classList.toggle('selected', tempGender === 'male');
+        settingsGenderFemale.classList.toggle('selected', tempGender === 'female');
+
+        settingsGenderMale.onclick = () => {
+          tempGender = 'male';
+          settingsGenderMale.classList.add('selected');
+          settingsGenderFemale.classList.remove('selected');
+        };
+        settingsGenderFemale.onclick = () => {
+          tempGender = 'female';
+          settingsGenderFemale.classList.add('selected');
+          settingsGenderMale.classList.remove('selected');
+        };
+      }
+
+      if (settingsModal) settingsModal.classList.remove('hidden');
+    });
+  }
+
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener('click', () => {
+      if (settingsModal) settingsModal.classList.add('hidden');
+    });
+  }
+
+  if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', () => {
+      const newName = settingsUsername ? settingsUsername.value.trim() : '';
+      const newPhone = settingsPhone ? settingsPhone.value.trim() : '';
+      const selectedCard = $('.gender-card[data-settings-gender].selected');
+      const newGender = selectedCard ? selectedCard.dataset.settingsGender : userProfile.gender;
+
+      if (newName) userProfile.username = newName;
+      userProfile.phone = newPhone;
+      userProfile.gender = newGender;
+      selectedGender = newGender;
+      userProfile.hasCompletedSetup = true;
+
+      saveUserProfile();
+      updateProfileUI();
+
+      if (settingsModal) settingsModal.classList.add('hidden');
+      showGemToast('✨ تم تحديث بيانات الحساب بنجاح');
+    });
+  }
 }
 
 // =============================================
@@ -268,6 +365,7 @@ function setupWelcomeUI() {
   if (usernameInput) {
     usernameInput.addEventListener('input', (e) => {
       userProfile.username = e.target.value.trim() || 'مستخدم جديد';
+      userProfile.hasCompletedSetup = true;
       saveUserProfile();
       updateProfileUI();
     });
@@ -280,149 +378,15 @@ function setupWelcomeUI() {
     });
   }
 
-  // Open Recharge Modal - delegated click handler
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('#open-recharge-modal, .gems-balance-badge, .add-gems-btn')) {
-      const modal = $('#recharge-modal');
-      if (modal) modal.classList.remove('hidden');
-    }
-  });
-
-  // Close Recharge Modal
-  if (closeRechargeBtn) {
-    closeRechargeBtn.addEventListener('click', () => {
-      rechargeModal.classList.add('hidden');
-    });
-  }
-
-  // Demo Recharge button
-  if (demoRechargeBtn) {
-    demoRechargeBtn.addEventListener('click', () => {
-      userProfile.gems += 100;
-      saveUserProfile();
-      updateProfileUI();
-      rechargeModal.classList.add('hidden');
-      alert('✨ تم شحن 100 جوهرة بنجاح!');
-    });
-  }
-
-  let selectedPackage = { gems: 1000, price: 2.49, paypalId: '6QC32E9TM4G26' };
-
-  // Gem packages -> open Checkout Modal and render official PayPal Hosted Buttons
-  $$('.gem-package-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const gems = parseInt(card.dataset.gems) || 1000;
-      const price = parseFloat(card.dataset.price) || 2.49;
-      const paypalId = card.dataset.paypal || '6QC32E9TM4G26';
-      selectedPackage = { gems, price, paypalId };
-
-      const packageTitle = $('#checkout-package-title');
-      if (packageTitle) packageTitle.textContent = `${gems.toLocaleString()} جوهرة (${price} $)`;
-
-      if (rechargeModal) rechargeModal.classList.add('hidden');
-      const checkoutModal = $('#checkout-modal');
-      if (checkoutModal) checkoutModal.classList.remove('hidden');
-
-      renderPayPalHostedButtons(paypalId);
-    });
-  });
-
-  function renderPayPalHostedButtons(buttonId) {
-    const container = $('#paypal-hosted-button-container');
-    if (!container) return;
-
-    container.innerHTML = '<div style="color:#aaa; font-size:14px; padding:10px;">جاري تحميل وسيلة الدفع الآمنة...</div>';
-
-    if (window.paypal && typeof paypal.HostedButtons === 'function') {
-      try {
-        container.innerHTML = '';
-        paypal.HostedButtons({
-          hostedButtonId: buttonId
-        }).render('#paypal-hosted-button-container');
-      } catch (err) {
-        console.error('[PayPal HostedButtons render error]', err);
-        renderFallbackPayButton(container, buttonId);
-      }
-    } else {
-      renderFallbackPayButton(container, buttonId);
-    }
-  }
-
-  function renderFallbackPayButton(container, buttonId) {
-    container.innerHTML = `
-      <a href="https://www.paypal.com/ncp/payment/${buttonId}" target="_blank" class="start-button" style="background:#ffd140; color:#000; text-decoration:none; display:inline-block; padding:14px 24px; font-weight:bold; border-radius:10px; width:100%; text-align:center; box-sizing:border-box;">
-        💳 الدفع بالفيزا / ماستركارد / PayPal
-      </a>
-    `;
-  }
-
-  // Close Checkout Modal
-  const closeCheckoutBtn = $('#close-checkout-btn');
-  if (closeCheckoutBtn) {
-    closeCheckoutBtn.addEventListener('click', () => {
-      const checkoutModal = $('#checkout-modal');
-      if (checkoutModal) checkoutModal.classList.add('hidden');
-      if (rechargeModal) rechargeModal.classList.remove('hidden');
-    });
-  }
-
-  async function processSuccessfulPayment(methodName) {
-    const checkoutModal = $('#checkout-modal');
-    if (checkoutModal) checkoutModal.classList.add('hidden');
-
-    try {
-      const res = await fetch('/api/create-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: selectedPackage.price,
-          gems: selectedPackage.gems,
-          paymentMethod: methodName,
-          username: userProfile.username,
-          phone: userProfile.phone
-        })
-      });
-      const data = await res.json();
-
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-        return;
-      }
-    } catch (e) {
-      console.warn('[Payment API error]', e);
-    }
-
-    userProfile.gems += selectedPackage.gems;
-    saveUserProfile();
-    updateProfileUI();
-
-    alert(`🎉 تم نجاح عملية الدفع بـ ${selectedPackage.price}$ عبر (${methodName})!\n\nتمت إضافة ${selectedPackage.gems} جوهرة لحسابك.`);
-  }
-
-  // Insufficient Gems modal buttons
-  if (goToRechargeBtn) {
-    goToRechargeBtn.addEventListener('click', () => {
-      insufficientGemsModal.classList.add('hidden');
-      rechargeModal.classList.remove('hidden');
-    });
-  }
-
-  if (switchToAnyBtn) {
-    switchToAnyBtn.addEventListener('click', () => {
-      insufficientGemsModal.classList.add('hidden');
-      filterCards.forEach(c => c.classList.remove('active'));
-      const anyCard = $('#filter-any');
-      if (anyCard) anyCard.classList.add('active');
-      selectedGenderFilter = 'any';
-    });
-  }
-
   // Gender selection
   genderCards.forEach(card => {
     card.addEventListener('click', () => {
       genderCards.forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       selectedGender = card.dataset.gender;
+      userProfile.gender = selectedGender;
+      userProfile.hasCompletedSetup = true;
+      saveUserProfile();
       validateForm();
     });
   });
@@ -436,9 +400,9 @@ function setupWelcomeUI() {
     });
   });
 
-  // Country manual selection (fallback)
+  // Country manual selection
   countrySelect.addEventListener('change', () => {
-    selectedCountry = countrySelect.value;
+    selectedCountry = countrySelect.value || 'ALL';
     const selectedOption = countrySelect.options[countrySelect.selectedIndex];
     selectedCountryName = selectedOption.dataset.name || selectedOption.text;
     validateForm();
@@ -449,14 +413,32 @@ function setupWelcomeUI() {
     changeCountryBtn.addEventListener('click', () => {
       countryDetected.classList.add('hidden');
       countryManual.classList.remove('hidden');
-      selectedCountry = '';
-      selectedCountryName = '';
+      selectedCountry = 'ALL';
+      selectedCountryName = 'كل العالم';
       validateForm();
     });
   }
 
   // Start button
   startBtn.addEventListener('click', startChat);
+
+  // Insufficient gems modal handlers
+  if (goToRechargeBtn) {
+    goToRechargeBtn.addEventListener('click', () => {
+      insufficientGemsModal.classList.add('hidden');
+      rechargeModal.classList.remove('hidden');
+    });
+  }
+
+  if (switchToAnyBtn) {
+    switchToAnyBtn.addEventListener('click', () => {
+      insufficientGemsModal.classList.add('hidden');
+      selectedGenderFilter = 'any';
+      filterCards.forEach(c => c.classList.remove('active'));
+      const anyCard = $('#filter-any');
+      if (anyCard) anyCard.classList.add('active');
+    });
+  }
 
   // Retry permission
   retryPermissionBtn.addEventListener('click', async () => {
@@ -473,12 +455,12 @@ function setupWelcomeUI() {
 }
 
 function validateForm() {
-  const isValid = selectedGender && selectedCountry;
-  startBtn.disabled = !isValid;
+  const isValid = !!(selectedGender && (selectedCountry || selectedCountry === 'ALL'));
+  if (startBtn) startBtn.disabled = !isValid;
 }
 
 // =============================================
-// Socket.IO Connection - Tunnel-friendly
+// Socket.IO Connection - Fast matching & reconnect
 // =============================================
 function connectSocket() {
   socket = io({
@@ -495,19 +477,17 @@ function connectSocket() {
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket.id);
     
-    // If we were already in a chat session, re-register
-    if (currentState !== 'idle' && selectedGender && selectedCountry) {
-      console.log('[Socket] Re-registering after reconnect...');
+    if (currentState !== 'idle' && selectedGender) {
       socket.emit('register', {
         gender: selectedGender,
-        country: selectedCountry,
-        countryName: selectedCountryName,
-        genderFilter: selectedGenderFilter
+        country: selectedCountry || 'ALL',
+        countryName: selectedCountryName || 'كل العالم',
+        genderFilter: selectedGenderFilter,
+        username: userProfile.username,
+        phone: userProfile.phone
       });
       
-      // If we were searching, search again
       if (currentState === 'searching') {
-        console.log('[Socket] Re-searching after reconnect...');
         socket.emit('find_partner');
       }
     }
@@ -515,10 +495,6 @@ function connectSocket() {
 
   socket.on('disconnect', (reason) => {
     console.log('[Socket] Disconnected:', reason);
-  });
-
-  socket.on('connect_error', (err) => {
-    console.log('[Socket] Connection error:', err.message);
   });
 
   socket.on('online_count', (count) => {
@@ -531,14 +507,30 @@ function connectSocket() {
     setState('searching');
   });
 
+  // Matched event -> Deduct 10 gems per connected match if gender filter active
   socket.on('matched', async (data) => {
     console.log('[Socket] Matched with:', data.partnerId);
     isInitiator = data.isInitiator;
 
-    // Show partner info
-    showPartnerInfo(data);
+    // Verify & deduct gems ONLY when a real match is connected
+    if (selectedGenderFilter !== 'any') {
+      if (userProfile.gems < FILTER_COST) {
+        console.warn('[Gems] Insufficient gems for matched chat');
+        cleanupPeerConnection();
+        socket.emit('stop_search');
+        if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
+        setState('idle');
+        return;
+      }
 
-    // Create peer connection
+      // Deduct gems for this matched connection
+      userProfile.gems -= FILTER_COST;
+      saveUserProfile();
+      updateProfileUI();
+      showGemToast(`💎 -${FILTER_COST} جواهر (تحديد الجنس)`);
+    }
+
+    showPartnerInfo(data);
     await createPeerConnection();
 
     if (isInitiator) {
@@ -577,19 +569,19 @@ function connectSocket() {
     }
   });
 
+  // Partner left -> Auto Next without showing "Conversation Ended" overlay
   socket.on('partner_left', () => {
-    console.log('[Socket] Partner left');
+    console.log('[Socket] Partner left -> Instant auto-search for next partner...');
     cleanupPeerConnection();
-    setState('partner_left');
+    socket.emit('find_partner');
+    setState('searching');
   });
 }
 
-// Helper: ensure socket is connected before emitting
 function emitWhenReady(event, data) {
   if (socket && socket.connected) {
     socket.emit(event, data);
   } else {
-    console.log(`[Socket] Not connected, waiting to emit '${event}'...`);
     socket.once('connect', () => {
       socket.emit(event, data);
     });
@@ -597,21 +589,19 @@ function emitWhenReady(event, data) {
 }
 
 // =============================================
-// Media Stream - Improved Permission Handling
+// Media Stream Permission
 // =============================================
 async function requestMediaPermission() {
-  // First check if mediaDevices is supported
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showPermissionError(
       'متصفحك لا يدعم الكاميرا',
-      'يرجى استخدام متصفح Chrome أو Firefox أو Edge حديث. تأكد من أنك تستخدم localhost أو HTTPS.',
+      'يرجى استخدام متصفح Chrome أو Firefox أو Edge حديث. تأكد من أنك تستخدم HTTPS.',
       false
     );
     return false;
   }
 
   try {
-    // Request both video and audio
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         width: { ideal: 1280, min: 640 },
@@ -625,7 +615,7 @@ async function requestMediaPermission() {
     });
 
     localVideo.srcObject = localStream;
-    console.log('[Media] Got local stream successfully');
+    console.log('[Media] Stream acquired successfully');
     return true;
 
   } catch (err) {
@@ -634,45 +624,18 @@ async function requestMediaPermission() {
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       showPermissionError(
         '🚫 تم رفض إذن الكاميرا',
-        'لقد تم حظر الكاميرا. يرجى السماح بالوصول للكاميرا والميكروفون من إعدادات المتصفح.',
+        'يرجى السماح بالوصول للكاميرا والميكروفون من إعدادات المتصفح.',
         true
       );
-    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-      showPermissionError(
-        '❌ لا توجد كاميرا',
-        'لم يتم العثور على كاميرا متصلة بالجهاز. يرجى توصيل كاميرا والمحاولة مرة أخرى.',
-        false
-      );
-    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-      showPermissionError(
-        '⚠️ الكاميرا مستخدمة',
-        'الكاميرا قيد الاستخدام من قبل تطبيق آخر. أغلق أي برنامج يستخدم الكاميرا وحاول مرة أخرى.',
-        false
-      );
-    } else if (err.name === 'OverconstrainedError') {
-      // Try again with simpler constraints
+    } else {
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true
-        });
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
         return true;
       } catch (err2) {
-        showPermissionError(
-          '❌ مشكلة في الكاميرا',
-          'حدث خطأ أثناء الوصول للكاميرا. حاول مرة أخرى.',
-          true
-        );
+        showPermissionError('❌ مشكلة الكاميرا', 'تعذر الحصول على صورة الكاميرا.', true);
       }
-    } else {
-      showPermissionError(
-        '❌ خطأ غير متوقع',
-        `حدث خطأ: ${err.message}. تأكد من أنك تستخدم المتصفح على localhost أو HTTPS.`,
-        true
-      );
     }
-
     return false;
   }
 }
@@ -686,41 +649,39 @@ function showPermissionError(title, message, showSteps) {
   if (messageEl) messageEl.textContent = message;
   if (stepsEl) stepsEl.style.display = showSteps ? 'block' : 'none';
 
-  permissionModal.classList.remove('hidden');
+  if (permissionModal) permissionModal.classList.remove('hidden');
 }
 
 // =============================================
 // Start Chat
 // =============================================
 async function startChat() {
-  // Check gems if using paid filter
-  if (!deductGemsForFilter()) return;
+  // Check if gems available if gender filter is selected
+  if (selectedGenderFilter !== 'any' && userProfile.gems < FILTER_COST) {
+    if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
+    return;
+  }
 
-  // Get media permission first
   const hasPermission = await requestMediaPermission();
   if (!hasPermission) return;
 
-  // Register with server
   emitWhenReady('register', {
-    gender: selectedGender,
-    country: selectedCountry,
-    countryName: selectedCountryName,
+    gender: selectedGender || 'male',
+    country: selectedCountry || 'ALL',
+    countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter,
     username: userProfile.username,
     phone: userProfile.phone
   });
 
-  // Switch to chat screen
   welcomeScreen.classList.remove('active');
   chatScreen.classList.add('active');
 
-  // Setup control buttons (only once)
   if (!controlsSetup) {
     setupControls();
     controlsSetup = true;
   }
 
-  // Start searching
   emitWhenReady('find_partner');
   setState('searching');
 }
@@ -729,29 +690,24 @@ async function startChat() {
 // Control Buttons
 // =============================================
 function setupControls() {
-  // Next button
+  // Next button -> Instant auto search for next partner
   nextBtn.addEventListener('click', () => {
-    if (!deductGemsForFilter()) return;
     cleanupPeerConnection();
     socket.emit('next');
     setState('searching');
   });
 
-  // Mic toggle
   micBtn.addEventListener('click', toggleMic);
-
-  // Camera toggle
   cameraBtn.addEventListener('click', toggleCamera);
-
-  // End call
   endBtn.addEventListener('click', endCall);
 
-  // Find new (from partner left overlay)
-  findNewBtn.addEventListener('click', () => {
-    partnerLeftOverlay.classList.add('hidden');
-    socket.emit('find_partner');
-    setState('searching');
-  });
+  if (findNewBtn) {
+    findNewBtn.addEventListener('click', () => {
+      partnerLeftOverlay.classList.add('hidden');
+      socket.emit('find_partner');
+      setState('searching');
+    });
+  }
 }
 
 function toggleMic() {
@@ -782,13 +738,11 @@ function endCall() {
   cleanupPeerConnection();
   socket.emit('stop_search');
 
-  // Stop local stream
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
   }
 
-  // Switch back to welcome screen
   chatScreen.classList.remove('active');
   welcomeScreen.classList.add('active');
   setState('idle');
@@ -800,50 +754,43 @@ function endCall() {
 async function createPeerConnection() {
   cleanupPeerConnection();
 
-  peerConnection = new RTCPeerConnection(ICE_SERVERS);
+  try {
+    peerConnection = new RTCPeerConnection(ICE_SERVERS);
 
-  // Add local tracks
-  if (localStream) {
     localStream.getTracks().forEach(track => {
       peerConnection.addTrack(track, localStream);
     });
+
+    peerConnection.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        remoteVideo.srcObject = event.streams[0];
+      }
+    };
+
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('ice_candidate', { candidate: event.candidate });
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      console.log('[WebRTC] Connection state:', peerConnection.connectionState);
+      if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+        cleanupPeerConnection();
+        // Instant search for next partner on WebRTC failure
+        socket.emit('find_partner');
+        setState('searching');
+      }
+    };
+
+  } catch (err) {
+    console.error('[WebRTC] Error creating connection:', err);
   }
-
-  // Handle remote tracks
-  peerConnection.ontrack = (event) => {
-    console.log('[WebRTC] Remote track received');
-    if (event.streams && event.streams[0]) {
-      remoteVideo.srcObject = event.streams[0];
-    }
-  };
-
-  // Handle ICE candidates
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit('ice_candidate', { candidate: event.candidate });
-    }
-  };
-
-  // Connection state changes
-  peerConnection.onconnectionstatechange = () => {
-    console.log('[WebRTC] Connection state:', peerConnection.connectionState);
-    if (peerConnection.connectionState === 'disconnected' ||
-        peerConnection.connectionState === 'failed') {
-      console.log('[WebRTC] Connection lost');
-    }
-  };
-
-  peerConnection.oniceconnectionstatechange = () => {
-    console.log('[WebRTC] ICE state:', peerConnection.iceConnectionState);
-  };
 }
 
 async function createAndSendOffer() {
   try {
-    const offer = await peerConnection.createOffer({
-      offerToReceiveVideo: true,
-      offerToReceiveAudio: true
-    });
+    const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
     console.log('[WebRTC] Offer sent');
@@ -873,7 +820,7 @@ function cleanupPeerConnection() {
     peerConnection.close();
     peerConnection = null;
   }
-  remoteVideo.srcObject = null;
+  if (remoteVideo) remoteVideo.srcObject = null;
   stopCallTimer();
 }
 
@@ -909,8 +856,9 @@ function setState(state) {
       break;
 
     case 'partner_left':
-      searchingOverlay.classList.add('hidden');
-      partnerLeftOverlay.classList.remove('hidden');
+      // Instant transition back to searching
+      searchingOverlay.classList.remove('hidden');
+      partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.add('hidden');
       callTimer.classList.add('hidden');
       stopCallTimer();
@@ -920,7 +868,7 @@ function setState(state) {
 
 function showPartnerInfo(data) {
   partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
-  partnerCountryName.textContent = data.partnerCountryName || '';
+  partnerCountryName.textContent = data.partnerCountryName || 'شريك جديد';
   partnerGenderIcon.textContent = data.partnerGender === 'male' ? '👨' : '👩';
 }
 
@@ -947,7 +895,7 @@ function stopCallTimer() {
 function updateTimerDisplay() {
   const minutes = Math.floor(callSeconds / 60).toString().padStart(2, '0');
   const seconds = (callSeconds % 60).toString().padStart(2, '0');
-  timerDisplay.textContent = `${minutes}:${seconds}`;
+  if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds}`;
 }
 
 // =============================================
@@ -955,6 +903,8 @@ function updateTimerDisplay() {
 // =============================================
 function setupDraggableLocalVideo() {
   const wrapper = $('#local-video-wrapper');
+  if (!wrapper) return;
+
   let isDragging = false;
   let startX, startY, initialX, initialY;
 
@@ -1002,7 +952,6 @@ function setupDraggableLocalVideo() {
     let newX = initialX + dx;
     let newY = initialY + dy;
 
-    // Boundaries
     const maxX = window.innerWidth - wrapper.offsetWidth - 10;
     const maxY = window.innerHeight - wrapper.offsetHeight - 100;
     newX = Math.max(10, Math.min(newX, maxX));
