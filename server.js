@@ -36,11 +36,17 @@ const MERCHANT_CONFIG = {
 
 // Google Search Console Verification Routes
 app.get('/googled6651fade4f35860.html', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
   res.status(200).send('google-site-verification: googled6651fade4f35860.html');
 });
 
-app.get('/google:id', (req, res) => {
-  res.status(200).send(`google-site-verification: google${req.params.id}`);
+app.use((req, res, next) => {
+  if (req.path.startsWith('/google') && req.path.endsWith('.html')) {
+    const filename = req.path.replace('/', '');
+    res.setHeader('Content-Type', 'text/html');
+    return res.status(200).send(`google-site-verification: ${filename}`);
+  }
+  next();
 });
 
 app.get('/robots.txt', (req, res) => {
