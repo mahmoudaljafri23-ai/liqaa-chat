@@ -558,11 +558,51 @@ function updateOnlineDisplay(count) {
 }
 
 // =============================================
-// Initialize Application
+// Web Push Notifications & Service Worker
 // =============================================
+function initPushNotifications() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration error:', err));
+  }
+
+  if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    setTimeout(() => {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          showGemToast('🔔 تم تفعيل إشعارات لقاء بنجاح!');
+        }
+      });
+    }, 4000);
+  }
+}
+
+function sendLocalPushNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, {
+            body: body,
+            icon: 'css/logo.png',
+            vibrate: [200, 100, 200]
+          });
+        });
+      } else {
+        new Notification(title, {
+          body: body,
+          icon: 'css/logo.png'
+        });
+      }
+    } catch (e) {
+      console.log('Notification trigger error:', e);
+    }
+  }
+}
+
 function init() {
   loadUserProfile();
   updateOnlineDisplay();
+  initPushNotifications();
   setupAdminPinModal();
   setupWelcomeUI();
   setupSettingsUI();
@@ -825,8 +865,30 @@ function setupSettingsUI() {
         };
       }
 
+      const adminBroadcastSection = $('#admin-broadcast-section');
+      if (adminBroadcastSection) {
+        adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
+      }
+
       if (settingsModal) settingsModal.classList.remove('hidden');
     });
+  }
+
+  const broadcastBtn = $('#admin-send-broadcast-btn');
+  const broadcastInput = $('#admin-broadcast-text');
+  if (broadcastBtn && broadcastInput) {
+    broadcastBtn.onclick = () => {
+      const msg = broadcastInput.value.trim();
+      if (!msg) return;
+      if (socket && socket.connected) {
+        socket.emit('send_global_notification', {
+          title: 'LiQaa - لقاء 🚀',
+          message: msg
+        });
+        showGemToast('📢 تم إرسال الإشعار لجميع المستخدمين بالعالم بنجاح!');
+        broadcastInput.value = '';
+      }
+    };
   }
 
   if (closeSettingsBtn) {
@@ -1022,10 +1084,16 @@ function connectSocket() {
     setState('searching');
   });
 
+  socket.on('global_notification', (data) => {
+    showGemToast(`📢 ${data.title}: ${data.message}`);
+    sendLocalPushNotification(data.title || 'LiQaa - لقاء 🚀', data.message);
+  });
+
   socket.on('private_message', (data) => {
     if (data && data.senderSocketId) {
       showGemToast(`💬 رسالة جديدة من ${data.senderUsername || 'صديق'}`);
       appendPrivateMessage(data.senderSocketId, 'other', data.text);
+      sendLocalPushNotification(`💬 رسالة من ${data.senderUsername || 'صديق'}`, data.text);
     }
   });
 
@@ -1051,6 +1119,8 @@ function connectSocket() {
       countryName: data.partnerCountryName,
       badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
     };
+
+    sendLocalPushNotification('LiQaa - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
 
     if (selectedGenderFilter !== 'any') {
       if (userProfile.gems < FILTER_COST) {
