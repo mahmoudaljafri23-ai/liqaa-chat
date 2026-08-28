@@ -213,11 +213,14 @@ async function detectCountry() {
   return null;
 }
 
+let myHomeCountryCode = 'JO';
+
 async function autoDetectCountry() {
   try {
     const result = await detectCountry();
 
     if (result && result.code) {
+      myHomeCountryCode = result.code;
       const option = countrySelect.querySelector(`option[value="${result.code}"]`);
       if (option) {
         selectedCountry = result.code;
@@ -612,6 +615,8 @@ function connectSocket() {
     if (currentState !== 'idle' && selectedGender) {
       socket.emit('register', {
         gender: selectedGender,
+        myCountry: myHomeCountryCode || 'JO',
+        targetCountry: selectedCountry || 'ALL',
         country: selectedCountry || 'ALL',
         countryName: selectedCountryName || 'كل العالم',
         genderFilter: selectedGenderFilter,
@@ -802,6 +807,8 @@ async function startChat() {
 
   emitWhenReady('register', {
     gender: selectedGender || 'male',
+    myCountry: myHomeCountryCode || 'JO',
+    targetCountry: selectedCountry || 'ALL',
     country: selectedCountry || 'ALL',
     countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter,

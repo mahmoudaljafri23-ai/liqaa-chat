@@ -185,13 +185,16 @@ function findMatch(socketId) {
     const candidateWantsUserGender =
       candidate.genderFilter === 'any' || candidate.genderFilter === user.gender;
 
-    // Check country filter compatibility
-    const userWantsCountry =
-      !user.country || user.country === 'ALL' || user.country === candidate.country;
-    const candidateWantsCountry =
-      !candidate.country || candidate.country === 'ALL' || candidate.country === user.country;
+    // Check country filter compatibility:
+    // User wants candidate if user's targetCountry is ALL, OR matches candidate's home country
+    const userWantsCandidateCountry =
+      !user.targetCountry || user.targetCountry === 'ALL' || user.targetCountry === candidate.myCountry;
+    
+    // Candidate wants user if candidate's targetCountry is ALL, OR matches user's home country
+    const candidateWantsUserCountry =
+      !candidate.targetCountry || candidate.targetCountry === 'ALL' || candidate.targetCountry === user.myCountry;
 
-    if (userWantsCandidateGender && candidateWantsUserGender && userWantsCountry && candidateWantsCountry) {
+    if (userWantsCandidateGender && candidateWantsUserGender && userWantsCandidateCountry && candidateWantsUserCountry) {
       return candidateId;
     }
   }
@@ -224,7 +227,7 @@ setInterval(() => {
         io.to(socketId).emit('matched', {
           partnerId: matchId,
           partnerGender: matchUser.gender,
-          partnerCountry: matchUser.country,
+          partnerCountry: matchUser.myCountry || matchUser.country,
           partnerCountryName: matchUser.countryName,
           isInitiator: true
         });
@@ -232,12 +235,12 @@ setInterval(() => {
         io.to(matchId).emit('matched', {
           partnerId: socketId,
           partnerGender: user.gender,
-          partnerCountry: user.country,
+          partnerCountry: user.myCountry || user.country,
           partnerCountryName: user.countryName,
           isInitiator: false
         });
 
-        console.log(`[Auto-Match] ${socketId} <-> ${matchId}`);
+        console.log(`[Auto-Match] ${socketId} (${user.myCountry}->${user.targetCountry}) <-> ${matchId} (${matchUser.myCountry}->${matchUser.targetCountry})`);
         break; // Match one pair per tick
       }
     }
@@ -255,7 +258,9 @@ io.on('connection', (socket) => {
   socket.on('register', (data) => {
     users.set(socket.id, {
       gender: data.gender,
-      country: data.country,
+      myCountry: data.myCountry || 'JO',
+      targetCountry: data.targetCountry || data.country || 'ALL',
+      country: data.myCountry || 'JO',
       countryName: data.countryName,
       genderFilter: data.genderFilter || 'any',
       username: data.username || 'مستخدم',
@@ -263,7 +268,7 @@ io.on('connection', (socket) => {
       partnerId: null
     });
     broadcastOnlineCount();
-    console.log(`[R] Registered: ${socket.id} | ${data.username || 'User'} | ${data.gender} | ${data.countryName}`);
+    console.log(`[R] Registered: ${socket.id} | ${data.username || 'User'} | Home: ${data.myCountry || 'JO'} | Target: ${data.targetCountry || data.country || 'ALL'}`);
   });
 
   // User requests to find a partner
