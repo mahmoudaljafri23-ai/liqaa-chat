@@ -15,8 +15,7 @@ app.use((req, res, next) => {
 
 // Google Search Console Verification Direct Route
 app.get('/googled6651fade4f35860.html', (req, res) => {
-  res.type('text/html');
-  res.status(200).send('google-site-verification: googled6651fade4f35860.html');
+  res.sendFile(path.join(__dirname, 'public', 'googled6651fade4f35860.html'));
 });
 const server = http.createServer(app);
 const io = new Server(server, {
