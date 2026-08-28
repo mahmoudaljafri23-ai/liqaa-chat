@@ -546,6 +546,17 @@ function setupWelcomeUI() {
 
   startBtn.addEventListener('click', startChat);
 
+  if (closeRechargeBtn) {
+    closeRechargeBtn.addEventListener('click', () => {
+      rechargeModal.classList.add('hidden');
+      cleanupPeerConnection();
+      if (socket) socket.emit('stop_search');
+      if (chatScreen) chatScreen.classList.remove('active');
+      if (welcomeScreen) welcomeScreen.classList.add('active');
+      setState('idle');
+    });
+  }
+
   if (goToRechargeBtn) {
     goToRechargeBtn.addEventListener('click', () => {
       insufficientGemsModal.classList.add('hidden');
@@ -646,7 +657,6 @@ function connectSocket() {
       userProfile.gems -= FILTER_COST;
       saveUserProfile();
       updateProfileUI();
-      showGemToast(`💎 -${FILTER_COST} جواهر (تحديد الجنس)`);
     }
 
     showPartnerInfo(data);

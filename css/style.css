@@ -1354,3 +1354,114 @@ body {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-20px); }
 }
+
+/* Gems Store Responsive Mobile Grid & Large Cards */
+.gems-modal-content {
+  max-width: 480px !important;
+  width: 94% !important;
+  padding: 24px 16px !important;
+}
+
+.gems-packages {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 15px 0 !important;
+}
+
+.gem-package-card {
+  background: var(--bg-dark) !important;
+  border: 2px solid var(--border) !important;
+  border-radius: 14px !important;
+  padding: 16px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  transition: transform 0.2s ease, border-color 0.2s ease !important;
+  cursor: pointer !important;
+  min-height: 165px !important;
+}
+
+.gem-package-card:hover {
+  transform: translateY(-3px) !important;
+  border-color: #ffd700 !important;
+}
+
+.gem-package-card.featured {
+  border-color: #ffd700 !important;
+  background: rgba(255, 215, 0, 0.08) !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.25) !important;
+}
+
+.package-icon {
+  font-size: 32px !important;
+  margin-bottom: 2px !important;
+}
+
+.package-amount {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  margin: 4px 0 !important;
+}
+
+.package-price {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: #4ade80 !important;
+  margin-bottom: 8px !important;
+}
+
+.popular-badge {
+  position: absolute !important;
+  top: -10px !important;
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53) !important;
+  color: white !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  padding: 3px 8px !important;
+  border-radius: 10px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+.buy-package-btn {
+  width: 100% !important;
+  padding: 10px 8px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  border-radius: 8px !important;
+  margin-top: auto !important;
+}
+
+@media (max-width: 480px) {
+  .gems-packages {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .gem-package-card {
+    padding: 14px 8px !important;
+    min-height: 160px !important;
+  }
+
+  .package-icon {
+    font-size: 28px !important;
+  }
+
+  .package-amount {
+    font-size: 14px !important;
+  }
+
+  .package-price {
+    font-size: 15px !important;
+  }
+
+  .buy-package-btn {
+    padding: 8px 4px !important;
+    font-size: 13px !important;
+  }
+}
