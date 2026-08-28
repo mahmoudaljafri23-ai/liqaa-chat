@@ -57,6 +57,8 @@ let selectedGenderFilter = 'any';
 let selectedCountry = 'ALL';
 let selectedCountryName = 'كل العالم';
 let callTimerInterval = null;
+let banCountdownInterval = null;
+let nudityScanInterval = null;
 let callSeconds = 0;
 let isInitiator = false;
 let controlsSetup = false;
@@ -68,7 +70,8 @@ let userProfile = {
   gender: '',
   country: 'ALL',
   gems: 50,
-  hasCompletedSetup: false
+  hasCompletedSetup: false,
+  bannedUntil: null
 };
 const FILTER_COST = 10; // cost in gems for gender filter
 
@@ -89,6 +92,7 @@ const usernameInput = $('#username-input');
 const phoneInput = $('#phone-input');
 const openRechargeModalBtn = $('#open-recharge-modal');
 const openSettingsModalBtn = $('#open-settings-modal-btn');
+const initialSetupSection = $('#initial-profile-setup-section');
 
 // Settings Modal elements
 const settingsModal = $('#settings-modal');
@@ -124,6 +128,9 @@ const closeRechargeBtn = $('#close-recharge-btn');
 const insufficientGemsModal = $('#insufficient-gems-modal');
 const goToRechargeBtn = $('#go-to-recharge-btn');
 const switchToAnyBtn = $('#switch-to-any-btn');
+
+const bannedModal = $('#banned-modal');
+const banCountdownTimer = $('#ban-countdown-timer');
 
 // Online counts
 const welcomeOnlineCount = $('#welcome-online-count');
@@ -239,6 +246,118 @@ async function autoDetectCountry() {
 }
 
 // =============================================
+// 24-Hour Ban System
+// =============================================
+function checkBanStatus() {
+  if (userProfile.bannedUntil && Date.now() < userProfile.bannedUntil) {
+    showBanModal(userProfile.bannedUntil);
+    return true;
+  } else if (userProfile.bannedUntil) {
+    // Ban expired
+    delete userProfile.bannedUntil;
+    saveUserProfile();
+  }
+  return false;
+}
+
+function showBanModal(bannedUntil) {
+  if (bannedModal) bannedModal.classList.remove('hidden');
+
+  function updateBanCountdown() {
+    const remainingMs = bannedUntil - Date.now();
+    if (remainingMs <= 0) {
+      if (banCountdownInterval) clearInterval(banCountdownInterval);
+      delete userProfile.bannedUntil;
+      saveUserProfile();
+      if (bannedModal) bannedModal.classList.add('hidden');
+      return;
+    }
+
+    const hours = Math.floor(remainingMs / (1000 * 60 * 60)).toString().padStart(2, '0');
+    const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    const secs = Math.floor((remainingMs % (1000 * 60)) / 1000).toString().padStart(2, '0');
+    if (banCountdownTimer) banCountdownTimer.textContent = `${hours}:${mins}:${secs}`;
+  }
+
+  updateBanCountdown();
+  if (banCountdownInterval) clearInterval(banCountdownInterval);
+  banCountdownInterval = setInterval(updateBanCountdown, 1000);
+}
+
+function trigger24HourBan(reason) {
+  console.warn('[BAN TRIGGERED]', reason);
+  userProfile.bannedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 Hours
+  saveUserProfile();
+
+  cleanupPeerConnection();
+  if (socket) socket.emit('stop_search');
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+
+  if (chatScreen) chatScreen.classList.remove('active');
+  if (welcomeScreen) welcomeScreen.classList.add('active');
+  setState('idle');
+
+  showBanModal(userProfile.bannedUntil);
+}
+
+// =============================================
+// Real-Time Nudity Detector (Visual Frame Scanner)
+// =============================================
+function startNudityScanner() {
+  stopNudityScanner();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 160;
+  canvas.height = 120;
+
+  nudityScanInterval = setInterval(() => {
+    if (currentState !== 'connected' && currentState !== 'searching') return;
+    if (!localVideo || !localVideo.srcObject || localVideo.paused || localVideo.ended) return;
+
+    try {
+      ctx.drawImage(localVideo, 0, 0, 160, 120);
+      const imgData = ctx.getImageData(0, 0, 160, 120);
+      const pixels = imgData.data;
+
+      let skinPixels = 0;
+      const totalPixels = pixels.length / 4;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        // Skin color threshold (RGB space classification)
+        if (r > 95 && g > 40 && b > 20 &&
+            (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
+            Math.abs(r - g) > 15 && r > g && r > b) {
+          skinPixels++;
+        }
+      }
+
+      const skinRatio = skinPixels / totalPixels;
+      // If skin ratio exceeds 55% of the frame, trigger 24-hour ban
+      if (skinRatio > 0.55) {
+        console.warn(`[Nudity System] Skin ratio ${(skinRatio * 100).toFixed(1)}% exceeds safety limit`);
+        trigger24HourBan('محتوى غير لائق / عاري');
+      }
+    } catch (err) {
+      console.warn('[Nudity System] Frame scan exception:', err.message);
+    }
+  }, 3000);
+}
+
+function stopNudityScanner() {
+  if (nudityScanInterval) {
+    clearInterval(nudityScanInterval);
+    nudityScanInterval = null;
+  }
+}
+
+// =============================================
 // User Profile & Gem Management
 // =============================================
 function loadUserProfile() {
@@ -264,10 +383,21 @@ function loadUserProfile() {
   selectedGender = userProfile.gender;
   saveUserProfile();
   updateProfileUI();
+  updateSetupSectionVisibility();
+  checkBanStatus();
 }
 
 function saveUserProfile() {
   localStorage.setItem('liqaa_user_profile', JSON.stringify(userProfile));
+}
+
+function updateSetupSectionVisibility() {
+  if (!initialSetupSection) return;
+  if (userProfile.hasCompletedSetup) {
+    initialSetupSection.style.display = 'none';
+  } else {
+    initialSetupSection.style.display = 'block';
+  }
 }
 
 function updateProfileUI() {
@@ -276,7 +406,6 @@ function updateProfileUI() {
   if (userDisplayName) userDisplayName.textContent = userProfile.username;
   if (gemsBalanceCount) gemsBalanceCount.textContent = userProfile.gems;
 
-  // Highlight gender card
   genderCards.forEach(card => {
     if (card.dataset.gender === userProfile.gender) {
       card.classList.add('selected');
@@ -305,6 +434,8 @@ function init() {
 function setupSettingsUI() {
   if (openSettingsModalBtn) {
     openSettingsModalBtn.addEventListener('click', () => {
+      if (checkBanStatus()) return;
+
       if (settingsUsername) settingsUsername.value = userProfile.username || '';
       if (settingsPhone) settingsPhone.value = userProfile.phone || '';
       
@@ -350,6 +481,7 @@ function setupSettingsUI() {
 
       saveUserProfile();
       updateProfileUI();
+      updateSetupSectionVisibility();
 
       if (settingsModal) settingsModal.classList.add('hidden');
       showGemToast('✨ تم تحديث بيانات الحساب بنجاح');
@@ -361,11 +493,9 @@ function setupSettingsUI() {
 // Welcome Screen UI
 // =============================================
 function setupWelcomeUI() {
-  // Username & Phone inputs
   if (usernameInput) {
     usernameInput.addEventListener('input', (e) => {
       userProfile.username = e.target.value.trim() || 'مستخدم جديد';
-      userProfile.hasCompletedSetup = true;
       saveUserProfile();
       updateProfileUI();
     });
@@ -378,20 +508,17 @@ function setupWelcomeUI() {
     });
   }
 
-  // Gender selection
   genderCards.forEach(card => {
     card.addEventListener('click', () => {
       genderCards.forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       selectedGender = card.dataset.gender;
       userProfile.gender = selectedGender;
-      userProfile.hasCompletedSetup = true;
       saveUserProfile();
       validateForm();
     });
   });
 
-  // Gender filter selection
   filterCards.forEach(card => {
     card.addEventListener('click', () => {
       filterCards.forEach(c => c.classList.remove('active'));
@@ -400,7 +527,6 @@ function setupWelcomeUI() {
     });
   });
 
-  // Country manual selection
   countrySelect.addEventListener('change', () => {
     selectedCountry = countrySelect.value || 'ALL';
     const selectedOption = countrySelect.options[countrySelect.selectedIndex];
@@ -408,7 +534,6 @@ function setupWelcomeUI() {
     validateForm();
   });
 
-  // Change country button (switch to manual)
   if (changeCountryBtn) {
     changeCountryBtn.addEventListener('click', () => {
       countryDetected.classList.add('hidden');
@@ -419,10 +544,8 @@ function setupWelcomeUI() {
     });
   }
 
-  // Start button
   startBtn.addEventListener('click', startChat);
 
-  // Insufficient gems modal handlers
   if (goToRechargeBtn) {
     goToRechargeBtn.addEventListener('click', () => {
       insufficientGemsModal.classList.add('hidden');
@@ -440,13 +563,11 @@ function setupWelcomeUI() {
     });
   }
 
-  // Retry permission
   retryPermissionBtn.addEventListener('click', async () => {
     permissionModal.classList.add('hidden');
     await startChat();
   });
 
-  // Close permission modal
   if (closePermissionBtn) {
     closePermissionBtn.addEventListener('click', () => {
       permissionModal.classList.add('hidden');
@@ -512,7 +633,6 @@ function connectSocket() {
     console.log('[Socket] Matched with:', data.partnerId);
     isInitiator = data.isInitiator;
 
-    // Verify & deduct gems ONLY when a real match is connected
     if (selectedGenderFilter !== 'any') {
       if (userProfile.gems < FILTER_COST) {
         console.warn('[Gems] Insufficient gems for matched chat');
@@ -523,7 +643,6 @@ function connectSocket() {
         return;
       }
 
-      // Deduct gems for this matched connection
       userProfile.gems -= FILTER_COST;
       saveUserProfile();
       updateProfileUI();
@@ -656,7 +775,13 @@ function showPermissionError(title, message, showSteps) {
 // Start Chat
 // =============================================
 async function startChat() {
-  // Check if gems available if gender filter is selected
+  if (checkBanStatus()) return;
+
+  // Mark setup completed when user starts chat & hide setup section
+  userProfile.hasCompletedSetup = true;
+  saveUserProfile();
+  updateSetupSectionVisibility();
+
   if (selectedGenderFilter !== 'any' && userProfile.gems < FILTER_COST) {
     if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
     return;
@@ -682,6 +807,7 @@ async function startChat() {
     controlsSetup = true;
   }
 
+  startNudityScanner();
   emitWhenReady('find_partner');
   setState('searching');
 }
@@ -690,7 +816,6 @@ async function startChat() {
 // Control Buttons
 // =============================================
 function setupControls() {
-  // Next button -> Instant auto search for next partner
   nextBtn.addEventListener('click', () => {
     cleanupPeerConnection();
     socket.emit('next');
@@ -735,6 +860,7 @@ function toggleCamera() {
 }
 
 function endCall() {
+  stopNudityScanner();
   cleanupPeerConnection();
   socket.emit('stop_search');
 
@@ -777,7 +903,6 @@ async function createPeerConnection() {
       console.log('[WebRTC] Connection state:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
         cleanupPeerConnection();
-        // Instant search for next partner on WebRTC failure
         socket.emit('find_partner');
         setState('searching');
       }
@@ -856,7 +981,6 @@ function setState(state) {
       break;
 
     case 'partner_left':
-      // Instant transition back to searching
       searchingOverlay.classList.remove('hidden');
       partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.add('hidden');
