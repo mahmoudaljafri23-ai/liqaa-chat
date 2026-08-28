@@ -291,6 +291,19 @@ io.on('connection', (socket) => {
     console.log(`[R] Registered: ${socket.id} | ${data.username || 'User'} | Home: ${data.myCountry || 'JO'} | Target: ${data.targetCountry || data.country || 'ALL'}`);
   });
 
+  // Relay real-time direct private messages between friends
+  socket.on('private_message', (data) => {
+    if (data && data.targetSocketId) {
+      const sender = users.get(socket.id);
+      io.to(data.targetSocketId).emit('private_message', {
+        senderSocketId: socket.id,
+        senderUsername: sender ? sender.username : 'صديق',
+        text: data.text,
+        timestamp: Date.now()
+      });
+    }
+  });
+
   // User requests to find a partner
   socket.on('find_partner', () => {
     const user = users.get(socket.id);

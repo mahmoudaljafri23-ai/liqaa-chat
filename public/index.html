@@ -21,6 +21,10 @@
           <span id="user-display-name">مستخدم جديد</span>
           <span style="font-size:12px; margin-right:4px;">⚙️</span>
         </div>
+        <div class="user-info-badge" id="open-friends-modal-btn" style="cursor:pointer; background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; font-size: 13px;" title="قائمة الأصدقاء والدردشة الخاصة">
+          <span class="user-avatar-icon">💬</span>
+          <span>الأصدقاء</span>
+        </div>
         <div class="gems-balance-badge" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
           <span class="gem-icon">💎</span>
           <span id="gems-balance-count">50</span>
@@ -368,6 +372,9 @@
         <span id="partner-country-name"></span>
         <span class="partner-divider">•</span>
         <span id="partner-gender-icon"></span>
+        <button id="add-friend-btn" class="action-button" style="padding: 3px 8px; font-size: 11px; border-radius: 10px; margin-right: 8px; background: rgba(59, 130, 246, 0.85); box-shadow: none;">
+          ➕ صديق
+        </button>
       </div>
 
       <!-- Connection Timer -->
@@ -645,6 +652,38 @@
       <p style="font-size: 11px; color: #888; margin-top: 15px;">
         سيتم فك الحظر عن حسابك وتجهيز التطبيق تلقائياً بمجرد انتهاء العداد.
       </p>
+    </div>
+  </div>
+
+  <!-- Friends & Private Chat Modal -->
+  <div id="friends-modal" class="modal hidden" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 460px; width: 92%; padding: 20px; text-align: right; background: #12121e; border: 1px solid #3b82f6; border-radius: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 15px;">
+        <h2 style="font-size: 18px; margin: 0; color: #60a5fa;">💬 الأصدقاء والدردشة الخاصة</h2>
+        <button id="close-friends-btn" style="background: none; border: none; color: #888; font-size: 22px; cursor: pointer;">✕</button>
+      </div>
+
+      <!-- Friends List View -->
+      <div id="friends-list-view">
+        <div id="friends-empty-msg" style="text-align: center; color: #888; padding: 30px 10px; font-size: 14px;">
+          لا يوجد أصدقاء مضافون بعد.<br>
+          <span style="font-size: 12px; color: #666; margin-top: 5px; display: inline-block;">يمكنك إضافة الأشخاص كأصدقاء أثناء دردشة الفيديو عبر زر ➕ صديق!</span>
+        </div>
+        <div id="friends-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;"></div>
+      </div>
+
+      <!-- Direct Private Chat Window (Hidden by default) -->
+      <div id="private-chat-view" class="hidden">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+          <button id="back-to-friends-list-btn" style="background: none; border: none; color: #3b82f6; font-weight: bold; cursor: pointer; font-size: 14px;">← عودة للأصدقاء</button>
+          <span style="color: #eee; font-weight: bold;" id="private-chat-friend-name">صديق</span>
+        </div>
+        <div id="private-chat-messages" style="height: 220px; overflow-y: auto; background: #0a0a12; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;"></div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="private-chat-input" placeholder="اكتب رسالة خاصة..." style="flex: 1; padding: 10px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-dark); color: #fff; font-family: 'Tajawal', sans-serif;" dir="auto">
+          <button id="send-private-msg-btn" class="action-button" style="padding: 10px 18px; border-radius: 20px; font-size: 14px; margin: 0;">إرسال</button>
+        </div>
+      </div>
     </div>
   </div>
 
