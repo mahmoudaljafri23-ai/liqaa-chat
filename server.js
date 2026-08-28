@@ -372,6 +372,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle global notification broadcast by Admin Creator
+  socket.on('send_global_notification', (data) => {
+    const user = users.get(socket.id);
+    if (user && (user.phone === '0790181802' || user.username === 'mahmoud')) {
+      io.emit('global_notification', {
+        title: data.title || 'LiQaa - لقاء 🚀',
+        message: data.message || 'لديك إشعار جديد في تطبيق لقاء!',
+        timestamp: Date.now()
+      });
+      console.log(`[📢 Global Broadcast Sent by Admin]: ${data.message}`);
+    }
+  });
+
   // User requests to find a partner
   socket.on('find_partner', () => {
     const user = users.get(socket.id);

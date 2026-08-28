@@ -1,0 +1,16 @@
+{
+  "short_name": "LiQaa",
+  "name": "LiQaa - لقاء | دردشة فيديو عشوائية",
+  "icons": [
+    {
+      "src": "css/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0d0f1b",
+  "theme_color": "#ff6b6b",
+  "display": "standalone",
+  "orientation": "portrait"
+}
