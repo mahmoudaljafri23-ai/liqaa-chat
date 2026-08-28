@@ -833,6 +833,13 @@ function setupControls() {
       setState('searching');
     });
   }
+
+  const cancelSearchBtn = $('#cancel-search-btn');
+  if (cancelSearchBtn) {
+    cancelSearchBtn.addEventListener('click', () => {
+      endCall();
+    });
+  }
 }
 
 function toggleMic() {
