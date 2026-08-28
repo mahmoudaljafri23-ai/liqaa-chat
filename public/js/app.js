@@ -934,6 +934,17 @@ function setupWelcomeUI() {
       permissionModal.classList.add('hidden');
     });
   }
+
+  $$('.give-badge-btn').forEach(btn => {
+    btn.onclick = () => {
+      const badgeType = btn.dataset.badge;
+      if (socket && socket.connected) {
+        socket.emit('give_badge', { badgeType });
+        const names = { awesome: '⭐ رائع', handsome: '✨ وسيم', elegant: '🎩 أنيق' };
+        showGemToast(`✨ تم إرسال وسام "${names[badgeType] || badgeType}" للشريك!`);
+      }
+    };
+  });
 }
 
 function validateForm() {
@@ -998,6 +1009,15 @@ function connectSocket() {
     }
   });
 
+  socket.on('receive_badge', (data) => {
+    if (!userProfile.badges) userProfile.badges = { awesome: 0, handsome: 0, elegant: 0 };
+    userProfile.badges[data.badgeType] = (userProfile.badges[data.badgeType] || 0) + 1;
+    saveUserProfile();
+
+    const names = { awesome: '⭐ رائع', handsome: '✨ وسيم', elegant: '🎩 أنيق' };
+    showGemToast(`🎉 حصلت على وسام "${names[data.badgeType] || data.badgeType}" من ${data.fromUsername || 'شريك'}!`);
+  });
+
   // Matched event -> Deduct 10 gems per connected match if gender filter active
   socket.on('matched', async (data) => {
     console.log('[Socket] Matched with:', data.partnerId);
@@ -1005,9 +1025,11 @@ function connectSocket() {
     currentPartner = {
       id: data.partnerId,
       socketId: data.partnerId,
+      username: data.partnerUsername || 'مستخدم',
       gender: data.partnerGender,
       country: data.partnerCountry,
-      countryName: data.partnerCountryName
+      countryName: data.partnerCountryName,
+      badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
     };
 
     if (selectedGenderFilter !== 'any') {
@@ -1349,6 +1371,7 @@ function cleanupPeerConnection() {
 // =============================================
 function setState(state) {
   currentState = state;
+  const callBadgesBar = $('#call-badges-bar');
 
   switch (state) {
     case 'idle':
@@ -1356,6 +1379,7 @@ function setState(state) {
       partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.add('hidden');
       callTimer.classList.add('hidden');
+      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       stopCallTimer();
       break;
 
@@ -1364,6 +1388,7 @@ function setState(state) {
       partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.add('hidden');
       callTimer.classList.add('hidden');
+      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       stopCallTimer();
       break;
 
@@ -1372,6 +1397,7 @@ function setState(state) {
       partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.remove('hidden');
       callTimer.classList.remove('hidden');
+      if (callBadgesBar) callBadgesBar.classList.remove('hidden');
       startCallTimer();
       break;
 
@@ -1380,6 +1406,7 @@ function setState(state) {
       partnerLeftOverlay.classList.add('hidden');
       partnerInfo.classList.add('hidden');
       callTimer.classList.add('hidden');
+      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       stopCallTimer();
       break;
   }
@@ -1390,6 +1417,16 @@ function showPartnerInfo(data) {
   const nameEl = $('#partner-username');
   if (nameEl) nameEl.textContent = data.partnerUsername || 'مستخدم';
   partnerGenderIcon.textContent = data.partnerGender === 'male' ? '👨' : '👩';
+
+  const badgesEl = $('#partner-badges-display');
+  if (badgesEl && data.partnerBadges) {
+    const b = data.partnerBadges;
+    let text = '';
+    if (b.awesome > 0) text += `⭐${b.awesome} `;
+    if (b.handsome > 0) text += `✨${b.handsome} `;
+    if (b.elegant > 0) text += `🎩${b.elegant}`;
+    badgesEl.textContent = text;
+  }
 }
 
 // =============================================

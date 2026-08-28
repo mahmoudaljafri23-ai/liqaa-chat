@@ -250,6 +250,7 @@ setInterval(() => {
           partnerGender: matchUser.gender,
           partnerCountry: matchUser.myCountry || matchUser.country,
           partnerCountryName: matchUser.countryName,
+          partnerBadges: matchUser.badges || { awesome: 0, handsome: 0, elegant: 0 },
           isInitiator: true
         });
 
@@ -259,6 +260,7 @@ setInterval(() => {
           partnerGender: user.gender,
           partnerCountry: user.myCountry || user.country,
           partnerCountryName: user.countryName,
+          partnerBadges: user.badges || { awesome: 0, handsome: 0, elegant: 0 },
           isInitiator: false
         });
 
@@ -287,10 +289,28 @@ io.on('connection', (socket) => {
       genderFilter: data.genderFilter || 'any',
       username: data.username || 'مستخدم',
       phone: data.phone || '',
+      badges: data.badges || { awesome: 0, handsome: 0, elegant: 0 },
       partnerId: null
     });
     broadcastOnlineCount();
     console.log(`[R] Registered: ${socket.id} | ${data.username || 'User'} | Home: ${data.myCountry || 'JO'} | Target: ${data.targetCountry || data.country || 'ALL'}`);
+  });
+
+  // Handle giving badges between chat partners
+  socket.on('give_badge', (data) => {
+    const user = users.get(socket.id);
+    if (user && user.partnerId) {
+      const partner = users.get(user.partnerId);
+      if (partner) {
+        if (!partner.badges) partner.badges = { awesome: 0, handsome: 0, elegant: 0 };
+        partner.badges[data.badgeType] = (partner.badges[data.badgeType] || 0) + 1;
+        
+        io.to(user.partnerId).emit('receive_badge', {
+          badgeType: data.badgeType,
+          fromUsername: user.username || 'شريك'
+        });
+      }
+    }
   });
 
   // Relay real-time direct private messages between friends
