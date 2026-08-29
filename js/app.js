@@ -277,6 +277,10 @@ function checkAdminPermissions() {
   } else {
     userProfile.isAdmin = false;
     userProfile.adminUnlocked = false;
+    if (userProfile.gems > 1000) {
+      userProfile.gems = 50;
+    }
+    saveUserProfile();
   }
   return false;
 }
@@ -1089,6 +1093,16 @@ function setupSettingsUI() {
       userProfile.gender = newGender;
       selectedGender = newGender;
       userProfile.hasCompletedSetup = true;
+
+      // Re-evaluate Admin status based on new phone/username
+      if (newPhone !== '0790181802' && !newPhone.includes('0790181802') && !newName.toLowerCase().includes('mahmoud')) {
+        userProfile.isAdmin = false;
+        userProfile.adminUnlocked = false;
+        userProfile.gems = 50; // Reset infinite gems to 50 for normal user testing
+      } else {
+        userProfile.isAdmin = true;
+        userProfile.gems = 999999;
+      }
 
       saveUserProfile();
       updateProfileUI();
