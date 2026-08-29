@@ -468,7 +468,7 @@ function updateProfileUI() {
   
   if (userDisplayName) {
     if (userProfile.isAdmin) {
-      userDisplayName.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-right: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👑 منشئ التطبيق</span>`;
+      userDisplayName.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-right: 2px;">👑 منشئ</span>`;
     } else {
       userDisplayName.textContent = userProfile.username;
     }
@@ -476,7 +476,7 @@ function updateProfileUI() {
 
   if (gemsBalanceCount) {
     if (userProfile.isAdmin) {
-      gemsBalanceCount.textContent = '∞ 999,999+';
+      gemsBalanceCount.textContent = '999k+';
     } else {
       gemsBalanceCount.textContent = userProfile.gems;
     }
