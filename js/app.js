@@ -661,7 +661,7 @@ function setupInviteModal() {
   if (shareWpBtn) {
     shareWpBtn.onclick = () => {
       const link = getMyReferralLink();
-      const text = `🔥 انضم معي الآن على تطبيق "LiQaa - لقاء" لأفضل دردشة فيديو ومحادثات مباشرة! 🎥✨\nسجل وفعل الإشعارات من الرابط التالي:\n${link}`;
+      const text = `⚡ انضم معي الآن على تطبيق "Loky Chat - لوكي شات" لأفضل دردشة فيديو ومحادثات مباشرة! 🎥✨\nسجل وفعل الإشعارات من الرابط التالي:\n${link}`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
   }
@@ -952,7 +952,7 @@ function setupSettingsUI() {
       if (!msg) return;
       if (socket && socket.connected) {
         socket.emit('send_global_notification', {
-          title: 'LiQaa - لقاء 🚀',
+          title: 'Loky Chat - لوكي شات 🚀',
           message: msg
         });
         showGemToast('📢 تم إرسال الإشعار لجميع المستخدمين بالعالم بنجاح!');
@@ -1156,7 +1156,7 @@ function connectSocket() {
 
   socket.on('global_notification', (data) => {
     showGemToast(`📢 ${data.title}: ${data.message}`);
-    sendLocalPushNotification(data.title || 'LiQaa - لقاء 🚀', data.message);
+    sendLocalPushNotification(data.title || 'Loky Chat - لوكي شات 🚀', data.message);
   });
 
   socket.on('private_message', (data) => {
@@ -1200,7 +1200,7 @@ function connectSocket() {
       badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
     };
 
-    sendLocalPushNotification('LiQaa - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
+    sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
 
     if (selectedGenderFilter !== 'any') {
       if (userProfile.gems < FILTER_COST) {
