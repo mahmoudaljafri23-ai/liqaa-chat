@@ -385,6 +385,27 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle referral reward claim (+50 gems for referrer)
+  socket.on('claim_referral_reward', (data) => {
+    if (!data || !data.referrerCode) return;
+
+    const referrerCode = data.referrerCode;
+    const newUsername = data.newUsername || 'صديق جديد';
+
+    for (const [sId, uData] of users.entries()) {
+      if (uData.username === referrerCode || uData.phone === referrerCode || sId === referrerCode) {
+        if (typeof uData.gems !== 'number') uData.gems = 50;
+        uData.gems += 50;
+        io.to(sId).emit('referral_reward_received', {
+          bonusGems: 50,
+          friendUsername: newUsername
+        });
+        console.log(`[🎁 Referral Bonus] Granted 50 gems to ${uData.username} for inviting ${newUsername}`);
+        break;
+      }
+    }
+  });
+
   // User requests to find a partner
   socket.on('find_partner', () => {
     const user = users.get(socket.id);

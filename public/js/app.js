@@ -570,36 +570,105 @@ function initPushNotifications() {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
           showGemToast('🔔 تم تفعيل إشعارات لقاء بنجاح!');
+          checkAndClaimReferralReward();
         }
       });
     }, 4000);
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    checkAndClaimReferralReward();
   }
 }
 
-function sendLocalPushNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try {
-      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, {
-            body: body,
-            icon: 'css/logo.png',
-            vibrate: [200, 100, 200]
-          });
-        });
-      } else {
-        new Notification(title, {
-          body: body,
-          icon: 'css/logo.png'
-        });
-      }
-    } catch (e) {
-      console.log('Notification trigger error:', e);
+let pendingReferrerCode = null;
+
+function checkReferralQuery() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get('ref');
+  if (ref) {
+    pendingReferrerCode = ref;
+    localStorage.setItem('liqaa_pending_ref', ref);
+  } else {
+    pendingReferrerCode = localStorage.getItem('liqaa_pending_ref');
+  }
+}
+
+function checkAndClaimReferralReward() {
+  if (!pendingReferrerCode) return;
+  const claimed = localStorage.getItem(`liqaa_claimed_ref_${pendingReferrerCode}`);
+  if (claimed) return;
+
+  const isSetupDone = userProfile && (userProfile.hasCompletedSetup || userProfile.username);
+  const isNotificationGranted = 'Notification' in window && Notification.permission === 'granted';
+
+  if (isSetupDone && isNotificationGranted) {
+    localStorage.setItem(`liqaa_claimed_ref_${pendingReferrerCode}`, 'true');
+    localStorage.removeItem('liqaa_pending_ref');
+
+    if (socket && socket.connected) {
+      socket.emit('claim_referral_reward', {
+        referrerCode: pendingReferrerCode,
+        newUsername: userProfile.username || 'صديق جديد'
+      });
     }
+
+    showGemToast('🎉 شكراً لانضمامك وتفعيل الإشعارات! تم منح صديقك 50 مجوهرة!');
+    pendingReferrerCode = null;
+  }
+}
+
+function setupInviteModal() {
+  const openInviteBtn = $('#open-invite-modal-btn');
+  const inviteModal = $('#invite-modal');
+  const closeInviteBtn = $('#close-invite-modal-btn');
+  const refLinkInput = $('#referral-link-input');
+  const copyBtn = $('#copy-ref-link-btn');
+  const shareWpBtn = $('#share-whatsapp-btn');
+
+  function getMyReferralLink() {
+    const code = userProfile.username || userProfile.phone || 'friend';
+    return `${window.location.origin}/?ref=${encodeURIComponent(code)}`;
+  }
+
+  if (openInviteBtn) {
+    openInviteBtn.onclick = () => {
+      const link = getMyReferralLink();
+      if (refLinkInput) refLinkInput.value = link;
+      if (inviteModal) inviteModal.classList.remove('hidden');
+    };
+  }
+
+  if (closeInviteBtn) {
+    closeInviteBtn.onclick = () => {
+      if (inviteModal) inviteModal.classList.add('hidden');
+    };
+  }
+
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const link = getMyReferralLink();
+      navigator.clipboard.writeText(link).then(() => {
+        showGemToast('📋 تم نسخ رابط الدعوة بنجاح!');
+      }).catch(() => {
+        if (refLinkInput) {
+          refLinkInput.select();
+          document.execCommand('copy');
+          showGemToast('📋 تم نسخ رابط الدعوة بنجاح!');
+        }
+      });
+    };
+  }
+
+  if (shareWpBtn) {
+    shareWpBtn.onclick = () => {
+      const link = getMyReferralLink();
+      const text = `🔥 انضم معي الآن على تطبيق "LiQaa - لقاء" لأفضل دردشة فيديو ومحادثات مباشرة! 🎥✨\nسجل وفعل الإشعارات من الرابط التالي:\n${link}`;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    };
   }
 }
 
 function init() {
+  checkReferralQuery();
   loadUserProfile();
   updateOnlineDisplay();
   initPushNotifications();
@@ -607,6 +676,7 @@ function init() {
   setupWelcomeUI();
   setupSettingsUI();
   setupFriendsSystem();
+  setupInviteModal();
   connectSocket();
   autoDetectCountry();
 }
@@ -1104,6 +1174,16 @@ function connectSocket() {
 
     const names = { awesome: '⭐ رائع', handsome: '✨ وسيم', elegant: '🎩 أنيق' };
     showGemToast(`🎉 حصلت على وسام "${names[data.badgeType] || data.badgeType}" من ${data.fromUsername || 'شريك'}!`);
+  });
+
+  socket.on('referral_reward_received', (data) => {
+    if (!userProfile.isAdmin) {
+      userProfile.gems = (userProfile.gems || 0) + (data.bonusGems || 50);
+      saveUserProfile();
+      updateProfileUI();
+    }
+    showGemToast(`🎁 مبروك! انضم ${data.friendUsername || 'صديقك'} عبر رابطك وفعل الإشعارات! تم إضافة +50 مجوهرة لرصيدك 💎`);
+    sendLocalPushNotification('🎁 هدية دعوة صديق!', `انضم ${data.friendUsername || 'صديقك'} وتم إضافة +50 مجوهرة لرصيدك!`);
   });
 
   // Matched event -> Deduct 10 gems per connected match if gender filter active
