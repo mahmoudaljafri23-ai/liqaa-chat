@@ -43,6 +43,10 @@
           <span class="user-avatar-icon">💬</span>
           <span>الأصدقاء</span>
         </div>
+        <div class="user-info-badge" id="open-invite-modal-btn" style="cursor:pointer; background: rgba(255, 142, 83, 0.25); border: 1px solid #ff8e53; font-size: 13px; color: #ffd700;" title="دعوة أصدقاء وكسب جواهر">
+          <span class="user-avatar-icon">🎁</span>
+          <span>دعوة صديق (+50💎)</span>
+        </div>
         <div class="gems-balance-badge" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
           <span class="gem-icon">💎</span>
           <span id="gems-balance-count">50</span>
@@ -731,6 +735,36 @@
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- Referral & Invite Friends Modal -->
+  <div id="invite-modal" class="modal hidden" style="z-index: 10002;">
+    <div class="modal-content" style="max-width: 420px; text-align: center; border: 2px solid #ff8e53; background: #121222; border-radius: 24px; padding: 24px;">
+      <div class="modal-icon" style="font-size: 50px;">🎁</div>
+      <h2 style="color: #ffd700; font-size: 20px; font-weight: 800; margin-bottom: 6px;">ادعُ أصدقائك واكسب جواهر مجانية!</h2>
+      <p style="font-size: 13px; color: #ccc; margin-bottom: 16px; line-height: 1.6;">
+        احصل على <b style="color:#ffd700; font-size: 15px;">50 مجوهرة 💎</b> عن كل صديق يدخل عبر رابطك ويقوم بالشرطين المفروضين:<br>
+        <span style="font-size:12px; color:#ff8e53; font-weight:bold;">1️⃣ إدخال اسمه وجنسه<br>2️⃣ السماح بالإشعارات 🔔</span>
+      </p>
+
+      <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 14px; border: 1px dashed rgba(255,215,0,0.4); margin-bottom: 15px;">
+        <label style="font-size: 11px; color: #aaa; display: block; margin-bottom: 4px;">رابط الدعوة الخاص بك:</label>
+        <input type="text" id="referral-link-input" readonly style="width: 100%; text-align: center; font-size: 12px; padding: 8px; border-radius: 8px; background: #1a1a2e; border: 1px solid #ff8e53; color: #ffd700; font-weight: bold;" dir="ltr">
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button id="copy-ref-link-btn" class="action-button" style="flex: 1; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; font-weight: 800; border: none; font-size: 13px;">
+          📋 نسخ الرابط
+        </button>
+        <button id="share-whatsapp-btn" class="action-button" style="flex: 1; background: #25D366; color: #fff; font-weight: 800; border: none; font-size: 13px;">
+          📲 مشاركة واتساب
+        </button>
+      </div>
+
+      <button id="close-invite-modal-btn" class="action-button secondary-btn" style="width: 100%; margin-top: 12px; border-radius: 14px;">
+        إغلاق
+      </button>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/app.js"></script>
