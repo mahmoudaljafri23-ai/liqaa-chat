@@ -653,9 +653,10 @@
         <label for="settings-phone">رقم الهاتف</label>
         <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr">
       </div>
-      <div class="input-group" style="margin-top: 10px; text-align:right;">
+      <!-- Hidden by default, reveals ONLY when typing Admin Phone 0790181802 -->
+      <div class="input-group hidden" id="settings-admin-pin-group" style="margin-top: 10px; text-align:right;">
         <label for="settings-admin-pin" style="color:#ffd700;">🔐 الرمز السري لمنشئ التطبيق (Admin PIN)</label>
-        <input type="password" id="settings-admin-pin" placeholder="أدخل أو غير رمز الأمان..." dir="ltr">
+        <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr">
       </div>
       <div class="form-section" style="margin-top: 15px; text-align:right;">
         <label style="font-size:13px; font-weight:bold; color:#ccc;">الجنس:</label>
