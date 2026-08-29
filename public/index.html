@@ -647,50 +647,50 @@
 
   <!-- Account Settings Modal -->
   <div id="settings-modal" class="modal hidden">
-    <div class="modal-content" style="max-width: 400px;">
-      <div class="modal-icon">⚙️</div>
-      <h2>إعدادات الملف الشخصي</h2>
-      <p style="font-size:13px; color:#aaa; margin-bottom:15px;">يمكنك تعديل بياناتك الشخصية في أي وقت</p>
+    <div class="modal-content" style="max-width: 400px; width: 92%; padding: 18px 16px;">
+      <div class="modal-icon" style="font-size:36px; margin-bottom: 2px;">⚙️</div>
+      <h2 style="font-size:18px; margin:0;">إعدادات الملف الشخصي</h2>
+      <p style="font-size:12px; color:#aaa; margin-bottom:10px;">يمكنك تعديل بياناتك الشخصية في أي وقت</p>
 
       <!-- Admin Push Broadcast Section (Moved to TOP for Admin) -->
-      <div id="admin-broadcast-section" class="hidden" style="margin-bottom: 20px; text-align:right; border: 1px dashed rgba(255,215,0,0.5); padding: 14px; border-radius: 14px; background: rgba(255, 215, 0, 0.05);">
-        <label style="color:#ffd700; font-weight:bold; font-size: 13px;">📢 إرسال إشعار عام لكل المستخدمين بالعالم (Push Notification)</label>
-        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:8px; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.5); border:1px solid #ffd700; color:#fff;" dir="rtl">
-        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; border:none;">
+      <div id="admin-broadcast-section" class="hidden" style="width:100%; margin-bottom: 12px; text-align:right; border: 1px dashed rgba(255,215,0,0.5); padding: 10px 12px; border-radius: 12px; background: rgba(255, 215, 0, 0.05);">
+        <label style="color:#ffd700; font-weight:bold; font-size: 12px; display:block;">📢 إرسال إشعار عام لكل المستخدمين بالعالم (Push Notification)</label>
+        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.5); border:1px solid #ffd700; color:#fff; font-size:12px;" dir="rtl">
+        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:8px; padding:8px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; border:none; font-size:13px;">
           🚀 إرسال الإشعار للجميع الآن
         </button>
       </div>
 
-      <div class="input-group" style="text-align:right;">
-        <label for="settings-username">الاسم / اسم المستخدم</label>
-        <input type="text" id="settings-username" placeholder="أدخل اسمك..." dir="auto">
+      <div class="input-group" style="width:100%; text-align:right;">
+        <label for="settings-username" style="font-size:12px;">الاسم / اسم المستخدم</label>
+        <input type="text" id="settings-username" placeholder="أدخل اسمك..." dir="auto" style="padding:8px 12px; font-size:13px;">
       </div>
-      <div class="input-group" style="margin-top: 10px; text-align:right;">
-        <label for="settings-phone">رقم الهاتف</label>
-        <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr">
+      <div class="input-group" style="width:100%; margin-top: 8px; text-align:right;">
+        <label for="settings-phone" style="font-size:12px;">رقم الهاتف</label>
+        <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr" style="padding:8px 12px; font-size:13px;">
       </div>
       <!-- Hidden by default, reveals ONLY when typing Admin Phone 0790181802 -->
-      <div class="input-group hidden" id="settings-admin-pin-group" style="margin-top: 10px; text-align:right;">
-        <label for="settings-admin-pin" style="color:#ffd700;">🔐 الرمز السري لمنشئ التطبيق (Admin PIN)</label>
-        <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr">
+      <div class="input-group hidden" id="settings-admin-pin-group" style="width:100%; margin-top: 8px; text-align:right;">
+        <label for="settings-admin-pin" style="color:#ffd700; font-size:12px;">🔐 الرمز السري لمنشئ التطبيق (Admin PIN)</label>
+        <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr" style="padding:8px 12px; font-size:13px;">
       </div>
-      <div class="form-section" style="margin-top: 15px; text-align:right;">
-        <label style="font-size:13px; font-weight:bold; color:#ccc;">الجنس:</label>
-        <div class="gender-cards" style="margin-top:5px;">
-          <div class="gender-card" data-settings-gender="male" id="settings-gender-male">
-            <div class="gender-icon">👨</div>
-            <span>ذكر</span>
+      <div class="form-section" style="width:100%; margin-top: 10px; text-align:right;">
+        <label style="font-size:12px; font-weight:bold; color:#ccc;">الجنس:</label>
+        <div class="gender-cards" style="margin-top:4px;">
+          <div class="gender-card" data-settings-gender="male" id="settings-gender-male" style="padding:8px;">
+            <div class="gender-icon" style="font-size:24px;">👨</div>
+            <span style="font-size:12px;">ذكر</span>
           </div>
-          <div class="gender-card" data-settings-gender="female" id="settings-gender-female">
-            <div class="gender-icon">👩</div>
-            <span>أنثى</span>
+          <div class="gender-card" data-settings-gender="female" id="settings-gender-female" style="padding:8px;">
+            <div class="gender-icon" style="font-size:24px;">👩</div>
+            <span style="font-size:12px;">أنثى</span>
           </div>
         </div>
       </div>
 
-      <div class="permission-buttons" style="margin-top: 20px;">
-        <button id="save-settings-btn" class="action-button" style="width:100%;">💾 حفظ التغيرات</button>
-        <button id="close-settings-btn" class="action-button secondary-btn" style="width:100%; margin-top:8px;">إلغاء</button>
+      <div class="permission-buttons" style="display:flex; gap:8px; width:100%; margin-top: 14px;">
+        <button id="save-settings-btn" class="action-button" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:800;">💾 حفظ التغيرات</button>
+        <button id="close-settings-btn" class="action-button secondary-btn" style="flex:1; margin:0; padding:10px; font-size:13px;">إلغاء</button>
       </div>
     </div>
   </div>
