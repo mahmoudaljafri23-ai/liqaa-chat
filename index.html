@@ -652,6 +652,15 @@
       <h2>إعدادات الملف الشخصي</h2>
       <p style="font-size:13px; color:#aaa; margin-bottom:15px;">يمكنك تعديل بياناتك الشخصية في أي وقت</p>
 
+      <!-- Admin Push Broadcast Section (Moved to TOP for Admin) -->
+      <div id="admin-broadcast-section" class="hidden" style="margin-bottom: 20px; text-align:right; border: 1px dashed rgba(255,215,0,0.5); padding: 14px; border-radius: 14px; background: rgba(255, 215, 0, 0.05);">
+        <label style="color:#ffd700; font-weight:bold; font-size: 13px;">📢 إرسال إشعار عام لكل المستخدمين بالعالم (Push Notification)</label>
+        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:8px; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.5); border:1px solid #ffd700; color:#fff;" dir="rtl">
+        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; border:none;">
+          🚀 إرسال الإشعار للجميع الآن
+        </button>
+      </div>
+
       <div class="input-group" style="text-align:right;">
         <label for="settings-username">الاسم / اسم المستخدم</label>
         <input type="text" id="settings-username" placeholder="أدخل اسمك..." dir="auto">
@@ -682,15 +691,6 @@
       <div class="permission-buttons" style="margin-top: 20px;">
         <button id="save-settings-btn" class="action-button" style="width:100%;">💾 حفظ التغيرات</button>
         <button id="close-settings-btn" class="action-button secondary-btn" style="width:100%; margin-top:8px;">إلغاء</button>
-      </div>
-
-      <!-- Admin Push Broadcast Section -->
-      <div id="admin-broadcast-section" class="hidden" style="margin-top: 15px; text-align:right; border-top: 1px dashed rgba(255,215,0,0.3); padding-top: 15px;">
-        <label style="color:#ffd700; font-weight:bold; font-size: 13px;">📢 إرسال إشعار عام لكل المستخدمين بالعالم (Push Notification)</label>
-        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:6px; padding:10px; border-radius:10px; background:rgba(0,0,0,0.4); border:1px solid #ffd700; color:#fff;" dir="rtl">
-        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:8px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:bold;">
-          🚀 إرسال الإشعار للجميع الآن
-        </button>
       </div>
     </div>
   </div>
