@@ -904,11 +904,24 @@ function renderPrivateMessages(friendId) {
   container.scrollTop = container.scrollHeight;
 }
 
-// =============================================
-// Settings Modal Logic
-// =============================================
 function setupSettingsUI() {
   const settingsAdminPin = $('#settings-admin-pin');
+  const adminPinGroup = $('#settings-admin-pin-group');
+
+  function updateAdminPinVisibility() {
+    const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
+    if (adminPinGroup) {
+      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
+        adminPinGroup.classList.remove('hidden');
+      } else {
+        adminPinGroup.classList.add('hidden');
+      }
+    }
+  }
+
+  if (settingsPhone) {
+    settingsPhone.addEventListener('input', updateAdminPinVisibility);
+  }
 
   if (openSettingsModalBtn) {
     openSettingsModalBtn.addEventListener('click', () => {
@@ -918,6 +931,8 @@ function setupSettingsUI() {
       if (settingsPhone) settingsPhone.value = userProfile.phone || '';
       if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
       
+      updateAdminPinVisibility();
+
       let tempGender = userProfile.gender || 'male';
       if (settingsGenderMale && settingsGenderFemale) {
         settingsGenderMale.classList.toggle('selected', tempGender === 'male');
