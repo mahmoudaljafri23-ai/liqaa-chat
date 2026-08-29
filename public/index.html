@@ -55,25 +55,32 @@
   <div id="welcome-screen" class="screen active">
     <div class="welcome-bg"></div>
     <div class="welcome-content">
-      <!-- User Header Bar -->
+      <!-- User Header Bar (WhatsApp Style Unified Navigation Bar) -->
       <div id="user-header-bar" class="user-header-bar">
-        <div class="user-info-badge" id="open-settings-modal-btn" style="cursor:pointer;" title="تعديل إعدادات الحساب">
-          <span class="user-avatar-icon">👤</span>
-          <span id="user-display-name">مستخدم جديد</span>
-          <span style="font-size:12px; margin-right:4px;">⚙️</span>
+        <!-- Profile Pill -->
+        <div class="header-nav-pill profile-pill" id="open-settings-modal-btn" title="تعديل إعدادات الحساب">
+          <span class="pill-icon">👤</span>
+          <span id="user-display-name" class="pill-text">مستخدم جديد</span>
+          <span style="font-size:10px; opacity:0.7;">⚙️</span>
         </div>
-        <div class="user-info-badge" id="open-friends-modal-btn" style="cursor:pointer; background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; font-size: 13px;" title="قائمة الأصدقاء والدردشة الخاصة">
-          <span class="user-avatar-icon">💬</span>
-          <span>الأصدقاء</span>
+
+        <!-- Friends Pill -->
+        <div class="header-nav-pill friends-pill" id="open-friends-modal-btn" title="قائمة الأصدقاء والدردشة الخاصة">
+          <span class="pill-icon">💬</span>
+          <span class="pill-text">الأصدقاء</span>
         </div>
-        <div class="user-info-badge" id="open-invite-modal-btn" style="cursor:pointer; background: rgba(255, 142, 83, 0.25); border: 1px solid #ff8e53; font-size: 13px; color: #ffd700;" title="دعوة أصدقاء وكسب جواهر">
-          <span class="user-avatar-icon">🎁</span>
-          <span>دعوة صديق (+50💎)</span>
+
+        <!-- Invite Pill -->
+        <div class="header-nav-pill invite-pill" id="open-invite-modal-btn" title="دعوة أصدقاء وكسب جواهر">
+          <span class="pill-icon">🎁</span>
+          <span class="pill-text">دعوة (+50💎)</span>
         </div>
-        <div class="gems-balance-badge" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
-          <span class="gem-icon">💎</span>
-          <span id="gems-balance-count">50</span>
-          <button class="add-gems-btn" onclick="document.getElementById('recharge-modal').classList.remove('hidden'); event.stopPropagation();">+</button>
+
+        <!-- Gems Balance Pill -->
+        <div class="header-nav-pill gems-pill" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
+          <span class="pill-icon">💎</span>
+          <span id="gems-balance-count" class="pill-text">50</span>
+          <button class="pill-add-btn" onclick="document.getElementById('recharge-modal').classList.remove('hidden'); event.stopPropagation();">+</button>
         </div>
       </div>
 

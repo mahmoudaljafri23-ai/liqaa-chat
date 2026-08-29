@@ -95,44 +95,117 @@ body {
   gap: 32px;
 }
 
-/* User Header Bar */
+/* WhatsApp Style Unified Top Navigation Bar */
 .user-header-bar {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-}
-
-.user-info-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-card);
-  padding: 8px 14px;
-  border-radius: 50px;
-  border: 1px solid var(--border);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.gems-balance-badge {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.15));
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  padding: 6px 14px;
+  margin-bottom: 14px;
+  padding: 5px;
+  background: rgba(18, 18, 32, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 50px;
-  cursor: pointer;
-  transition: var(--transition);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.header-nav-pill {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: 50px;
+  font-size: 12px;
   font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  user-select: none;
+}
+
+.header-nav-pill:hover, .header-nav-pill:active {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.15);
+}
+
+.header-nav-pill.profile-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.header-nav-pill.friends-pill {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.header-nav-pill.invite-pill {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.45);
   color: #ffd700;
 }
 
-.gems-balance-badge:hover {
-  transform: scale(1.05);
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 140, 0, 0.25));
+.header-nav-pill.gems-pill {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 142, 83, 0.2));
+  border-color: rgba(255, 215, 0, 0.45);
+  color: #ffd700;
+}
+
+.pill-icon {
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pill-text {
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill-add-btn {
+  width: 18px;
+  height: 18px;
+  background: #ffd700;
+  color: #000;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+  border: none;
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .user-header-bar {
+    gap: 4px;
+    padding: 3px;
+  }
+  .header-nav-pill {
+    padding: 0 5px;
+    height: 36px;
+    gap: 3px;
+  }
+  .pill-text {
+    font-size: 11px;
+  }
+  .pill-icon {
+    font-size: 12px;
+  }
 }
 
 .add-gems-btn {
