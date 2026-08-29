@@ -1505,6 +1505,11 @@ function setupControls() {
   cameraBtn.addEventListener('click', toggleCamera);
   endBtn.addEventListener('click', endCall);
 
+  const flipCamBtn = $('#flip-cam-btn');
+  if (flipCamBtn) {
+    flipCamBtn.addEventListener('click', switchCamera);
+  }
+
   if (findNewBtn) {
     findNewBtn.addEventListener('click', () => {
       partnerLeftOverlay.classList.add('hidden');
