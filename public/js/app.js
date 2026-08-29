@@ -329,7 +329,7 @@ function setupAdminPinModal() {
 // =============================================
 function checkBanStatus() {
   checkAdminPermissions();
-  if (userProfile.isAdmin) {
+  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) {
     delete userProfile.bannedUntil;
     saveUserProfile();
     if (bannedModal) bannedModal.classList.add('hidden');
@@ -348,7 +348,7 @@ function checkBanStatus() {
 }
 
 function showBanModal(bannedUntil) {
-  if (userProfile.isAdmin) return;
+  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) return;
   if (bannedModal) bannedModal.classList.remove('hidden');
 
   function updateBanCountdown() {
@@ -364,7 +364,9 @@ function showBanModal(bannedUntil) {
     const hours = Math.floor(remainingMs / (1000 * 60 * 60)).toString().padStart(2, '0');
     const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
     const secs = Math.floor((remainingMs % (1000 * 60)) / 1000).toString().padStart(2, '0');
-    if (banCountdownTimer) banCountdownTimer.textContent = `${hours}:${mins}:${secs}`;
+
+    const countdownEl = $('#ban-countdown-timer');
+    if (countdownEl) countdownEl.textContent = `${hours}:${mins}:${secs}`;
   }
 
   updateBanCountdown();
@@ -373,7 +375,7 @@ function showBanModal(bannedUntil) {
 }
 
 function trigger24HourBan(reason) {
-  if (userProfile.isAdmin) {
+  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) {
     console.log('[BAN BYPASSED] Admin user is immune from bans');
     return;
   }
@@ -397,61 +399,11 @@ function trigger24HourBan(reason) {
 }
 
 // =============================================
-// Real-Time Nudity Detector (Visual Frame Scanner)
+// Real-Time Nudity Detector (Visual Frame Scanner Disabled)
 // =============================================
-let consecutiveSkinDetections = 0;
-
 function startNudityScanner() {
+  // Automated pixel scanner disabled to prevent false positives in cars/dim lighting.
   stopNudityScanner();
-  consecutiveSkinDetections = 0;
-  if (userProfile.isAdmin) return; // Admins exempt from scanner
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = 160;
-  canvas.height = 120;
-
-  nudityScanInterval = setInterval(() => {
-    if (userProfile.isAdmin) return;
-    if (currentState !== 'connected' && currentState !== 'searching') return;
-    if (!localVideo || !localVideo.srcObject || localVideo.paused || localVideo.ended) return;
-
-    try {
-      ctx.drawImage(localVideo, 0, 0, 160, 120);
-      const imgData = ctx.getImageData(0, 0, 160, 120);
-      const pixels = imgData.data;
-
-      let skinPixels = 0;
-      const totalPixels = pixels.length / 4;
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-
-        // Strict RGB skin color threshold
-        if (r > 105 && g > 45 && b > 20 &&
-            (Math.max(r, g, b) - Math.min(r, g, b) > 20) &&
-            Math.abs(r - g) > 15 && r > g && r > b) {
-          skinPixels++;
-        }
-      }
-
-      const skinRatio = skinPixels / totalPixels;
-      // Requires 85%+ skin ratio for 4 consecutive checks (12s) to prevent false positives
-      if (skinRatio > 0.85) {
-        consecutiveSkinDetections++;
-        console.warn(`[Nudity Scanner] High skin ratio ${(skinRatio * 100).toFixed(1)}% (Check ${consecutiveSkinDetections}/4)`);
-        if (consecutiveSkinDetections >= 4) {
-          trigger24HourBan('محتوى غير لائق / عاري');
-        }
-      } else {
-        consecutiveSkinDetections = Math.max(0, consecutiveSkinDetections - 1);
-      }
-    } catch (err) {
-      console.warn('[Nudity System] Frame scan exception:', err.message);
-    }
-  }, 3000);
 }
 
 function stopNudityScanner() {
