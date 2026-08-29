@@ -549,17 +549,21 @@ io.on('connection', (socket) => {
 
       socket.emit('matched', {
         partnerId: matchId,
+        partnerUsername: matchUser.username || 'مستخدم',
         partnerGender: matchUser.gender,
-        partnerCountry: matchUser.country,
+        partnerCountry: matchUser.myCountry || matchUser.country,
         partnerCountryName: matchUser.countryName,
+        partnerBadges: matchUser.badges || { awesome: 0, handsome: 0, elegant: 0 },
         isInitiator: true
       });
 
       io.to(matchId).emit('matched', {
         partnerId: socket.id,
+        partnerUsername: user.username || 'مستخدم',
         partnerGender: user.gender,
-        partnerCountry: user.country,
+        partnerCountry: user.myCountry || user.country,
         partnerCountryName: user.countryName,
+        partnerBadges: user.badges || { awesome: 0, handsome: 0, elegant: 0 },
         isInitiator: false
       });
 

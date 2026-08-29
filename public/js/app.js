@@ -838,7 +838,7 @@ function setupFriendsSystem() {
 
   if (openFriendsBtn) {
     openFriendsBtn.onclick = () => {
-      renderFriendsList();
+      renderFriendsAndOnlineUsers();
       if (friendsModal) friendsModal.classList.remove('hidden');
     };
   }
@@ -862,10 +862,12 @@ function setupFriendsSystem() {
         return;
       }
 
+      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
       const newFriend = {
         id: currentPartner.id,
         socketId: currentPartner.socketId,
-        name: currentPartner.username || `مستخدم ${countryCodeToFlag(currentPartner.country)}`,
+        name: friendName,
+        username: friendName,
         gender: currentPartner.gender,
         country: currentPartner.country,
         countryName: currentPartner.countryName,
@@ -874,7 +876,8 @@ function setupFriendsSystem() {
 
       friendsList.unshift(newFriend);
       saveFriendsList();
-      showGemToast('➕ تم إضافة الشريك إلى قائمة أصدقائك!');
+      renderFriendsAndOnlineUsers();
+      showGemToast(`➕ تم إضافة ${friendName} إلى قائمة أصدقائك!`);
     };
   }
 
