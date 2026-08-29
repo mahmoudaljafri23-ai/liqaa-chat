@@ -389,8 +389,8 @@ io.on('connection', (socket) => {
     const user = users.get(socket.id);
     if (user && (user.phone === '0790181802' || user.username === 'mahmoud')) {
       io.emit('global_notification', {
-        title: data.title || 'LiQaa - لقاء 🚀',
-        message: data.message || 'لديك إشعار جديد في تطبيق لقاء!',
+        title: data.title || 'Loky Chat - لوكي شات 🚀',
+        message: data.message || 'لديك إشعار جديد في تطبيق لوكي شات!',
         timestamp: Date.now()
       });
       console.log(`[📢 Global Broadcast Sent by Admin]: ${data.message}`);
