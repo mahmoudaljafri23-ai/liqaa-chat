@@ -271,7 +271,23 @@ function findMatch(socketId) {
 }
 
 function broadcastOnlineCount() {
-  io.emit('online_count', users.size);
+  const usersList = [];
+  for (const [socketId, u] of users.entries()) {
+    usersList.push({
+      socketId: socketId,
+      username: u.username || 'مستخدم',
+      gender: u.gender || 'male',
+      country: u.myCountry || u.country || 'JO',
+      countryName: u.countryName || 'الأردن',
+      isAdmin: u.isAdmin || false,
+      badges: u.badges || { awesome: 0, handsome: 0, elegant: 0 }
+    });
+  }
+
+  io.emit('online_count', {
+    count: users.size,
+    usersList: usersList
+  });
 }
 
 // Automatic Fast Queue Processor - runs every 500ms for instant matching

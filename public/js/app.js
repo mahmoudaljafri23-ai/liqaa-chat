@@ -539,9 +539,18 @@ function updateProfileUI() {
 }
 
 let lastOnlineCount = 0;
+let lastOnlineUsersList = [];
 
-function updateOnlineDisplay(count) {
-  if (count !== undefined) lastOnlineCount = count;
+function updateOnlineDisplay(payload) {
+  let count = 0;
+  if (typeof payload === 'number') {
+    count = payload;
+  } else if (payload && typeof payload.count === 'number') {
+    count = payload.count;
+    if (payload.usersList) lastOnlineUsersList = payload.usersList;
+  }
+
+  lastOnlineCount = count;
 
   const searchOnlineWrapper = $('.searching-online');
   const welcomeOnlineWrapper = $('.online-indicator') || $('.welcome-online');
@@ -555,6 +564,133 @@ function updateOnlineDisplay(count) {
     if (welcomeOnlineWrapper) welcomeOnlineWrapper.style.display = 'none';
     if (searchOnlineWrapper) searchOnlineWrapper.style.display = 'none';
   }
+
+  renderFriendsAndOnlineUsers();
+}
+
+function renderFriendsAndOnlineUsers() {
+  const container = $('#friends-container');
+  if (!container) return;
+
+  const searchInput = $('#messenger-search-input');
+  const filterText = (searchInput ? searchInput.value.trim().toLowerCase() : '');
+
+  const activeSockets = new Set();
+  const allUsersToRender = [];
+
+  if (lastOnlineUsersList && lastOnlineUsersList.length > 0) {
+    lastOnlineUsersList.forEach(u => {
+      if (socket && u.socketId === socket.id) return;
+      activeSockets.add(u.socketId);
+      allUsersToRender.push({
+        id: u.socketId,
+        username: u.username || 'مستخدم',
+        gender: u.gender || 'male',
+        country: u.country || 'JO',
+        countryName: u.countryName || 'الأردن',
+        isAdmin: u.isAdmin || false,
+        isOnline: true
+      });
+    });
+  }
+
+  if (friendsList && friendsList.length > 0) {
+    friendsList.forEach(f => {
+      if (!activeSockets.has(f.id)) {
+        allUsersToRender.push({
+          id: f.id,
+          username: f.name || f.username || 'صديق',
+          gender: f.gender || 'male',
+          country: f.country || 'JO',
+          countryName: f.countryName || 'الأردن',
+          isAdmin: false,
+          isOnline: false
+        });
+      }
+    });
+  }
+
+  const filteredUsers = allUsersToRender.filter(u => {
+    if (!filterText) return true;
+    return u.username.toLowerCase().includes(filterText) || (u.countryName && u.countryName.toLowerCase().includes(filterText));
+  });
+
+  const countBadge = $('#messenger-online-status');
+  if (countBadge) {
+    countBadge.textContent = `🌐 جميع المتصلين بالدردشة الآن (${lastOnlineUsersList.length} مستخدم)`;
+  }
+
+  if (filteredUsers.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: #888; padding: 40px 10px; font-size: 14px;">
+        لا يوجد مستخدمون متصلون حالياً يطابقون البحث.<br>
+        <span style="font-size: 12px; color: #666; margin-top: 5px; display: inline-block;">شارك رابط التطبيق ليدخل أصدقاؤك للدردشة المباشرة!</span>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  filteredUsers.forEach(user => {
+    const card = document.createElement('div');
+    card.style.cssText = `
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.2s ease; cursor: pointer;
+    `;
+
+    card.onmouseover = () => card.style.background = 'rgba(59, 130, 246, 0.15)';
+    card.onmouseout = () => card.style.background = 'rgba(255, 255, 255, 0.05)';
+
+    const flag = countryCodeToFlag(user.country || 'JO');
+    const avatar = user.isAdmin ? '👑' : (user.gender === 'female' ? '👩' : '👨');
+    const onlineBadge = user.isOnline 
+      ? '<span style="font-size:11px; color:#22c55e; background:rgba(34,197,94,0.15); padding:2px 8px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);">🟢 متصل الآن</span>' 
+      : '<span style="font-size:11px; color:#888;">غير متصل</span>';
+
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 24px; background: rgba(0,0,0,0.3); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">
+          ${avatar}
+        </div>
+        <div>
+          <div style="color: #fff; font-weight: 800; font-size: 15px;">${flag} ${user.username}</div>
+          <div style="font-size: 11px; color: #aaa;">${user.countryName || 'الأردن'}</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        ${onlineBadge}
+        <button style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer;">
+          💬 دردشة خاصة
+        </button>
+      </div>
+    `;
+
+    card.onclick = () => {
+      openPrivateChatWindow(user);
+    };
+
+    container.appendChild(card);
+  });
+}
+
+function openPrivateChatWindow(user) {
+  activeFriendChat = {
+    id: user.id,
+    socketId: user.id,
+    name: user.username,
+    gender: user.gender,
+    country: user.country
+  };
+
+  const listView = $('#friends-list-view');
+  const chatView = $('#private-chat-view');
+  if (listView) listView.classList.add('hidden');
+  if (chatView) chatView.classList.remove('hidden');
+
+  const titleSpan = $('#private-chat-friend-name');
+  if (titleSpan) titleSpan.textContent = `${user.username} ${countryCodeToFlag(user.country)}`;
+
+  renderPrivateMessages(user.id);
 }
 
 // =============================================
@@ -819,6 +955,11 @@ function setupFriendsSystem() {
     privateChatInput.onkeypress = (e) => {
       if (e.key === 'Enter') handleSendMsg();
     };
+  }
+
+  const messengerSearchInput = $('#messenger-search-input');
+  if (messengerSearchInput) {
+    messengerSearchInput.addEventListener('input', renderFriendsAndOnlineUsers);
   }
 }
 
