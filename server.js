@@ -70,12 +70,24 @@ app.get('/robots.txt', (req, res) => {
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://liqaa-chat.onrender.com/</loc>
-    <lastmod>2026-08-28</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="hi" href="https://liqaa-chat.onrender.com/"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://liqaa-chat.onrender.com/"/>
   </url>
 </urlset>`);
 });
