@@ -98,30 +98,34 @@ body {
 /* WhatsApp Style Unified Top Navigation Bar */
 .user-header-bar {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 14px;
-  padding: 5px;
-  background: rgba(18, 18, 32, 0.7);
+  padding: 4px;
+  background: rgba(18, 18, 32, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 50px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
 .header-nav-pill {
-  flex: 1;
-  height: 40px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 0 10px;
+  gap: 3px;
+  padding: 0 6px;
   border-radius: 50px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -130,6 +134,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   user-select: none;
+  overflow: hidden;
 }
 
 .header-nav-pill:hover, .header-nav-pill:active {
@@ -161,26 +166,28 @@ body {
 }
 
 .pill-icon {
-  font-size: 14px;
+  font-size: 13px;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .pill-text {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .pill-add-btn {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   background: #ffd700;
   color: #000;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -188,23 +195,24 @@ body {
   margin-right: 2px;
   border: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .user-header-bar {
-    gap: 4px;
+    gap: 3px;
     padding: 3px;
   }
   .header-nav-pill {
-    padding: 0 5px;
+    padding: 0 4px;
     height: 36px;
-    gap: 3px;
+    gap: 2px;
   }
   .pill-text {
-    font-size: 11px;
+    font-size: 10px;
   }
   .pill-icon {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 
