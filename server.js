@@ -176,18 +176,81 @@ app.get('/api/paypal-config', (req, res) => {
   });
 });
 
-app.post('/api/create-paypal-payment', (req, res) => {
+async function getPayPalAccessToken() {
+  try {
+    const auth = Buffer.from(`${MERCHANT_CONFIG.PAYPAL_CLIENT_ID}:${MERCHANT_CONFIG.PAYPAL_SECRET}`).toString('base64');
+    const response = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      body: 'grant_type=client_credentials',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+    const data = await response.json();
+    return data.access_token;
+  } catch (e) {
+    console.error('[PayPal Token Error]', e);
+    return null;
+  }
+}
+
+app.post('/api/create-paypal-payment', async (req, res) => {
   const { amount, gems } = req.body;
   console.log(`[🅿️ PayPal Payment Request] Amount: $${amount} | Gems: ${gems} | To: ${MERCHANT_CONFIG.PAYPAL_EMAIL}`);
 
   const host = req.get('host');
   const protocol = req.protocol;
+  const fallbackUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(MERCHANT_CONFIG.PAYPAL_EMAIL)}&item_name=${encodeURIComponent(`LiQaa Chat - ${gems} Gems`)}&amount=${encodeURIComponent(amount)}&currency_code=USD&solution_type=sole&landing_page=billing&no_shipping=1&no_note=1&return=${encodeURIComponent(`${protocol}://${host}/api/paypal-callback?gems=${gems}`)}&cancel_return=${encodeURIComponent(`${protocol}://${host}/`)}`;
 
-  const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(MERCHANT_CONFIG.PAYPAL_EMAIL)}&item_name=${encodeURIComponent(`LiQaa Chat - ${gems} Gems`)}&amount=${encodeURIComponent(amount)}&currency_code=USD&solution_type=sole&landing_page=billing&no_shipping=1&no_note=1&return=${encodeURIComponent(`${protocol}://${host}/api/paypal-callback?gems=${gems}`)}&cancel_return=${encodeURIComponent(`${protocol}://${host}/`)}`;
+  try {
+    const token = await getPayPalAccessToken();
+    if (token) {
+      const orderRes = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          intent: 'CAPTURE',
+          purchase_units: [{
+            description: `Loky Chat - ${gems} Gems`,
+            amount: {
+              currency_code: 'USD',
+              value: String(amount)
+            }
+          }],
+          payment_source: {
+            paypal: {
+              experience_context: {
+                payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
+                landing_page: 'GUEST_CHECKOUT',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW',
+                return_url: `${protocol}://${host}/api/paypal-callback?gems=${gems}`,
+                cancel_url: `${protocol}://${host}/`
+              }
+            }
+          }
+        })
+      });
+      const orderData = await orderRes.json();
+      if (orderData && orderData.links) {
+        const approveLink = orderData.links.find(link => link.rel === 'payer-action' || link.rel === 'approve');
+        if (approveLink && approveLink.href) {
+          console.log('[PayPal REST v2 Guest Order Created]', approveLink.href);
+          return res.json({ success: true, paypalUrl: approveLink.href });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[PayPal v2 API Error]', err);
+  }
 
   res.json({
     success: true,
-    paypalUrl: paypalUrl
+    paypalUrl: fallbackUrl
   });
 });
 
