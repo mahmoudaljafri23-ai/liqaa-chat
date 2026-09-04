@@ -622,37 +622,26 @@
     </div>
   </div>
 
-  <!-- Real Checkout Payment Modal (Visa / Mastercard Guest + Zain Cash Options) -->
+  <!-- Real Checkout Payment Modal (Visa / Mastercard / PayPal Direct Checkout) -->
   <div id="checkout-modal" class="modal hidden" style="z-index: 10002; backdrop-filter: blur(12px);">
-    <div class="modal-content checkout-modal-content" style="max-width: 440px; width: 92%; text-align: center; border: 1px solid #ffd700; background: #121324; padding: 20px 16px;">
-      <div class="modal-icon" style="font-size: 38px; margin-bottom:4px;">💳</div>
-      <h2 style="font-size: 19px; margin-bottom: 4px;">إتمام عملية الدفع والشحن</h2>
-      <p style="margin-bottom: 12px; color: #ccc; font-size: 13px;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">3,000 جوهرة (4.99$)</strong></p>
+    <div class="modal-content checkout-modal-content" style="max-width: 420px; width: 92%; text-align: center; border: 1px solid #ffd700; background: #121324; padding: 22px 18px;">
+      <div class="modal-icon" style="font-size: 40px; margin-bottom:4px;">💳</div>
+      <h2 style="font-size: 20px; margin-bottom: 4px;">إتمام عملية الدفع والشحن</h2>
+      <p style="margin-bottom: 16px; color: #ccc; font-size: 14px;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">3,000 جوهرة (4.99$)</strong></p>
 
-      <!-- Option 1: Direct Visa / Mastercard Guest Checkout -->
-      <div style="width:100%; margin-bottom: 12px; text-align:right; background:rgba(255,255,255,0.04); padding:12px; border-radius:14px; border:1px solid rgba(59,130,246,0.4);">
-        <label style="font-size:12px; color:#60a5fa; font-weight:bold; display:block; margin-bottom:6px;">💳 1. الدفع بالفيزا / ماستركارد (بدون حساب بايبال):</label>
-        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; border-radius: 10px; cursor: pointer; margin:0;">
-          💳 ادفع بالفيزا / ماستركارد بدون حساب (Guest Checkout)
+      <!-- Direct Visa / Mastercard / PayPal Payment Button -->
+      <div style="width:100%; margin-bottom: 16px;">
+        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800; background: linear-gradient(135deg, #0070ba, #003087); color: #fff; border: 1px solid #60a5fa; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 112, 186, 0.4); margin:0;">
+          💳 الدفع الآمن (Visa / Mastercard / PayPal)
         </button>
       </div>
 
-      <!-- Option 2: Zain Cash / Orange Money / CLIQ Local Jordan Payment -->
-      <div style="width:100%; text-align:right; background:rgba(255,215,0,0.05); padding:12px; border-radius:14px; border:1px dashed rgba(255,215,0,0.4); margin-bottom:12px;">
-        <label style="font-size:12px; color:#ffd700; font-weight:bold; display:block; margin-bottom:4px;">📱 2. الدفع المحلي (زين كاش / أورنج ماني / كليك CLIQ):</label>
-        <p style="font-size:11px; color:#aaa; margin-bottom:6px;">حول المبلغ على الرقم التالي وستصلك الجواهر فوراً:</p>
-        <div style="background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:bold; color:#fff; font-size:13px;" dir="ltr">0790181802</span>
-          <span style="font-size:11px; color:#ffd700;">زين كاش / CLIQ</span>
-        </div>
+      <div style="text-align:center; margin-top:8px;">
+        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:26px;" />
+        <p style="font-size:11px; color:#aaa; margin-top:4px;">ادفع ببطاقة الفيزا أو الماستركارد كـ مستخدم زائر بدون حساب بايبال 🔒</p>
       </div>
 
-      <div style="text-align:center; margin-top:6px;">
-        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:22px;" />
-        <p style="font-size:11px; color:#888; margin-top:3px;">طرق دفع سهلة ومتاحة للجميع 100% 🔒</p>
-      </div>
-
-      <div class="permission-buttons" style="margin-top: 12px; width: 100%;">
+      <div class="permission-buttons" style="margin-top: 16px; width: 100%;">
         <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%; margin:0; padding:10px; font-size:13px;">إلغاء العملية والعودة للمتجر</button>
       </div>
     </div>
