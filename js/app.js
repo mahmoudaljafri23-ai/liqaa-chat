@@ -1324,10 +1324,49 @@ function setupSettingsUI() {
       const adminBroadcastSection = $('#admin-broadcast-section');
       if (adminBroadcastSection) {
         adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
+        if (userProfile.isAdmin) {
+          fetchAdminRechargeStats();
+        }
       }
 
       if (settingsModal) settingsModal.classList.remove('hidden');
     });
+  }
+
+  async function fetchAdminRechargeStats() {
+    if (!userProfile || !userProfile.isAdmin) return;
+    try {
+      const res = await fetch('/api/admin/recharge-stats');
+      const data = await res.json();
+      if (data && data.success) {
+        const revEl = $('#admin-total-revenue');
+        const gemsEl = $('#admin-total-gems-sold');
+        const listEl = $('#admin-purchases-list');
+
+        if (revEl) revEl.textContent = `${data.totalRevenue} $`;
+        if (gemsEl) gemsEl.textContent = Number(data.totalGemsSold).toLocaleString();
+
+        if (listEl) {
+          if (!data.purchases || data.purchases.length === 0) {
+            listEl.innerHTML = 'لا توجد عمليات شحن مسجلة بعد';
+          } else {
+            listEl.innerHTML = data.purchases.map(p => `
+              <div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+                <span>👤 ${p.username} (${p.gems} 💎)</span>
+                <span style="color: #4ade80; font-weight: bold;">${p.price}$ <small style="color: #aaa; font-weight: normal;">[${p.date}]</small></span>
+              </div>
+            `).join('');
+          }
+        }
+      }
+    } catch(err) {
+      console.error('[Admin Stats Fetch Error]', err);
+    }
+  }
+
+  const refreshStatsBtn = $('#refresh-admin-stats-btn');
+  if (refreshStatsBtn) {
+    refreshStatsBtn.onclick = fetchAdminRechargeStats;
   }
 
   const broadcastBtn = $('#admin-send-broadcast-btn');
