@@ -235,6 +235,11 @@ app.get('/api/paypal-callback', (req, res) => {
   `);
 });
 
+app.post('/api/paypal-ipn', (req, res) => {
+  console.log('[🅿️ PayPal IPN Notification Received]', req.body);
+  res.status(200).send('OK');
+});
+
 // =============================================
 // State Management
 // =============================================
