@@ -623,24 +623,29 @@
   </div>
 
   <!-- Real Checkout Payment Modal -->
-  <div id="checkout-modal" class="modal hidden">
-    <div class="modal-content checkout-modal-content" style="max-width: 420px; text-align: center;">
-      <div class="modal-icon">💳</div>
-      <h2>إتمام عملية الدفع الآمن</h2>
-      <p style="margin-bottom: 15px; color: #ccc;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">1,000 جوهرة (2.49$)</strong></p>
+  <div id="checkout-modal" class="modal hidden" style="z-index: 10002; backdrop-filter: blur(12px);">
+    <div class="modal-content checkout-modal-content" style="max-width: 420px; width: 92%; text-align: center; border: 1px solid #ffd700; background: #121324;">
+      <div class="modal-icon" style="font-size: 42px;">💳</div>
+      <h2 style="font-size: 20px; margin-bottom: 5px;">إتمام عملية الدفع الآمن</h2>
+      <p style="margin-bottom: 15px; color: #ccc; font-size: 14px;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">3,000 جوهرة (4.99$)</strong></p>
 
-      <!-- PayPal Hosted Buttons Container (Renders Visa/Mastercard & PayPal buttons directly) -->
-      <div id="paypal-hosted-button-container" dir="ltr" style="width: 100%; max-width: 300px; margin: 15px auto; min-height: 80px; text-align: center;">
-        <div style="color:#888; font-size:14px; padding:15px;">جاري تحميل وسيلة الدفع الآمنة...</div>
+      <div style="width:100%; margin: 10px 0;">
+        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800; background: linear-gradient(135deg, #0070ba, #003087); color: #fff; border: 1px solid #60a5fa; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 112, 186, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>💳 الدفع الفوري (Visa / Mastercard / PayPal)</span>
+        </button>
+      </div>
+
+      <!-- Container for dynamic payment links or buttons -->
+      <div id="paypal-hosted-button-container" dir="ltr" style="width: 100%; margin: 5px auto; min-height: 30px; text-align: center;">
       </div>
 
       <div style="text-align:center; margin-top:10px;">
-        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:24px;" />
-        <p style="font-size:11px; color:#888; margin-top:5px;">ادفع ببطاقة Visa أو Mastercard أو حساب PayPal مباشرة بدون مغادرة الموقع</p>
+        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:26px;" />
+        <p style="font-size:11px; color:#aaa; margin-top:5px;">ادفع ببطاقة الفيزا أو الماستركارد أو Apple Pay أو PayPal بأمان تام</p>
       </div>
 
-      <div class="permission-buttons" style="margin-top: 20px;">
-        <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%;">إلغاء العملية والعودة للمتجر</button>
+      <div class="permission-buttons" style="margin-top: 15px; width: 100%;">
+        <button id="close-checkout-btn" class="action-button secondary-btn" style="width:100%; margin:0; padding:10px; font-size:13px;">إلغاء العملية والعودة للمتجر</button>
       </div>
     </div>
   </div>
