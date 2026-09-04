@@ -918,6 +918,8 @@ function setupGemsStore() {
       if (checkBanStatus()) return;
       if (rechargeModal) rechargeModal.classList.remove('hidden');
     };
+  }
+
   function renderPayPalSmartButtons(gems, price) {
     const container = $('#paypal-button-container');
     if (!container) return;
