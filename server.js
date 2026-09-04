@@ -235,8 +235,50 @@ app.get('/api/paypal-callback', (req, res) => {
   `);
 });
 
+// Purchases log storage for Admin Dashboard
+const purchasesLog = [
+  { id: 1, date: '2026-09-04 05:33', gems: 1000, price: 2.49, username: 'Ahmad Darweesh', method: 'PayPal / Visa' }
+];
+
+app.get('/api/admin/recharge-stats', (req, res) => {
+  const totalRevenue = purchasesLog.reduce((sum, p) => sum + Number(p.price || 0), 0);
+  const totalGemsSold = purchasesLog.reduce((sum, p) => sum + Number(p.gems || 0), 0);
+  res.json({
+    success: true,
+    totalRevenue: totalRevenue.toFixed(2),
+    totalGemsSold: totalGemsSold,
+    totalCount: purchasesLog.length,
+    purchases: purchasesLog
+  });
+});
+
+app.post('/api/record-purchase', (req, res) => {
+  const { gems, price, username } = req.body;
+  const newPurchase = {
+    id: purchasesLog.length + 1,
+    date: new Date().toLocaleString('ar-EG'),
+    gems: Number(gems) || 1000,
+    price: Number(price) || 2.49,
+    username: username || 'مستخدم',
+    method: 'PayPal / Visa'
+  };
+  purchasesLog.unshift(newPurchase);
+  console.log('[💰 New Purchase Recorded]', newPurchase);
+  res.json({ success: true, purchase: newPurchase });
+});
+
 app.post('/api/paypal-ipn', (req, res) => {
   console.log('[🅿️ PayPal IPN Notification Received]', req.body);
+  if (req.body && req.body.mc_gross) {
+    purchasesLog.unshift({
+      id: purchasesLog.length + 1,
+      date: new Date().toLocaleString('ar-EG'),
+      gems: req.body.item_name ? (parseInt(req.body.item_name.replace(/\D/g, ''), 10) || 1000) : 1000,
+      price: Number(req.body.mc_gross) || 2.49,
+      username: req.body.payer_email || 'مشتري بايبال',
+      method: 'PayPal IPN'
+    });
+  }
   res.status(200).send('OK');
 });
 

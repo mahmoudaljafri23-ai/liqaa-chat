@@ -715,6 +715,30 @@
             <button id="admin-add-gems-btn" style="padding:6px 12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-weight:800; border:none; border-radius:8px; font-size:12px; cursor:pointer; white-space:nowrap;">+ إضافة لرصيدي</button>
           </div>
         </div>
+
+        <!-- Admin Financial & Recharge Stats Dashboard Card -->
+        <div id="admin-stats-box" style="margin-top: 12px; border-top: 1px dashed rgba(255,215,0,0.4); padding-top: 10px; text-align: right;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+            <label style="color:#ffd700; font-weight:bold; font-size: 12px;">📊 إحصائيات المبيعات والأرباح (خاص بالمنشئ)</label>
+            <button id="refresh-admin-stats-btn" style="background:none; border:none; color:#ffd700; font-size:11px; cursor:pointer;">🔄 تحديث</button>
+          </div>
+          
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; padding: 8px; border-radius: 10px; text-align: center;">
+              <span style="font-size: 10px; color: #aaa; display:block;">إجمالي الأرباح 💰</span>
+              <strong id="admin-total-revenue" style="font-size: 15px; color: #4ade80;">0.00 $</strong>
+            </div>
+            <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; padding: 8px; border-radius: 10px; text-align: center;">
+              <span style="font-size: 10px; color: #aaa; display:block;">الجواهر المشحونة 💎</span>
+              <strong id="admin-total-gems-sold" style="font-size: 15px; color: #60a5fa;">0</strong>
+            </div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,215,0,0.2); max-height: 110px; overflow-y: auto;">
+            <div style="font-size: 11px; color: #ffd700; font-weight: bold; margin-bottom: 4px;">📜 سجل المبيعات الشحن الأخيرة:</div>
+            <div id="admin-purchases-list" style="font-size: 10px; color: #ccc;">جاري التحميل...</div>
+          </div>
+        </div>
       </div>
 
       <div class="input-group" style="width:100%; text-align:right;">
