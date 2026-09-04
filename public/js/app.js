@@ -769,8 +769,87 @@ function init() {
   setupSettingsUI();
   setupFriendsSystem();
   setupInviteModal();
+  setupGemsStore();
   connectSocket();
   autoDetectCountry();
+}
+
+// =============================================
+// Gems Store & Payment System
+// =============================================
+let currentSelectedPackage = { gems: 3000, price: 4.99, paypalUrl: '' };
+
+function setupGemsStore() {
+  const rechargeModal = $('#recharge-modal');
+  const checkoutModal = $('#checkout-modal');
+  const closeCheckoutBtn = $('#close-checkout-btn');
+  const payNowBtn = $('#pay-now-btn');
+  const checkoutTitle = $('#checkout-package-title');
+
+  if (openRechargeModalBtn) {
+    openRechargeModalBtn.onclick = () => {
+      if (checkBanStatus()) return;
+      if (rechargeModal) rechargeModal.classList.remove('hidden');
+    };
+  }
+
+  const packageCards = $$('.gem-package-card');
+  packageCards.forEach(card => {
+    const handlePackageClick = async (e) => {
+      e.stopPropagation();
+      const gems = card.dataset.gems || '1000';
+      const price = card.dataset.price || '2.49';
+
+      currentSelectedPackage = { gems, price, paypalUrl: '' };
+
+      if (checkoutTitle) {
+        checkoutTitle.textContent = `${Number(gems).toLocaleString()} جوهرة (${price}$)`;
+      }
+
+      if (rechargeModal) rechargeModal.classList.add('hidden');
+      if (checkoutModal) checkoutModal.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/create-paypal-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: price, gems: gems })
+        });
+        const data = await res.json();
+        if (data && data.paypalUrl) {
+          currentSelectedPackage.paypalUrl = data.paypalUrl;
+        }
+      } catch (err) {
+        console.error('[Payment API Error]', err);
+      }
+    };
+
+    card.addEventListener('click', handlePackageClick);
+    const buyBtn = card.querySelector('.buy-package-btn');
+    if (buyBtn) {
+      buyBtn.addEventListener('click', handlePackageClick);
+    }
+  });
+
+  if (payNowBtn) {
+    payNowBtn.onclick = () => {
+      const price = currentSelectedPackage.price || '4.99';
+      const gems = currentSelectedPackage.gems || '3000';
+      
+      const targetUrl = currentSelectedPackage.paypalUrl || 
+        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD`;
+
+      window.open(targetUrl, '_blank');
+      showGemToast('💳 جاري فتح صفحة الدفع الآمنة...');
+    };
+  }
+
+  if (closeCheckoutBtn) {
+    closeCheckoutBtn.onclick = () => {
+      if (checkoutModal) checkoutModal.classList.add('hidden');
+      if (rechargeModal) rechargeModal.classList.remove('hidden');
+    };
+  }
 }
 
 // =============================================
