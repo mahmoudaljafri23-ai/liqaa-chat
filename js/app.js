@@ -1279,6 +1279,9 @@ function setupSettingsUI() {
         showGemToast('📢 تم إرسال الإشعار لجميع المستخدمين بالعالم بنجاح!');
         broadcastInput.value = '';
       }
+    };
+  }
+
   const addGemsBtn = $('#admin-add-gems-btn');
   const addGemsAmountInput = $('#admin-add-gems-amount');
   if (addGemsBtn) {
