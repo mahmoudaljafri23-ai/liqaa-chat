@@ -191,25 +191,44 @@ app.post('/api/create-paypal-payment', (req, res) => {
 });
 
 app.get('/api/paypal-callback', (req, res) => {
-  const gems = req.query.gems || 100;
+  const gems = parseInt(req.query.gems, 10) || 1000;
   console.log('[PayPal Callback] Payment complete, gems:', gems);
   res.send(`
+    <!DOCTYPE html>
     <html>
       <head>
-        <title>تمت عملية الدفع بنجاح عبر PayPal</title>
+        <meta charset="UTF-8">
+        <title>تمت عملية الدفع بنجاح 💎</title>
         <style>
-          body { font-family: sans-serif; text-align: center; padding: 50px; background: #0f0f1a; color: white; }
-          .card { background: #1a1a2e; padding: 30px; border-radius: 16px; display: inline-block; border: 1px solid #0070ba; }
-          .btn { background: #0070ba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; }
+          body { font-family: sans-serif; text-align: center; padding: 50px 20px; background: #0f0f1a; color: white; }
+          .card { background: #1a1a2e; padding: 30px; border-radius: 20px; display: inline-block; border: 1px solid #0070ba; max-width: 400px; }
+          .btn { background: #0070ba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; margin-top: 15px; }
         </style>
       </head>
       <body>
         <div class="card">
-          <h1>🎉 تمت عملية الدفع بنجاح عبر PayPal!</h1>
-          <p>تم تحويل المبلغ بنجاح إلى حساب mahmoud.aljafri23@gmail.com والإيداع جاهز.</p>
-          <br><br>
-          <a href="/" class="btn">العودة للتطبيق</a>
+          <h1>🎉 تمت عملية الدفع بنجاح!</h1>
+          <p style="font-size: 16px; color: #4ade80; font-weight: bold;">تمت إضافة +${gems} مجوهرة لرصيدك بنجاح! 💎</p>
+          <p style="font-size: 12px; color: #aaa;">جاري العودة للتطبيق تلقائياً...</p>
+          <a href="/?gems_added=${gems}" class="btn">العودة للتطبيق الآن 🚀</a>
         </div>
+        <script>
+          try {
+            var profileStr = localStorage.getItem('liqaa_user_profile');
+            var profile = profileStr ? JSON.parse(profileStr) : {};
+            var currentGems = parseInt(profile.gems || 50, 10);
+            profile.gems = currentGems + ${gems};
+            localStorage.setItem('liqaa_user_profile', JSON.stringify(profile));
+            if (profile.accountEmail) {
+              localStorage.setItem('liqaa_gems_' + profile.accountEmail, profile.gems);
+            }
+          } catch(e) {
+            console.error('Error updating gems in local storage:', e);
+          }
+          setTimeout(function() {
+            window.location.href = '/?gems_added=${gems}';
+          }, 1500);
+        </script>
       </body>
     </html>
   `);
