@@ -799,26 +799,57 @@ function setupAuthSystem() {
     };
   }
 
+  const googleInlineForm = $('#google-inline-form');
+  const googleEmailInput = $('#google-email-input');
+  const googleConfirmBtn = $('#google-confirm-btn');
+
+  const processGoogleLink = (userGoogleEmail) => {
+    if (userGoogleEmail && userGoogleEmail.includes('@')) {
+      const usernameFromEmail = userGoogleEmail.split('@')[0];
+      userProfile.accountEmail = userGoogleEmail;
+      userProfile.username = usernameFromEmail;
+      userProfile.hasAccount = true;
+
+      const savedGems = localStorage.getItem(`liqaa_gems_${userGoogleEmail}`);
+      if (savedGems !== null) {
+        userProfile.gems = parseInt(savedGems, 10);
+      } else {
+        localStorage.setItem(`liqaa_gems_${userGoogleEmail}`, userProfile.gems);
+      }
+
+      saveUserProfile();
+      updateProfileUI();
+      if (authModal) authModal.classList.add('hidden');
+      showGemToast(`🎉 تم ربط الحساب والجواهر ببريد Google (${userGoogleEmail}) بنجاح!`);
+    } else {
+      showGemToast('❌ يرجى إدخال عنوان بريد Google صحيح');
+    }
+  };
+
   if (googleLoginBtn) {
     googleLoginBtn.onclick = () => {
-      const userGoogleEmail = prompt('أدخل بريد جوجل الخاص بك للارتباط التلقائي (Google Account Email):', userProfile.accountEmail || '');
-      if (userGoogleEmail && userGoogleEmail.includes('@')) {
-        const usernameFromEmail = userGoogleEmail.split('@')[0];
-        userProfile.accountEmail = userGoogleEmail;
-        userProfile.username = usernameFromEmail;
-        userProfile.hasAccount = true;
-
-        const savedGems = localStorage.getItem(`liqaa_gems_${userGoogleEmail}`);
-        if (savedGems !== null) {
-          userProfile.gems = parseInt(savedGems, 10);
-        } else {
-          localStorage.setItem(`liqaa_gems_${userGoogleEmail}`, userProfile.gems);
+      if (googleInlineForm) {
+        googleInlineForm.classList.toggle('hidden');
+        if (!googleInlineForm.classList.contains('hidden') && googleEmailInput) {
+          googleEmailInput.value = userProfile.accountEmail || '';
+          googleEmailInput.focus();
         }
+      }
+    };
+  }
 
-        saveUserProfile();
-        updateProfileUI();
-        if (authModal) authModal.classList.add('hidden');
-        showGemToast(`🎉 تم ربط الحساب والجواهر ببريد جوجل (${userGoogleEmail}) بنجاح!`);
+  if (googleConfirmBtn) {
+    googleConfirmBtn.onclick = () => {
+      const email = googleEmailInput ? googleEmailInput.value.trim() : '';
+      processGoogleLink(email);
+    };
+  }
+
+  if (googleEmailInput) {
+    googleEmailInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        processGoogleLink(googleEmailInput.value.trim());
       }
     };
   }
