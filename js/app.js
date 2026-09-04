@@ -770,8 +770,88 @@ function init() {
   setupFriendsSystem();
   setupInviteModal();
   setupGemsStore();
+  setupAuthSystem();
   connectSocket();
   autoDetectCountry();
+}
+
+// =============================================
+// Google & Account Auth System
+// =============================================
+function setupAuthSystem() {
+  const authModal = $('#auth-modal');
+  const openAuthModalBtn = $('#open-auth-modal-btn');
+  const googleLoginBtn = $('#google-login-btn');
+  const closeAuthModalBtn = $('#close-auth-modal-btn');
+  const emailAuthForm = $('#email-auth-form');
+
+  if (openAuthModalBtn) {
+    openAuthModalBtn.onclick = () => {
+      const settingsModal = $('#settings-modal');
+      if (settingsModal) settingsModal.classList.add('hidden');
+      if (authModal) authModal.classList.remove('hidden');
+    };
+  }
+
+  if (closeAuthModalBtn) {
+    closeAuthModalBtn.onclick = () => {
+      if (authModal) authModal.classList.add('hidden');
+    };
+  }
+
+  if (googleLoginBtn) {
+    googleLoginBtn.onclick = () => {
+      const userGoogleEmail = prompt('أدخل بريد جوجل الخاص بك للارتباط التلقائي (Google Account Email):', userProfile.accountEmail || '');
+      if (userGoogleEmail && userGoogleEmail.includes('@')) {
+        const usernameFromEmail = userGoogleEmail.split('@')[0];
+        userProfile.accountEmail = userGoogleEmail;
+        userProfile.username = usernameFromEmail;
+        userProfile.hasAccount = true;
+
+        const savedGems = localStorage.getItem(`liqaa_gems_${userGoogleEmail}`);
+        if (savedGems !== null) {
+          userProfile.gems = parseInt(savedGems, 10);
+        } else {
+          localStorage.setItem(`liqaa_gems_${userGoogleEmail}`, userProfile.gems);
+        }
+
+        saveUserProfile();
+        updateProfileUI();
+        if (authModal) authModal.classList.add('hidden');
+        showGemToast(`🎉 تم ربط الحساب والجواهر ببريد جوجل (${userGoogleEmail}) بنجاح!`);
+      }
+    };
+  }
+
+  if (emailAuthForm) {
+    emailAuthForm.onsubmit = (e) => {
+      e.preventDefault();
+      const emailInput = $('#auth-email-input');
+      const email = emailInput ? emailInput.value.trim() : '';
+
+      if (!email || !email.includes('@')) {
+        showGemToast('❌ يرجى إدخال عنوان بريد إلكتروني صحيح');
+        return;
+      }
+
+      const usernameFromEmail = email.split('@')[0];
+      userProfile.accountEmail = email;
+      userProfile.username = usernameFromEmail;
+      userProfile.hasAccount = true;
+
+      const savedGems = localStorage.getItem(`liqaa_gems_${email}`);
+      if (savedGems !== null) {
+        userProfile.gems = parseInt(savedGems, 10);
+      } else {
+        localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
+      }
+
+      saveUserProfile();
+      updateProfileUI();
+      if (authModal) authModal.classList.add('hidden');
+      showGemToast(`🎉 تم ربط الحساب والجواهر ببريدك الإلكتروني بنجاح!`);
+    };
+  }
 }
 
 // =============================================
