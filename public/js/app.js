@@ -918,6 +918,53 @@ function setupGemsStore() {
       if (checkBanStatus()) return;
       if (rechargeModal) rechargeModal.classList.remove('hidden');
     };
+  function renderPayPalSmartButtons(gems, price) {
+    const container = $('#paypal-button-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (window.paypal && window.paypal.Buttons) {
+      try {
+        window.paypal.Buttons({
+          style: {
+            layout: 'vertical',
+            color: 'gold',
+            shape: 'rect',
+            label: 'pay'
+          },
+          createOrder: function(data, actions) {
+            return actions.order.create({
+              purchase_units: [{
+                description: `Loky Chat - ${gems} Gems`,
+                amount: {
+                  currency_code: 'USD',
+                  value: price
+                }
+              }],
+              application_context: {
+                shipping_preference: 'NO_SHIPPING'
+              }
+            });
+          },
+          onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+              const gemsToAdd = parseInt(gems, 10) || 1000;
+              userProfile.gems = (parseInt(userProfile.gems, 10) || 50) + gemsToAdd;
+              saveUserProfile();
+              updateProfileUI();
+              if (checkoutModal) checkoutModal.classList.add('hidden');
+              showGemToast(`🎉 مبروك! تمت عملية الدفع بنجاح! تم إضافة +${gemsToAdd} مجوهرة إلى رصيدك! 💎`);
+            });
+          },
+          onError: function(err) {
+            console.error('PayPal Smart Button Error:', err);
+            showGemToast('❌ حدث خطأ أثناء الدفع المباشر، يرجى تجربة الزر الخارجي');
+          }
+        }).render('#paypal-button-container');
+      } catch(e) {
+        console.error('Failed to render PayPal Smart Buttons:', e);
+      }
+    }
   }
 
   const packageCards = $$('.gem-package-card');
@@ -935,6 +982,8 @@ function setupGemsStore() {
 
       if (rechargeModal) rechargeModal.classList.add('hidden');
       if (checkoutModal) checkoutModal.classList.remove('hidden');
+
+      renderPayPalSmartButtons(gems, price);
 
       try {
         const res = await fetch('/api/create-paypal-payment', {

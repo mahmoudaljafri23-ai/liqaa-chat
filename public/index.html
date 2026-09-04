@@ -48,7 +48,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&components=hosted-buttons&disable-funding=venmo&currency=USD"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&components=buttons,hosted-buttons&disable-funding=venmo&currency=USD"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -630,10 +630,13 @@
       <h2 style="font-size: 20px; margin-bottom: 4px;">إتمام عملية الدفع والشحن</h2>
       <p style="margin-bottom: 16px; color: #ccc; font-size: 14px;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">3,000 جوهرة (4.99$)</strong></p>
 
-      <!-- Direct Visa / Mastercard / PayPal Payment Button -->
+      <!-- Direct Embedded PayPal & Card Smart Payment Buttons Container -->
+      <div id="paypal-button-container" style="width:100%; margin-bottom: 12px; min-height: 50px;"></div>
+
+      <!-- Direct Link Fallback Option -->
       <div style="width:100%; margin-bottom: 16px;">
-        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 800; background: linear-gradient(135deg, #0070ba, #003087); color: #fff; border: 1px solid #60a5fa; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 112, 186, 0.4); margin:0;">
-          💳 الدفع الآمن (Visa / Mastercard / PayPal)
+        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 800; background: rgba(0, 112, 186, 0.2); color: #60a5fa; border: 1px dashed #60a5fa; border-radius: 14px; cursor: pointer; margin:0;">
+          🌐 الدفع عبر التبويب الخارجي (رابط قديم)
         </button>
       </div>
 
