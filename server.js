@@ -182,7 +182,7 @@ app.post('/api/create-paypal-payment', (req, res) => {
   const host = req.get('host');
   const protocol = req.protocol;
 
-  const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(MERCHANT_CONFIG.PAYPAL_EMAIL)}&item_name=${encodeURIComponent(`LiQaa Chat - ${gems} Gems`)}&amount=${encodeURIComponent(amount)}&currency_code=USD&return=${encodeURIComponent(`${protocol}://${host}/api/paypal-callback?gems=${gems}`)}&cancel_return=${encodeURIComponent(`${protocol}://${host}/`)}`;
+  const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(MERCHANT_CONFIG.PAYPAL_EMAIL)}&item_name=${encodeURIComponent(`LiQaa Chat - ${gems} Gems`)}&amount=${encodeURIComponent(amount)}&currency_code=USD&solution_type=sole&landing_page=billing&return=${encodeURIComponent(`${protocol}://${host}/api/paypal-callback?gems=${gems}`)}&cancel_return=${encodeURIComponent(`${protocol}://${host}/`)}`;
 
   res.json({
     success: true,

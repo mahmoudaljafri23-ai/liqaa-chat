@@ -948,7 +948,7 @@ function setupGemsStore() {
       const gems = currentSelectedPackage.gems || '3000';
       
       const targetUrl = currentSelectedPackage.paypalUrl || 
-        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD`;
+        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&solution_type=sole&landing_page=billing`;
 
       window.open(targetUrl, '_blank');
       showGemToast('💳 جاري فتح صفحة الدفع الآمنة...');
