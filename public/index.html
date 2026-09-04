@@ -622,31 +622,34 @@
     </div>
   </div>
 
-  <!-- Real Checkout Payment Modal (Direct Embedded Card Payment) -->
+  <!-- Real Checkout Payment Modal (Visa / Mastercard Guest + Zain Cash Options) -->
   <div id="checkout-modal" class="modal hidden" style="z-index: 10002; backdrop-filter: blur(12px);">
     <div class="modal-content checkout-modal-content" style="max-width: 440px; width: 92%; text-align: center; border: 1px solid #ffd700; background: #121324; padding: 20px 16px;">
       <div class="modal-icon" style="font-size: 38px; margin-bottom:4px;">💳</div>
-      <h2 style="font-size: 19px; margin-bottom: 4px;">إتمام عملية الدفع الآمن</h2>
+      <h2 style="font-size: 19px; margin-bottom: 4px;">إتمام عملية الدفع والشحن</h2>
       <p style="margin-bottom: 12px; color: #ccc; font-size: 13px;">الباقة المختارة: <strong id="checkout-package-title" style="color:#ffd700;">3,000 جوهرة (4.99$)</strong></p>
 
-      <!-- Embedded Direct Card Payment Form -->
-      <div id="direct-card-form" style="width:100%; text-align:right; background:rgba(255,255,255,0.04); padding:14px; border-radius:14px; border:1px solid rgba(255,215,0,0.3); margin-bottom:12px;">
-        <label style="font-size:12px; color:#ffd700; font-weight:bold; display:block; margin-bottom:6px;">💳 ادفع مباشرة ببطاقة الفيزا أو الماستركارد:</label>
-        <div style="margin-bottom:8px;">
-          <input type="text" id="card-number-input" placeholder="رقم بطاقة الفيزا / الماستركارد (16 رقم)..." style="width:100%; padding:10px 12px; border-radius:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:13px; font-family:monospace;" dir="ltr">
-        </div>
-        <div style="display:flex; gap:8px; margin-bottom:10px;">
-          <input type="text" id="card-expiry-input" placeholder="شهر/سنة MM/YY" style="flex:1; padding:10px 12px; border-radius:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:13px; font-family:monospace;" dir="ltr">
-          <input type="password" id="card-cvc-input" placeholder="رمز CVC/CVV" maxlength="4" style="flex:1; padding:10px 12px; border-radius:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:13px; font-family:monospace;" dir="ltr">
-        </div>
-        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #0070ba, #003087); color: #fff; border: 1px solid #60a5fa; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 112, 186, 0.4); margin:0;">
-          🚀 تأكيد وإتمام الدفع المباشر الآن
+      <!-- Option 1: Direct Visa / Mastercard Guest Checkout -->
+      <div style="width:100%; margin-bottom: 12px; text-align:right; background:rgba(255,255,255,0.04); padding:12px; border-radius:14px; border:1px solid rgba(59,130,246,0.4);">
+        <label style="font-size:12px; color:#60a5fa; font-weight:bold; display:block; margin-bottom:6px;">💳 1. الدفع بالفيزا / ماستركارد (بدون حساب بايبال):</label>
+        <button id="pay-now-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 800; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; border-radius: 10px; cursor: pointer; margin:0;">
+          💳 ادفع بالفيزا / ماستركارد بدون حساب (Guest Checkout)
         </button>
       </div>
 
-      <div style="text-align:center; margin-top:8px;">
-        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:24px;" />
-        <p style="font-size:11px; color:#aaa; margin-top:4px;">دفع إلكتروني آمن ومعتمد 100% بدون مغادرة الموقع 🔒</p>
+      <!-- Option 2: Zain Cash / Orange Money / CLIQ Local Jordan Payment -->
+      <div style="width:100%; text-align:right; background:rgba(255,215,0,0.05); padding:12px; border-radius:14px; border:1px dashed rgba(255,215,0,0.4); margin-bottom:12px;">
+        <label style="font-size:12px; color:#ffd700; font-weight:bold; display:block; margin-bottom:4px;">📱 2. الدفع المحلي (زين كاش / أورنج ماني / كليك CLIQ):</label>
+        <p style="font-size:11px; color:#aaa; margin-bottom:6px;">حول المبلغ على الرقم التالي وستصلك الجواهر فوراً:</p>
+        <div style="background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:bold; color:#fff; font-size:13px;" dir="ltr">0790181802</span>
+          <span style="font-size:11px; color:#ffd700;">زين كاش / CLIQ</span>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top:6px;">
+        <img src="https://www.paypalobjects.com/images/Debit_Credit_APM.svg" alt="cards" style="height:22px;" />
+        <p style="font-size:11px; color:#888; margin-top:3px;">طرق دفع سهلة ومتاحة للجميع 100% 🔒</p>
       </div>
 
       <div class="permission-buttons" style="margin-top: 12px; width: 100%;">
