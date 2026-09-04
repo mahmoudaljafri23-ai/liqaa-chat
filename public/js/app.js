@@ -1009,6 +1009,8 @@ function setupGemsStore() {
     }
   });
 
+  const payPaypalBtn = $('#pay-paypal-btn');
+
   if (payNowBtn) {
     payNowBtn.onclick = () => {
       const price = currentSelectedPackage.price || '4.99';
@@ -1017,8 +1019,20 @@ function setupGemsStore() {
       const targetUrl = currentSelectedPackage.paypalUrl || 
         `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&solution_type=sole&landing_page=billing&no_shipping=1&no_note=1`;
 
-      window.open(targetUrl, '_blank');
-      showGemToast('💳 جاري فتح صفحة الدفع الآمنة...');
+      showGemToast('💳 جاري التوجيه لصفحة الدفع ببطاقة الفيزا والماستركارد...');
+      window.location.href = targetUrl;
+    };
+  }
+
+  if (payPaypalBtn) {
+    payPaypalBtn.onclick = () => {
+      const price = currentSelectedPackage.price || '4.99';
+      const gems = currentSelectedPackage.gems || '3000';
+      
+      const targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&landing_page=login&no_shipping=1&no_note=1`;
+
+      showGemToast('🅿️ جاري التوجيه لصفحة الدفع عبر حساب PayPal...');
+      window.location.href = targetUrl;
     };
   }
 
