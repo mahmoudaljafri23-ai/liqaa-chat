@@ -36,9 +36,10 @@ const io = new Server(server, {
 // المفاتيح الرسمية لربط حسابك في Tap Payments لاستقبال الفيزا
 // =============================================
 const MERCHANT_CONFIG = {
-  // PayPal Email & Client ID الرسمي لاستقبال الفلوس المباشرة
-  PAYPAL_EMAIL: process.env.PAYPAL_EMAIL || '',
-  PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || '',
+  // PayPal Email & Client Credentials الرسمي لاستقبال الفلوس المباشرة
+  PAYPAL_EMAIL: process.env.PAYPAL_EMAIL || 'mahmoud.aljafri23@gmail.com',
+  PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || 'BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8',
+  PAYPAL_SECRET: process.env.PAYPAL_SECRET || 'EOvBoTq_ctdUgzB630QBPPxmLnWtChY4_oqXebHj9A7cXQVY9RvvsaEP2Hg5m4kuGcYGeB4lE6RgsX2y',
 
   // Tap Payments Keys
   TAP_SECRET_KEY: process.env.TAP_SECRET_KEY || '',
