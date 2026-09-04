@@ -684,6 +684,21 @@ function checkReferralQuery() {
   }
 }
 
+function checkPaymentSuccessQuery() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const gemsAdded = urlParams.get('gems_added');
+  if (gemsAdded) {
+    const gemsNum = parseInt(gemsAdded, 10);
+    if (!isNaN(gemsNum) && gemsNum > 0) {
+      userProfile.gems = (parseInt(userProfile.gems, 10) || 50) + gemsNum;
+      saveUserProfile();
+      updateProfileUI();
+      showGemToast(`🎉 مبروك! تمت عملية الدفع بنجاح وتم إضافة +${gemsNum} مجوهرة إلى رصيدك! 💎`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+}
+
 function checkAndClaimReferralReward() {
   if (!pendingReferrerCode) return;
   const claimed = localStorage.getItem(`liqaa_claimed_ref_${pendingReferrerCode}`);
@@ -762,6 +777,7 @@ function setupInviteModal() {
 function init() {
   checkReferralQuery();
   loadUserProfile();
+  checkPaymentSuccessQuery();
   updateOnlineDisplay();
   initPushNotifications();
   setupAdminPinModal();
@@ -1263,6 +1279,15 @@ function setupSettingsUI() {
         showGemToast('📢 تم إرسال الإشعار لجميع المستخدمين بالعالم بنجاح!');
         broadcastInput.value = '';
       }
+  const addGemsBtn = $('#admin-add-gems-btn');
+  const addGemsAmountInput = $('#admin-add-gems-amount');
+  if (addGemsBtn) {
+    addGemsBtn.onclick = () => {
+      const amount = parseInt(addGemsAmountInput ? addGemsAmountInput.value : '3000', 10) || 3000;
+      userProfile.gems = (parseInt(userProfile.gems, 10) || 50) + amount;
+      saveUserProfile();
+      updateProfileUI();
+      showGemToast(`💎 تم إضافة +${amount} مجوهرة إلى رصيدك بنجاح!`);
     };
   }
 
