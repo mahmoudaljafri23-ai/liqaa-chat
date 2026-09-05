@@ -787,6 +787,7 @@ function init() {
   setupInviteModal();
   setupGemsStore();
   setupAuthSystem();
+  setupControls();
   connectSocket();
   autoDetectCountry();
 }
@@ -1834,15 +1835,20 @@ async function startChat() {
 // Control Buttons
 // =============================================
 function setupControls() {
-  nextBtn.addEventListener('click', () => {
-    cleanupPeerConnection();
-    socket.emit('next');
-    setState('searching');
-  });
+  if (controlsSetup) return;
+  controlsSetup = true;
 
-  micBtn.addEventListener('click', toggleMic);
-  cameraBtn.addEventListener('click', toggleCamera);
-  endBtn.addEventListener('click', endCall);
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      cleanupPeerConnection();
+      if (socket) socket.emit('next');
+      setState('searching');
+    });
+  }
+
+  if (micBtn) micBtn.addEventListener('click', toggleMic);
+  if (cameraBtn) cameraBtn.addEventListener('click', toggleCamera);
+  if (endBtn) endBtn.addEventListener('click', endCall);
 
   const flipCamBtn = $('#flip-cam-btn');
   if (flipCamBtn) {
@@ -1851,15 +1857,32 @@ function setupControls() {
 
   if (findNewBtn) {
     findNewBtn.addEventListener('click', () => {
-      partnerLeftOverlay.classList.add('hidden');
-      socket.emit('find_partner');
+      if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
+      if (socket) socket.emit('find_partner');
       setState('searching');
     });
   }
 
   const cancelSearchBtn = $('#cancel-search-btn');
   if (cancelSearchBtn) {
-    cancelSearchBtn.addEventListener('click', () => {
+    cancelSearchBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      endCall();
+    });
+    cancelSearchBtn.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      endCall();
+    });
+  }
+
+  const chatBackHomeBtn = $('#chat-back-home-btn');
+  if (chatBackHomeBtn) {
+    chatBackHomeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      endCall();
+    });
+    chatBackHomeBtn.addEventListener('touchend', (e) => {
+      e.stopPropagation();
       endCall();
     });
   }
@@ -1881,9 +1904,13 @@ function toggleMic() {
     });
   }
 
-  micBtn.classList.toggle('muted', !isMicOn);
-  micBtn.querySelector('.mic-on').classList.toggle('hidden', !isMicOn);
-  micBtn.querySelector('.mic-off').classList.toggle('hidden', isMicOn);
+  if (micBtn) {
+    micBtn.classList.toggle('muted', !isMicOn);
+    const micOn = micBtn.querySelector('.mic-on');
+    const micOff = micBtn.querySelector('.mic-off');
+    if (micOn) micOn.classList.toggle('hidden', !isMicOn);
+    if (micOff) micOff.classList.toggle('hidden', isMicOn);
+  }
 }
 
 function toggleCamera() {
@@ -1893,25 +1920,57 @@ function toggleCamera() {
     track.enabled = isCameraOn;
   });
 
-  cameraBtn.classList.toggle('muted', !isCameraOn);
-  cameraBtn.querySelector('.cam-on').classList.toggle('hidden', !isCameraOn);
-  cameraBtn.querySelector('.cam-off').classList.toggle('hidden', isCameraOn);
+  if (cameraBtn) {
+    cameraBtn.classList.toggle('muted', !isCameraOn);
+    const camOn = cameraBtn.querySelector('.cam-on');
+    const camOff = cameraBtn.querySelector('.cam-off');
+    if (camOn) camOn.classList.toggle('hidden', !isCameraOn);
+    if (camOff) camOff.classList.toggle('hidden', isCameraOn);
+  }
 }
 
 function endCall() {
+  console.log('[App] Ending call / returning to home screen...');
   stopNudityScanner();
   cleanupPeerConnection();
-  socket.emit('stop_search');
+
+  if (socket && socket.connected) {
+    socket.emit('stop_search');
+  }
 
   if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
+    try {
+      localStream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+    } catch (e) {
+      console.warn('Error stopping tracks:', e);
+    }
     localStream = null;
   }
 
-  chatScreen.classList.remove('active');
-  welcomeScreen.classList.add('active');
+  if (localVideo) localVideo.srcObject = null;
+  if (remoteVideo) remoteVideo.srcObject = null;
+
+  if (chatScreen) chatScreen.classList.remove('active');
+  if (welcomeScreen) welcomeScreen.classList.add('active');
+
   setState('idle');
+
+  // Reset draggable video PiP if moved
+  const wrapper = $('#local-video-wrapper');
+  if (wrapper) {
+    wrapper.style.position = '';
+    wrapper.style.left = '';
+    wrapper.style.top = '';
+    wrapper.style.right = '';
+  }
+
+  validateForm();
+  updateProfileUI();
 }
+window.endCall = endCall;
 
 // =============================================
 // WebRTC Peer Connection
