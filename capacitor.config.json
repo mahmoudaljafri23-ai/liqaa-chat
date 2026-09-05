@@ -1,0 +1,15 @@
+{
+  "appId": "com.lokychat.app",
+  "appName": "Loky Chat",
+  "webDir": "public",
+  "server": {
+    "url": "https://liqaa-chat.onrender.com",
+    "cleartext": true,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}
