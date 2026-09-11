@@ -6,6 +6,11 @@
 // =============================================
 // Configuration - Fast WebRTC STUN & TURN
 // =============================================
+const SERVER_URL = (window.location.hostname === 'localhost' || window.location.protocol === 'capacitor:' || window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1')
+  ? 'https://liqaa-chat.onrender.com'
+  : '';
+const API_BASE_URL = SERVER_URL || '';
+
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -989,7 +994,7 @@ function setupGemsStore() {
       renderPayPalSmartButtons(gems, price);
 
       try {
-        const res = await fetch('/api/create-paypal-payment', {
+        const res = await fetch(API_BASE_URL + '/api/create-paypal-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: price, gems: gems })
@@ -1337,7 +1342,7 @@ function setupSettingsUI() {
   async function fetchAdminRechargeStats() {
     if (!userProfile || !userProfile.isAdmin) return;
     try {
-      const res = await fetch('/api/admin/recharge-stats');
+      const res = await fetch(API_BASE_URL + '/api/admin/recharge-stats');
       const data = await res.json();
       if (data && data.success) {
         const revEl = $('#admin-total-revenue');
@@ -1557,7 +1562,7 @@ function validateForm() {
 // Socket.IO Connection - Fast matching & reconnect
 // =============================================
 function connectSocket() {
-  socket = io({
+  socket = io(SERVER_URL, {
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
