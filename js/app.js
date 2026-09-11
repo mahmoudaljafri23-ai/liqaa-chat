@@ -190,32 +190,49 @@ function showGemToast(message) {
 }
 
 // =============================================
-// Auto-detect Country from IP
+// Auto-detect Country from IP (Ultra-fast concurrent with timeout)
 // =============================================
-async function detectCountry() {
-  for (const apiUrl of GEO_APIS) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
+const AR_COUNTRY_NAMES = {
+  'JO': 'الأردن', 'SA': 'السعودية', 'AE': 'الإمارات', 'EG': 'مصر', 'IQ': 'العراق',
+  'SY': 'سوريا', 'LB': 'لبنان', 'PS': 'فلسطين', 'KW': 'الكويت', 'QA': 'قطر',
+  'BH': 'البحرين', 'OM': 'عمان', 'YE': 'اليمن', 'DZ': 'الجزائر', 'MA': 'المغرب',
+  'TN': 'تونس', 'LY': 'ليبيا', 'SD': 'السودان', 'TR': 'تركيا', 'US': 'الولايات المتحدة',
+  'DE': 'ألمانيا', 'FR': 'فرنسا', 'GB': 'المملكة المتحدة', 'CA': 'كندا', 'SE': 'السويد'
+};
 
-      const res = await fetch(apiUrl, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      if (!res.ok) continue;
-      const data = await res.json();
-
-      const countryCode = data.country_code || data.country || data.countryCode || '';
-      const countryNameEn = data.country_name || data.country || data.countryName || '';
-
-      if (countryCode) {
-        return { code: countryCode.toUpperCase(), name: countryNameEn };
-      }
-    } catch (e) {
-      console.warn(`[Geo] Failed with ${apiUrl}:`, e.message);
-      continue;
+async function fetchGeoApi(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json();
+    const code = data.country || data.country_code || data.countryCode || '';
+    const name = data.country_name || data.countryName || data.country || '';
+    if (code && typeof code === 'string' && code.length === 2) {
+      return { code: code.toUpperCase(), name: name };
     }
+    throw new Error('invalid data');
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
   }
-  return null;
+}
+
+async function detectCountry() {
+  const endpoints = [
+    'https://api.country.is',
+    'https://ipwho.is/',
+    'https://freeipapi.com/api/json'
+  ];
+
+  try {
+    return await Promise.any(endpoints.map(ep => fetchGeoApi(ep)));
+  } catch (e) {
+    console.warn('[Geo] All endpoints failed or timed out:', e);
+    return null;
+  }
 }
 
 let myHomeCountryCode = 'JO';
@@ -226,20 +243,21 @@ async function autoDetectCountry() {
 
     if (result && result.code) {
       myHomeCountryCode = result.code;
-      const option = countrySelect.querySelector(`option[value="${result.code}"]`);
+      const option = countrySelect ? countrySelect.querySelector(`option[value="${result.code}"]`) : null;
       if (option) {
         selectedCountry = result.code;
         selectedCountryName = option.dataset.name || option.textContent;
       } else {
         selectedCountry = result.code;
-        selectedCountryName = result.name;
+        selectedCountryName = AR_COUNTRY_NAMES[result.code] || result.name || result.code;
       }
-      detectedFlag.textContent = countryCodeToFlag(result.code);
-      detectedName.textContent = selectedCountryName;
 
-      countryDetecting.classList.add('hidden');
-      countryDetected.classList.remove('hidden');
-      countryManual.classList.add('hidden');
+      if (detectedFlag) detectedFlag.textContent = countryCodeToFlag(result.code);
+      if (detectedName) detectedName.textContent = selectedCountryName;
+
+      if (countryDetecting) countryDetecting.classList.add('hidden');
+      if (countryDetected) countryDetected.classList.remove('hidden');
+      if (countryManual) countryManual.classList.add('hidden');
       validateForm();
       return;
     }
@@ -247,10 +265,16 @@ async function autoDetectCountry() {
     console.warn('[Geo] Auto-detect failed:', e);
   }
 
-  // Fallback to manual global country select
-  countryDetecting.classList.add('hidden');
-  countryDetected.classList.add('hidden');
-  countryManual.classList.remove('hidden');
+  // Fallback if detection fails or times out: Default to Jordan or manual selector
+  selectedCountry = 'JO';
+  selectedCountryName = 'الأردن';
+  if (detectedFlag) detectedFlag.textContent = '🇯🇴';
+  if (detectedName) detectedName.textContent = 'الأردن';
+
+  if (countryDetecting) countryDetecting.classList.add('hidden');
+  if (countryDetected) countryDetected.classList.remove('hidden');
+  if (countryManual) countryManual.classList.add('hidden');
+  validateForm();
 }
 
 // =============================================
