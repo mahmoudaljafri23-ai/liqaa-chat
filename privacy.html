@@ -17,9 +17,6 @@
     .highlight { background: rgba(56, 189, 248, 0.1); border-right: 4px solid #38bdf8; padding: 14px 18px; border-radius: 8px; margin: 18px 0; }
     .contact-box { background: rgba(255, 142, 83, 0.1); border: 1px solid rgba(255, 142, 83, 0.3); border-radius: 12px; padding: 22px; margin-top: 30px; text-align: center; }
     .contact-box a { color: #ff8e53; font-weight: bold; text-decoration: none; font-size: 16px; }
-    .lang-switch { display: flex; gap: 10px; margin-bottom: 20px; }
-    .lang-btn { background: #1e293b; color: #fff; border: 1px solid #475569; padding: 6px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; font-size: 13px; }
-    .lang-btn.active { background: #38bdf8; color: #000; font-weight: bold; }
     .section-en { direction: ltr; text-align: left; margin-top: 50px; border-top: 2px dashed rgba(255,255,255,0.15); padding-top: 30px; }
     .section-en h1, .section-en h2 { text-align: left; }
     .section-en ul { margin-left: 25px; margin-right: 0; }
@@ -28,12 +25,7 @@
 </head>
 <body>
   <div class="container">
-    <div class="lang-switch">
-      <a href="#ar" class="lang-btn active">العربية (Arabic)</a>
-      <a href="#en" class="lang-btn">English</a>
-    </div>
-
-    <!-- ARABIC VERSION -->
+    <!-- ARABIC SECTION -->
     <div id="ar">
       <h1>🔒 سياسة الخصوصية لتطبيق لوكي شات (Loky Chat)</h1>
       <p class="updated">تاريخ آخر تحديث: 30 سبتمبر 2026</p>
@@ -45,69 +37,69 @@
       <h2>1. المعلومات التي نجمعها وكيفية استخدامها</h2>
       <p>يقوم تطبيق Loky Chat بجمع واستخدام البيانات الضرورية فقط لتقديم خدمة دردشة الفيديو العشوائية والمحادثات المباشرة:</p>
       <ul>
-        <li><strong>بيانات الكاميرا والميكروفون (Camera & Microphone):</strong> نطلب إذن الوصول إلى الكاميرا والميكروفون لتمكين البث المباشر بين الطرفين (Peer-to-Peer) عبر بروتوكول WebRTC المشفر. <em>لا نقوم أبداً بتسجيل أو تخزين أو حفظ أي فيديو أو صوت على أي خوادم خارجية.</em></li>
-        <li><strong>اسم المستخدم والصورة الرمزية (اختياري):</strong> لتخصيص تجربتك وعرض اسمك للطرف الآخر أثناء المحادثة.</li>
-        <li><strong>الموقع الجغرافي التقريبي (الدولة):</strong> يُستخدم لتحديد الدولة فقط لتوفير ميزة الفلترة وتسهيل الاتصال، ولا يتم تتبع موقعك الدقيق عبر (GPS).</li>
-        <li><strong>معلومات الجهاز ومعرّف التثبيت:</strong> معرّفات تقنية عشوائية تُستخدم لمنع الاحتيال وضمان استقرار الاتصال.</li>
+        <li><strong>الكاميرا والميكروفون (Camera & Microphone):</strong> نطلب إذن الوصول إلى الكاميرا والميكروفون لتمكين مكالمات الفيديو والصوت المباشرة بين المستخدمين (Peer-to-Peer) عبر بروتوكول WebRTC المشفر. <em>نحن لا نقوم بتسجيل أو تخزين أو حفظ أي مكالمات صوتية أو مرئية على أي خادم مطلقاً.</em></li>
+        <li><strong>اسم المستخدم والصورة الرمزية (اختياري):</strong> لعرض اسمك للطرف الآخر أثناء المحادثة.</li>
+        <li><strong>الموقع الجغرافي التقريبي (الدولة):</strong> يُستخدم لتحديد الدولة لتمكين الفلترة الجغرافية، ولا نصل إلى موقعك الدقيق عبر GPS.</li>
+        <li><strong>معلومات الجهاز ومعرّف التثبيت:</strong> معرّفات تقنية عشوائية مجهولة الهوية لضمان استقرار الاتصال ومنع إساءة الاستخدام.</li>
       </ul>
 
       <h2>2. أمان وسرية المحادثات</h2>
-      <p>تتم كافة مكالمات الفيديو عبر تقنية <strong>WebRTC</strong> المشفرة بين الطرفين مباشرة (End-to-End Encryption)، مما يعني أن البيانات تنتقل مباشرة بين هاتفك وهاتف الشخص الآخر دون المرور عبر وسيط أو تخزينها.</p>
+      <p>تتم كافة مكالمات الفيديو عبر تقنية <strong>WebRTC</strong> المشفرة بين الطرفين مباشرة (End-to-End Encryption)، بحيث تنتقل البيانات بين هاتفك وهاتف الطرف الآخر دون المرور أو التخزين على خوادمنا.</p>
 
-      <h2>3. عمليات الشراء والدفع (In-App Purchases)</h2>
-      <p>تتم جميع عمليات شراء الجواهر داخل التطبيق عبر بوابات رسمية ومعتمدة وآمنة بنسبة 100% مثل Google Play Billing و PayPal. نحن لا نطلع ولا نخزن أي معلومات لبطاقاتك الائتمانية أو حساباتك المصرفية.</p>
+      <h2>3. عمليات الشراء والفوترة (In-App Purchases)</h2>
+      <p>تتم عمليات شراء الجواهر داخل التطبيق عبر بوابات رسمية معتمدة وآمنة بنسبة 100% مثل Google Play Billing و PayPal. نحن لا نطلع ولا نخزن أي تفاصيل لبطاقات الدفع أو الحسابات البنكية.</p>
 
-      <h2>4. حماية المجتمع والإبلاغ عن المحتوى المخالف</h2>
-      <p>يحتوي التطبيق على زر إبلاغ فوري (Report) لمكافحة أي سلوك غير لائق أو مخالف، ويتم مراجعة كافة البلاغات يدوياً لضمان بيئة آمنة ونظيفة لجميع المستخدمين.</p>
+      <h2>4. الأمان وحماية المجتمع</h2>
+      <p>يوفر التطبيق أداة إبلاغ فوري (Report) تتيح للمستخدمين التبليغ عن أي مخالفات أو سلوك غير لائق، وتتم مراجعة البلاغات يدوياً لضمان مجتمع آمن.</p>
 
-      <h2>5. سياسة الفئات العمرية</h2>
-      <p>تطبيق Loky Chat مخصص للبالغين فقط (18 عاماً فما فوق). لا نسمح للأطفال أو القُصّر باستخدام التطبيق ونقوم بإلغاء أي حساب يثبت عدم استيفائه للشروط العمرية فوراً.</p>
+      <h2>5. سياسة الفئات العمرية (18+)</h2>
+      <p>تطبيق Loky Chat مخصص للبالغين فقط (18 عاماً فما فوق). لا نجمع بيانات القُصّر ويتم حذف أي حساب مخالف فوراً.</p>
 
       <h2>6. حذف الحساب والبيانات (Data Deletion)</h2>
-      <p>يحق للمستخدم في أي وقت طلب حذف حسابه وبياناته بالكامل من خلال إعدادات التطبيق أو عبر مراسلتنا مباشرة على البريد الإلكتروني الموضح أدناه، ويتم حذف البيانات فوراً.</p>
+      <p>يمكن للمستخدم حذف حسابه وبياناته فوراً وبشكل دائم من إعدادات التطبيق أو بمراسلتنا مباشرة على البريد الإلكتروني.</p>
 
       <div class="contact-box">
-        <h3>هل لديك أي استفسار حول الخصوصية؟</h3>
-        <p>إذا كان لديك أي سؤال أو طلب حذف بيانات، يمكنك التواصل مع مطور التطبيق مباشرة:</p>
+        <h3>للتواصل والاستفسارات حول الخصوصية</h3>
+        <p>إذا كان لديك أي استفسار أو طلب حذف بيانات، تواصل مع المطور عبر البريد الإلكتروني:</p>
         <p><a href="mailto:mahmoud.aljafri23@gmail.com">mahmoud.aljafri23@gmail.com</a></p>
       </div>
     </div>
 
-    <!-- ENGLISH VERSION -->
+    <!-- ENGLISH SECTION -->
     <div id="en" class="section-en">
       <h1>🔒 Privacy Policy - Loky Chat</h1>
       <p class="updated">Last Updated: September 30, 2026</p>
 
       <div class="highlight">
-        <strong>Loky Chat</strong> values your privacy. We are committed to protecting your personal data and ensuring full compliance with Google Play Developer Policies and global privacy standards.
+        <strong>Loky Chat</strong> is committed to protecting your privacy and complying fully with Google Play Developer Policies.
       </div>
 
-      <h2>1. Information We Collect and How It Is Used</h2>
+      <h2>1. Information We Collect</h2>
       <ul>
-        <li><strong>Camera and Microphone:</strong> Required to enable real-time peer-to-peer video & audio calls via encrypted WebRTC. <em>We do NOT record, save, or store any audio or video calls on any servers.</em></li>
-        <li><strong>Profile Information:</strong> Optional display name, gender, and avatar to identify you to chat partners.</li>
-        <li><strong>Approximate Location (Country):</strong> Country code is used solely for region matching. We do NOT access precise GPS location.</li>
-        <li><strong>Device Identifiers:</strong> Anonymous IDs used for app stability, connection management, and anti-abuse prevention.</li>
+        <li><strong>Camera & Microphone:</strong> Used exclusively to enable real-time WebRTC peer-to-peer video/audio chat. We NEVER record or store video/audio calls.</li>
+        <li><strong>User Profile:</strong> Optional username and avatar for displaying to chat partners.</li>
+        <li><strong>Approximate Location (Country):</strong> Country code used only for region matching. No precise GPS location is accessed.</li>
+        <li><strong>Device Identifiers:</strong> Anonymous IDs used strictly for connectivity and anti-abuse protection.</li>
       </ul>
 
       <h2>2. Data Security & Encryption</h2>
-      <p>All video interactions are established using secure, end-to-end encrypted <strong>WebRTC</strong> peer-to-peer connections. Data is streamed directly between participants without being stored on our servers.</p>
+      <p>All video calls utilize end-to-end encrypted WebRTC peer-to-peer technology. Direct data streams occur strictly between users.</p>
 
-      <h2>3. In-App Purchases & Payments</h2>
-      <p>All financial transactions are processed securely through certified payment providers, including official <strong>Google Play Billing</strong> and PayPal. We never store or have access to your credit card or bank details.</p>
+      <h2>3. In-App Purchases & Billing</h2>
+      <p>In-app coin purchases are processed securely via official Google Play Billing and verified gateways. We do not process or store sensitive payment card credentials.</p>
 
-      <h2>4. User Safety & Moderation</h2>
-      <p>We provide in-call reporting tools to report any inappropriate behavior. All reports are reviewed to ensure a safe and respectful community.</p>
+      <h2>4. Community Safety & Reporting</h2>
+      <p>Users have immediate access to report tools during calls to flag inappropriate conduct. All reports are manually moderated.</p>
 
       <h2>5. Age Policy (18+)</h2>
-      <p>Loky Chat is intended exclusively for users aged 18 and older. We do not knowingly collect personal information from minors.</p>
+      <p>Loky Chat is strictly designed for adults aged 18 and older.</p>
 
-      <h2>6. Account and Data Deletion</h2>
-      <p>You can request complete deletion of your account and all associated data at any time inside the app settings or by contacting our support team below.</p>
+      <h2>6. Account & Data Deletion</h2>
+      <p>Users can permanently delete their account and associated data directly in-app or by contacting our support team below.</p>
 
       <div class="contact-box">
-        <h3>Privacy Support & Inquiries</h3>
-        <p>For any questions or data deletion requests, contact us at:</p>
+        <h3>Contact & Support</h3>
+        <p>For privacy inquiries or deletion requests, email us at:</p>
         <p><a href="mailto:mahmoud.aljafri23@gmail.com">mahmoud.aljafri23@gmail.com</a></p>
       </div>
     </div>
