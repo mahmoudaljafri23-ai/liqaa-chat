@@ -407,14 +407,14 @@ function showBanModal(bannedUntil) {
   banCountdownInterval = setInterval(updateBanCountdown, 1000);
 }
 
-function trigger24HourBan(reason) {
+function trigger24HourBan(reason, expiresAt) {
   if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) {
     console.log('[BAN BYPASSED] Admin user is immune from bans');
     return;
   }
 
   console.warn('[BAN TRIGGERED]', reason);
-  userProfile.bannedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 Hours
+  userProfile.bannedUntil = expiresAt || (Date.now() + 24 * 60 * 60 * 1000);
   saveUserProfile();
 
   cleanupPeerConnection();
@@ -816,9 +816,86 @@ function init() {
   setupInviteModal();
   setupGemsStore();
   setupAuthSystem();
+  setupReportModal();
   setupControls();
   connectSocket();
   autoDetectCountry();
+}
+
+// =============================================
+// User Report & Violation System
+// =============================================
+function setupReportModal() {
+  const reportModal = $('#report-modal');
+  const reportPartnerBtn = $('#report-partner-btn');
+  const closeReportBtn = $('#close-report-modal-btn');
+  const cancelReportBtn = $('#cancel-report-btn');
+  const submitReportBtn = $('#submit-report-btn');
+  const reportDetailsInput = $('#report-details-input');
+
+  function openReportModalForCurrentPartner() {
+    if (!currentPartner || !currentPartner.id) {
+      showGemToast('⚠️ لا يوجد شخص متصل معك حالياً لتقديم بلاغ ضده');
+      return;
+    }
+    if (reportDetailsInput) reportDetailsInput.value = '';
+    if (reportModal) reportModal.classList.remove('hidden');
+  }
+
+  if (reportPartnerBtn) {
+    reportPartnerBtn.onclick = openReportModalForCurrentPartner;
+  }
+
+  if (closeReportBtn) {
+    closeReportBtn.onclick = () => { if (reportModal) reportModal.classList.add('hidden'); };
+  }
+  if (cancelReportBtn) {
+    cancelReportBtn.onclick = () => { if (reportModal) reportModal.classList.add('hidden'); };
+  }
+
+  if (submitReportBtn) {
+    submitReportBtn.onclick = async () => {
+      if (!currentPartner || !currentPartner.id) {
+        showGemToast('⚠️ لا يوجد شريك محدد للإبلاغ عنه');
+        if (reportModal) reportModal.classList.add('hidden');
+        return;
+      }
+
+      const selectedOption = $('input[name="report-reason"]:checked');
+      const reason = selectedOption ? selectedOption.value : 'مخالفة';
+      const details = reportDetailsInput ? reportDetailsInput.value.trim() : '';
+
+      try {
+        const payload = {
+          reporterUsername: userProfile.username || 'مستخدم',
+          reporterPhone: userProfile.phone || '',
+          reportedUsername: currentPartner.username || 'مستخدم',
+          reportedGender: currentPartner.gender || '',
+          reportedCountry: currentPartner.country || '',
+          reportedSocketId: currentPartner.socketId || currentPartner.id,
+          reason: reason,
+          details: details
+        };
+
+        const res = await fetch(API_BASE_URL + '/api/report-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          showGemToast('🚨 تم إرسال البلاغ بنجاح! ستتم مراجعته يدوياً من قِبل المشرف.');
+        } else {
+          showGemToast('✅ تم تسجيل بلاغك وسيقوم المشرف بمراجعته فوراً');
+        }
+      } catch (err) {
+        console.error('[Report error]', err);
+        showGemToast('🚨 تم إرسال البلاغ وسيقوم المشرف بمراجعته فوراً');
+      }
+
+      if (reportModal) reportModal.classList.add('hidden');
+    };
+  }
 }
 
 // =============================================
@@ -1356,11 +1433,125 @@ function setupSettingsUI() {
         adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
         if (userProfile.isAdmin) {
           fetchAdminRechargeStats();
+          fetchAdminReports();
         }
       }
 
       if (settingsModal) settingsModal.classList.remove('hidden');
     });
+  }
+
+  async function fetchAdminReports() {
+    if (!userProfile || !userProfile.isAdmin) return;
+    try {
+      const res = await fetch(API_BASE_URL + '/api/admin/reports');
+      const data = await res.json();
+      if (data && data.success) {
+        const countEl = $('#admin-pending-reports-count');
+        const listEl = $('#admin-reports-list');
+        const bannedCountEl = $('#admin-banned-count');
+        const bannedListEl = $('#admin-banned-list');
+
+        const pending = (data.reports || []).filter(r => r.status === 'pending');
+        if (countEl) countEl.textContent = pending.length;
+
+        if (listEl) {
+          if (pending.length === 0) {
+            listEl.innerHTML = '<div style="font-size: 11px; color: #aaa; text-align: center; padding: 6px;">لا توجد بلاغات معلقة حالياً ✅</div>';
+          } else {
+            listEl.innerHTML = pending.map(r => `
+              <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 8px; font-size: 11px; text-align: right;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                  <strong style="color: #fca5a5; font-size: 12px;">🚨 ضد: ${r.reportedUsername} (${r.reportedGender === 'female' ? '👩 أنثى' : '👨 ذكر'})</strong>
+                  <span style="color: #aaa; font-size: 9px;">${r.date}</span>
+                </div>
+                <div style="color: #ffd700; margin-bottom: 2px;">⚠️ السبب: <b>${r.reason}</b></div>
+                ${r.details ? `<div style="color: #ddd; font-size: 10px; margin-bottom: 4px; background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 4px;">💬 ${r.details}</div>` : ''}
+                <div style="color: #aaa; font-size: 10px; margin-bottom: 6px;">👤 المُبلِّغ: ${r.reporter}</div>
+                <div style="display: flex; gap: 4px; justify-content: flex-end;">
+                  <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', 24, '${r.reason}', '${r.id}')" style="background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+                    ⛔ حظر 24 ساعة
+                  </button>
+                  <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', -1, '${r.reason}', '${r.id}')" style="background: #991b1b; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+                    🚫 حظر دائم
+                  </button>
+                  <button onclick="window.adminDismissReport('${r.id}')" style="background: rgba(255,255,255,0.15); color: #ccc; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer;">
+                    ✅ تجاهل
+                  </button>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+        if (bannedCountEl) bannedCountEl.textContent = `(${ (data.bannedUsers || []).length } محظور)`;
+        if (bannedListEl) {
+          if (!data.bannedUsers || data.bannedUsers.length === 0) {
+            bannedListEl.innerHTML = '<span style="color:#888;">لا يوجد مستخدمين محظورين</span>';
+          } else {
+            bannedListEl.innerHTML = data.bannedUsers.map(b => `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <span>🚫 <b>${b.username}</b> <small style="color:#aaa;">(${b.durationText || 'محظور'})</small></span>
+                <button onclick="window.adminUnbanUser('${b.key}')" style="background: #10b981; color: #fff; border: none; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer;">
+                  🔓 فك الحظر
+                </button>
+              </div>
+            `).join('');
+          }
+        }
+      }
+    } catch(err) {
+      console.error('[Admin Reports Fetch Error]', err);
+    }
+  }
+
+  window.adminBanUser = async (username, socketId, hours, reason, reportId) => {
+    try {
+      const res = await fetch(API_BASE_URL + '/api/admin/ban-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUsername: username, targetSocketId: socketId, durationHours: hours, reason: reason, reportId: reportId })
+      });
+      const data = await res.json();
+      showGemToast(`⛔ ${data.message || 'تم تنفيذ الحظر بنجاح'}`);
+      fetchAdminReports();
+    } catch (e) {
+      showGemToast('❌ تعذر تنفيذ الحظر');
+    }
+  };
+
+  window.adminUnbanUser = async (key) => {
+    try {
+      const res = await fetch(API_BASE_URL + '/api/admin/unban-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key })
+      });
+      const data = await res.json();
+      showGemToast(`🔓 ${data.message || 'تم فك الحظر بنجاح'}`);
+      fetchAdminReports();
+    } catch (e) {
+      showGemToast('❌ تعذر فك الحظر');
+    }
+  };
+
+  window.adminDismissReport = async (reportId) => {
+    try {
+      await fetch(API_BASE_URL + '/api/admin/dismiss-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: reportId })
+      });
+      showGemToast('✅ تم تجاهل وتبرئة البلاغ');
+      fetchAdminReports();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const refreshReportsBtn = $('#refresh-admin-reports-btn');
+  if (refreshReportsBtn) {
+    refreshReportsBtn.onclick = fetchAdminReports;
   }
 
   async function fetchAdminRechargeStats() {
@@ -1634,6 +1825,20 @@ function connectSocket() {
   socket.on('global_notification', (data) => {
     showGemToast(`📢 ${data.title}: ${data.message}`);
     sendLocalPushNotification(data.title || 'Loky Chat - لوكي شات 🚀', data.message);
+  });
+
+  socket.on('admin_new_report', (data) => {
+    if (userProfile && userProfile.isAdmin) {
+      showGemToast(`🚨 بلاغ جديد وارد ضد: ${data.reportedUsername} (${data.reason})`);
+      sendLocalPushNotification('🚨 بلاغ جديد وارد!', `ضد: ${data.reportedUsername} - السبب: ${data.reason}`);
+      const refreshBtn = $('#refresh-admin-reports-btn');
+      if (refreshBtn) refreshBtn.click();
+    }
+  });
+
+  socket.on('you_are_banned', (data) => {
+    console.warn('[Banned by Admin]', data);
+    trigger24HourBan(data.reason || 'مخالفة شروط الاستخدام', data.expiresAt);
   });
 
   socket.on('private_message', (data) => {
