@@ -94,16 +94,12 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 // Explicit Privacy and Account Deletion Routes for Google Play
-app.get('/privacy', (req, res) => {
+app.get(['/privacy', '/privacy.html'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
-app.get('/privacy.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
-});
-app.get('/delete-account', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'delete-account.html'));
-});
-app.get('/delete-account.html', (req, res) => {
+app.get(['/delete-account', '/delete-account.html'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.sendFile(path.join(__dirname, 'public', 'delete-account.html'));
 });
 
