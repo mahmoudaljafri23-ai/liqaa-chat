@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+const fs = require('fs');
+
+const content = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -105,4 +107,9 @@
     </div>
   </div>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync('public/privacy.html', content, 'utf8');
+fs.writeFileSync('privacy.html', content, 'utf8');
+fs.writeFileSync('android/app/src/main/assets/public/privacy.html', content, 'utf8');
+console.log('UTF-8 Privacy Policy written successfully!');
