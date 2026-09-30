@@ -360,6 +360,127 @@ app.post('/api/paypal-ipn', (req, res) => {
 });
 
 // =============================================
+// 📋 Reports & User Moderation Store (Manual Admin Control)
+// =============================================
+const reportsList = [];
+const bannedUsers = new Map(); // key (username/phone) -> { key, username, phone, reason, bannedAt, expiresAt, durationText }
+
+app.get('/api/admin/reports', (req, res) => {
+  const bannedArray = [];
+  const now = Date.now();
+  for (const [key, data] of bannedUsers.entries()) {
+    if (data.expiresAt && data.expiresAt <= now) {
+      bannedUsers.delete(key);
+    } else {
+      bannedArray.push(data);
+    }
+  }
+
+  res.json({
+    success: true,
+    reports: reportsList.slice(0, 100),
+    bannedUsers: bannedArray
+  });
+});
+
+app.post('/api/report-user', (req, res) => {
+  const { reporterUsername, reporterPhone, reportedUsername, reportedGender, reportedCountry, reportedSocketId, reason, details } = req.body;
+  const newReport = {
+    id: 'REP_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    timestamp: Date.now(),
+    date: new Date().toLocaleString('ar-EG'),
+    reporter: reporterUsername || 'مستخدم',
+    reporterPhone: reporterPhone || '',
+    reportedUsername: reportedUsername || 'مجهول',
+    reportedGender: reportedGender || '',
+    reportedCountry: reportedCountry || '',
+    reportedSocketId: reportedSocketId || '',
+    reason: reason || 'مخالفة',
+    details: details || '',
+    status: 'pending' // pending | banned | dismissed
+  };
+
+  reportsList.unshift(newReport);
+  if (reportsList.length > 300) reportsList.pop();
+
+  console.log(`[🚨 New Report Received] Against: ${newReport.reportedUsername} | Reason: ${newReport.reason}`);
+
+  // Notify any active Admin in real-time
+  io.emit('admin_new_report', newReport);
+
+  res.json({ success: true, message: 'تم استلام البلاغ وسيتم مراجعته من قبل الإدارة' });
+});
+
+app.post('/api/admin/ban-user', (req, res) => {
+  const { targetUsername, targetPhone, targetSocketId, durationHours, reason, reportId } = req.body;
+  const key = (targetUsername || targetPhone || '').trim();
+  if (!key) return res.status(400).json({ error: 'Missing username or identifier' });
+
+  const durationMs = durationHours ? (Number(durationHours) * 60 * 60 * 1000) : (24 * 60 * 60 * 1000);
+  const expiresAt = durationHours === -1 ? null : (Date.now() + durationMs);
+  const durationText = durationHours === -1 ? 'حظر دائم' : `حظر لمدة ${durationHours} ساعة`;
+
+  const banRecord = {
+    key: key,
+    username: targetUsername || key,
+    phone: targetPhone || '',
+    reason: reason || 'مخالفة شروط الاستخدام',
+    bannedAt: Date.now(),
+    expiresAt: expiresAt,
+    durationText: durationText
+  };
+
+  bannedUsers.set(key.toLowerCase(), banRecord);
+  if (targetPhone) bannedUsers.set(targetPhone, banRecord);
+
+  // Update report status if provided
+  if (reportId) {
+    const rep = reportsList.find(r => r.id === reportId);
+    if (rep) rep.status = 'banned';
+  }
+
+  // If user is currently online, disconnect them and kick out
+  for (const [sId, uData] of users.entries()) {
+    if (sId === targetSocketId || (uData.username && uData.username.toLowerCase() === key.toLowerCase()) || (uData.phone && uData.phone === targetPhone)) {
+      io.to(sId).emit('you_are_banned', {
+        reason: banRecord.reason,
+        expiresAt: banRecord.expiresAt,
+        durationText: banRecord.durationText
+      });
+      removeFromQueue(sId);
+      if (uData.partnerId) {
+        io.to(uData.partnerId).emit('partner_left');
+        const p = users.get(uData.partnerId);
+        if (p) p.partnerId = null;
+      }
+      users.delete(sId);
+    }
+  }
+
+  console.log(`[⛔ User Banned by Admin]: ${key} (${durationText})`);
+  res.json({ success: true, message: `تم حظر المستخدم ${key} بنجاح` });
+});
+
+app.post('/api/admin/unban-user', (req, res) => {
+  const { key } = req.body;
+  if (key) {
+    bannedUsers.delete(key.toLowerCase());
+    bannedUsers.delete(key);
+  }
+  console.log(`[🔓 User Unbanned by Admin]: ${key}`);
+  res.json({ success: true, message: 'تم رفع الحظر بنجاح' });
+});
+
+app.post('/api/admin/dismiss-report', (req, res) => {
+  const { reportId } = req.body;
+  const rep = reportsList.find(r => r.id === reportId);
+  if (rep) {
+    rep.status = 'dismissed';
+  }
+  res.json({ success: true, message: 'تم تجاهل البلاغ' });
+});
+
+// =============================================
 // State Management
 // =============================================
 const users = new Map();       // socketId -> { gender, country, countryName, partnerId, genderFilter }
