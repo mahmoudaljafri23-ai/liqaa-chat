@@ -200,81 +200,81 @@ const AR_COUNTRY_NAMES = {
   'DE': 'ألمانيا', 'FR': 'فرنسا', 'GB': 'المملكة المتحدة', 'CA': 'كندا', 'SE': 'السويد'
 };
 
-async function fetchGeoApi(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2500);
+const TIMEZONE_TO_COUNTRY = {
+  'Asia/Amman': 'JO',
+  'Asia/Riyadh': 'SA',
+  'Asia/Dubai': 'AE',
+  'Africa/Cairo': 'EG',
+  'Asia/Baghdad': 'IQ',
+  'Asia/Damascus': 'SY',
+  'Asia/Beirut': 'LB',
+  'Asia/Gaza': 'PS',
+  'Asia/Hebron': 'PS',
+  'Asia/Jerusalem': 'PS',
+  'Asia/Kuwait': 'KW',
+  'Asia/Qatar': 'QA',
+  'Asia/Bahrain': 'BH',
+  'Asia/Muscat': 'OM',
+  'Asia/Aden': 'YE',
+  'Africa/Algiers': 'DZ',
+  'Africa/Casablanca': 'MA',
+  'Africa/Tunis': 'TN',
+  'Africa/Tripoli': 'LY',
+  'Africa/Khartoum': 'SD',
+  'Europe/Istanbul': 'TR',
+  'Asia/Istanbul': 'TR',
+  'America/New_York': 'US',
+  'America/Los_Angeles': 'US',
+  'Europe/London': 'GB',
+  'Europe/Berlin': 'DE',
+  'Europe/Paris': 'FR'
+};
+
+function getInstantCountry() {
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('status ' + res.status);
-    const data = await res.json();
-    const code = data.country || data.country_code || data.countryCode || '';
-    const name = data.country_name || data.countryName || data.country || '';
-    if (code && typeof code === 'string' && code.length === 2) {
-      return { code: code.toUpperCase(), name: name };
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && TIMEZONE_TO_COUNTRY[tz]) {
+      const code = TIMEZONE_TO_COUNTRY[tz];
+      return { code, name: AR_COUNTRY_NAMES[code] || code };
     }
-    throw new Error('invalid data');
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
+  } catch (e) {}
+  return { code: 'JO', name: 'الأردن' };
 }
 
-async function detectCountry() {
-  const endpoints = [
-    'https://api.country.is',
-    'https://ipwho.is/',
-    'https://freeipapi.com/api/json'
-  ];
+function applyCountry(code, name) {
+  myHomeCountryCode = code;
+  selectedCountry = code;
+  selectedCountryName = name || AR_COUNTRY_NAMES[code] || code;
 
-  try {
-    return await Promise.any(endpoints.map(ep => fetchGeoApi(ep)));
-  } catch (e) {
-    console.warn('[Geo] All endpoints failed or timed out:', e);
-    return null;
-  }
-}
-
-let myHomeCountryCode = 'JO';
-
-async function autoDetectCountry() {
-  try {
-    const result = await detectCountry();
-
-    if (result && result.code) {
-      myHomeCountryCode = result.code;
-      const option = countrySelect ? countrySelect.querySelector(`option[value="${result.code}"]`) : null;
-      if (option) {
-        selectedCountry = result.code;
-        selectedCountryName = option.dataset.name || option.textContent;
-      } else {
-        selectedCountry = result.code;
-        selectedCountryName = AR_COUNTRY_NAMES[result.code] || result.name || result.code;
-      }
-
-      if (detectedFlag) detectedFlag.textContent = countryCodeToFlag(result.code);
-      if (detectedName) detectedName.textContent = selectedCountryName;
-
-      if (countryDetecting) countryDetecting.classList.add('hidden');
-      if (countryDetected) countryDetected.classList.remove('hidden');
-      if (countryManual) countryManual.classList.add('hidden');
-      validateForm();
-      return;
-    }
-  } catch (e) {
-    console.warn('[Geo] Auto-detect failed:', e);
-  }
-
-  // Fallback if detection fails or times out: Default to Jordan or manual selector
-  selectedCountry = 'JO';
-  selectedCountryName = 'الأردن';
-  if (detectedFlag) detectedFlag.textContent = '🇯🇴';
-  if (detectedName) detectedName.textContent = 'الأردن';
+  if (detectedFlag) detectedFlag.textContent = countryCodeToFlag(code);
+  if (detectedName) detectedName.textContent = selectedCountryName;
 
   if (countryDetecting) countryDetecting.classList.add('hidden');
   if (countryDetected) countryDetected.classList.remove('hidden');
   if (countryManual) countryManual.classList.add('hidden');
   validateForm();
+}
+
+async function autoDetectCountry() {
+  // 1. Instant detection in 0ms (no loading spinner delay)
+  const instant = getInstantCountry();
+  applyCountry(instant.code, instant.name);
+
+  // 2. Background refine from IP (optional, non-blocking)
+  try {
+    const result = await Promise.race([
+      detectCountry(),
+      new Promise(resolve => setTimeout(() => resolve(null), 1500))
+    ]);
+
+    if (result && result.code) {
+      const option = countrySelect ? countrySelect.querySelector(`option[value="${result.code}"]`) : null;
+      const cName = option ? (option.dataset.name || option.textContent) : (AR_COUNTRY_NAMES[result.code] || result.name || result.code);
+      applyCountry(result.code, cName);
+    }
+  } catch (e) {
+    console.warn('[Geo] Background IP check skipped:', e);
+  }
 }
 
 // =============================================
