@@ -820,6 +820,9 @@ function init() {
   setupControls();
   connectSocket();
   autoDetectCountry();
+  if (IS_NATIVE_APP) {
+    initPlayBilling();
+  }
 }
 
 // =============================================
@@ -1013,6 +1016,106 @@ function setupAuthSystem() {
 // =============================================
 let currentSelectedPackage = { gems: 3000, price: 4.99, paypalUrl: '' };
 
+// =============================================
+// Google Play Billing (Android app only)
+// =============================================
+const IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PlayBilling = IS_NATIVE_APP
+  ? (window.Capacitor.Plugins && window.Capacitor.Plugins.PlayBilling) || (window.Capacitor.registerPlugin && window.Capacitor.registerPlugin('PlayBilling'))
+  : null;
+const GEM_PRODUCTS = { '1000': 'gems_1000', '3000': 'gems_3000', '7000': 'gems_7000', '15000': 'gems_15000' };
+const PRODUCT_GEMS = { gems_1000: 1000, gems_3000: 3000, gems_7000: 7000, gems_15000: 15000 };
+let playProductsLoaded = false;
+let playPurchaseInProgress = false;
+
+function getGrantedTokens() {
+  try { return JSON.parse(localStorage.getItem('liqaa_play_tokens') || '[]'); } catch (e) { return []; }
+}
+
+// Grants gems exactly once per purchase token, then consumes it so it can be bought again.
+async function grantAndConsumePlayPurchase(purchase) {
+  if (!purchase || !purchase.purchaseToken || !purchase.purchased) return;
+  const gemsToAdd = PRODUCT_GEMS[purchase.productId];
+  if (!gemsToAdd) return;
+
+  const tokens = getGrantedTokens();
+  if (!tokens.includes(purchase.purchaseToken)) {
+    userProfile.gems = (parseInt(userProfile.gems, 10) || 0) + gemsToAdd;
+    tokens.push(purchase.purchaseToken);
+    localStorage.setItem('liqaa_play_tokens', JSON.stringify(tokens.slice(-100)));
+    saveUserProfile();
+    updateProfileUI();
+    showGemToast(`🎉 +${gemsToAdd} 💎`);
+    fetch(API_BASE_URL + '/api/record-purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gems: gemsToAdd, username: userProfile.username, method: 'Google Play', orderId: purchase.orderId || '' })
+    }).catch(() => {});
+  }
+
+  try {
+    await PlayBilling.consume({ purchaseToken: purchase.purchaseToken });
+  } catch (err) {
+    console.error('[PlayBilling] consume failed, will retry on next launch', err);
+  }
+}
+
+async function initPlayBilling() {
+  if (!PlayBilling) return;
+  document.body.classList.add('native-app');
+
+  try {
+    const { products } = await PlayBilling.getProducts({ productIds: Object.values(GEM_PRODUCTS) });
+    (products || []).forEach(p => {
+      const gems = PRODUCT_GEMS[p.productId];
+      const card = document.querySelector(`.gem-package-card[data-gems="${gems}"]`);
+      const priceEl = card && card.querySelector('.package-price');
+      if (priceEl && p.price) priceEl.textContent = p.price; // localized price from Google Play
+    });
+    playProductsLoaded = (products || []).length > 0;
+  } catch (err) {
+    console.error('[PlayBilling] getProducts failed', err);
+  }
+
+  // Recover purchases that were paid but not yet granted/consumed (e.g. app closed mid-purchase)
+  try {
+    const { purchases } = await PlayBilling.getUnconsumedPurchases();
+    for (const p of purchases || []) await grantAndConsumePlayPurchase(p);
+  } catch (err) {
+    console.error('[PlayBilling] recovery failed', err);
+  }
+
+  if (PlayBilling.addListener) {
+    PlayBilling.addListener('purchaseUpdated', (p) => grantAndConsumePlayPurchase(p));
+  }
+}
+
+async function buyWithGooglePlay(gems) {
+  if (!PlayBilling) return;
+  if (playPurchaseInProgress) return;
+  const productId = GEM_PRODUCTS[String(gems)];
+  if (!productId) return;
+
+  playPurchaseInProgress = true;
+  try {
+    if (!playProductsLoaded) await initPlayBilling();
+    const result = await PlayBilling.purchase({ productId });
+    if (result && result.pending) {
+      showGemToast(t('purchase_pending'));
+    } else {
+      await grantAndConsumePlayPurchase(result);
+      const rechargeModal = $('#recharge-modal');
+      if (rechargeModal) rechargeModal.classList.add('hidden');
+    }
+  } catch (err) {
+    const msg = String((err && err.message) || err);
+    if (!msg.includes('USER_CANCELED')) showGemToast(t('purchase_failed'));
+    console.error('[PlayBilling] purchase error', err);
+  } finally {
+    playPurchaseInProgress = false;
+  }
+}
+
 function setupGemsStore() {
   const rechargeModal = $('#recharge-modal');
   const checkoutModal = $('#checkout-modal');
@@ -1082,6 +1185,12 @@ function setupGemsStore() {
       e.stopPropagation();
       const gems = card.dataset.gems || '1000';
       const price = card.dataset.price || '2.49';
+
+      // Android app: Google Play Billing only (required by Play payments policy)
+      if (IS_NATIVE_APP) {
+        buyWithGooglePlay(gems);
+        return;
+      }
 
       currentSelectedPackage = { gems, price, paypalUrl: '' };
 
