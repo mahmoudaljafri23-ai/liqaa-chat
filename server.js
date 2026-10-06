@@ -93,10 +93,14 @@ app.get('/sitemap.xml', (req, res) => {
 </urlset>`);
 });
 
-// Explicit Privacy and Account Deletion Routes for Google Play
+// Explicit Privacy, Child Safety, and Account Deletion Routes for Google Play
 app.get(['/privacy', '/privacy.html'], (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+app.get(['/child-safety', '/child-safety.html', '/safety', '/safety.html'], (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.sendFile(path.join(__dirname, 'public', 'child-safety.html'));
 });
 app.get(['/delete-account', '/delete-account.html'], (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+const fs = require('fs');
+
+const childSafetyContent = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -100,4 +102,10 @@
     </div>
   </div>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync('public/child-safety.html', childSafetyContent, 'utf8');
+fs.writeFileSync('child-safety.html', childSafetyContent, 'utf8');
+fs.writeFileSync('android/app/src/main/assets/public/child-safety.html', childSafetyContent, 'utf8');
+
+console.log('child-safety.html created successfully in all locations!');
