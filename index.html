@@ -157,8 +157,8 @@
         <!-- Gender Filter -->
         <div class="form-section">
           <h3 class="section-title">
-            <span class="title-icon">🔍</span>
-            أريد التحدث مع
+            <span class="title-icon">👥</span>
+            أريد التحدث مع جنس
           </h3>
           <div class="filter-cards">
             <div class="filter-card active" data-filter="any" id="filter-any">
@@ -166,12 +166,74 @@
               <span class="badge-free">مجانى ✨</span>
             </div>
             <div class="filter-card" data-filter="male" id="filter-male">
-              <span>ذكور</span>
+              <span>👨 ذكور</span>
               <span class="badge-price">10 💎 / اتصال</span>
             </div>
             <div class="filter-card" data-filter="female" id="filter-female">
-              <span>إناث</span>
+              <span>👩 إناث</span>
               <span class="badge-price">10 💎 / اتصال</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Target Country Filter -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <span class="title-icon">🎯</span>
+            أريد التحدث مع دولة
+          </h3>
+          <div class="target-country-cards">
+            <div class="target-country-card active" data-target="ALL" id="target-country-all">
+              <span>🌍 كل العالم</span>
+              <span class="badge-free">مجانى ✨</span>
+            </div>
+            <div class="target-country-card" data-target="HOME" id="target-country-home">
+              <span id="target-home-label">🏠 بلدي الحالي</span>
+              <span class="badge-free">مجانى ✨</span>
+            </div>
+            <div class="target-country-card" data-target="CUSTOM" id="target-country-custom">
+              <span id="target-custom-label">📍 دولة محددة</span>
+              <span class="badge-price">10 💎 / اتصال</span>
+            </div>
+          </div>
+          <div id="target-country-select-wrapper" class="hidden" style="margin-top: 10px;">
+            <div class="select-wrapper">
+              <select id="target-custom-select">
+                <option value="" disabled selected>اختر الدولة التي تريد محادثة أشخاص منها...</option>
+                <option value="SA" data-name="السعودية">🇸🇦 السعودية - Saudi Arabia</option>
+                <option value="EG" data-name="مصر">🇪🇬 مصر - Egypt</option>
+                <option value="AE" data-name="الإمارات">🇦🇪 الإمارات - UAE</option>
+                <option value="JO" data-name="الأردن">🇯🇴 الأردن - Jordan</option>
+                <option value="IQ" data-name="العراق">🇮🇶 العراق - Iraq</option>
+                <option value="DZ" data-name="الجزائر">🇩🇿 الجزائر - Algeria</option>
+                <option value="MA" data-name="المغرب">🇲🇦 المغرب - Morocco</option>
+                <option value="KW" data-name="الكويت">🇰🇼 الكويت - Kuwait</option>
+                <option value="QA" data-name="قطر">🇶🇦 قطر - Qatar</option>
+                <option value="OM" data-name="عمان">🇴🇲 عمان - Oman</option>
+                <option value="BH" data-name="البحرين">🇧🇭 البحرين - Bahrain</option>
+                <option value="LB" data-name="لبنان">🇱🇧 لبنان - Lebanon</option>
+                <option value="SY" data-name="سوريا">🇸🇾 سوريا - Syria</option>
+                <option value="PS" data-name="فلسطين">🇵🇸 فلسطين - Palestine</option>
+                <option value="YE" data-name="اليمن">🇾🇪 اليمن - Yemen</option>
+                <option value="TN" data-name="تونس">🇹🇳 تونس - Tunisia</option>
+                <option value="LY" data-name="ليبيا">🇱🇾 ليبيا - Libya</option>
+                <option value="SD" data-name="السودان">🇸🇩 السودان - Sudan</option>
+                <option value="TR" data-name="تركيا">🇹🇷 تركيا - Turkey</option>
+                <option value="US" data-name="الولايات المتحدة">🇺🇸 الولايات المتحدة - USA</option>
+                <option value="GB" data-name="المملكة المتحدة">🇬🇧 بريطانيا - UK</option>
+                <option value="DE" data-name="ألمانيا">🇩🇪 ألمانيا - Germany</option>
+                <option value="FR" data-name="فرنسا">🇫🇷 فرنسا - France</option>
+                <option value="IT" data-name="إيطاليا">🇮🇹 إيطاليا - Italy</option>
+                <option value="ES" data-name="إسبانيا">🇪🇸 إسبانيا - Spain</option>
+                <option value="RU" data-name="روسيا">🇷🇺 روسيا - Russia</option>
+                <option value="BR" data-name="البرازيل">🇧🇷 البرازيل - Brazil</option>
+                <option value="IN" data-name="الهند">🇮🇳 الهند - India</option>
+                <option value="ID" data-name="إندونيسيا">🇮🇩 إندونيسيا - Indonesia</option>
+                <option value="PK" data-name="باكستان">🇵🇰 باكستان - Pakistan</option>
+                <option value="IR" data-name="إيران">🇮🇷 إيران - Iran</option>
+                <option value="CA" data-name="كندا">🇨🇦 كندا - Canada</option>
+                <option value="SE" data-name="السويد">🇸🇪 السويد - Sweden</option>
+              </select>
             </div>
           </div>
         </div>
@@ -453,9 +515,11 @@
       <div id="partner-info" class="hidden">
         <span id="partner-flag"></span>
         <span id="partner-username" style="font-weight: 800; color: #fff; margin: 0 4px;">مستخدم</span>
+        <div id="partner-gender-badge" class="partner-gender-tag gender-male">
+          <span id="partner-gender-icon">👨</span>
+          <span id="partner-gender-text">ذكر</span>
+        </div>
         <span id="partner-badges-display" style="font-size: 11px; color: #ffd700; margin: 0 4px;"></span>
-        <span class="partner-divider">•</span>
-        <span id="partner-gender-icon"></span>
         <button id="add-friend-btn" class="action-button" style="padding: 4px 10px; font-size: 11px; border-radius: 10px; margin-right: 6px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow: none;">
           ➕ إضافة صديق
         </button>

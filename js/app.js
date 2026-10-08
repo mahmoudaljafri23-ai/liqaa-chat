@@ -61,6 +61,9 @@ let selectedGender = 'male';
 let selectedGenderFilter = 'any';
 let selectedCountry = 'ALL';
 let selectedCountryName = 'كل العالم';
+let selectedTargetCountryMode = 'ALL'; // 'ALL' | 'HOME' | 'CUSTOM'
+let selectedTargetCountryCode = 'ALL';
+let selectedTargetCountryName = 'كل العالم';
 let callTimerInterval = null;
 let banCountdownInterval = null;
 let nudityScanInterval = null;
@@ -248,6 +251,9 @@ function applyCountry(code, name) {
 
   if (detectedFlag) detectedFlag.textContent = countryCodeToFlag(code);
   if (detectedName) detectedName.textContent = selectedCountryName;
+
+  const targetHomeLabel = $('#target-home-label');
+  if (targetHomeLabel) targetHomeLabel.textContent = `🏠 ${selectedCountryName}`;
 
   if (countryDetecting) countryDetecting.classList.add('hidden');
   if (countryDetected) countryDetected.classList.remove('hidden');
@@ -761,13 +767,17 @@ function setupInviteModal() {
   const shareWpBtn = $('#share-whatsapp-btn');
 
   function getMyReferralLink() {
-    const code = userProfile.username || userProfile.phone || 'friend';
-    return `${window.location.origin}/?ref=${encodeURIComponent(code)}`;
+    const code = encodeURIComponent(userProfile.username || userProfile.phone || 'friend');
+    return `https://loky-chat.onrender.com/?ref=${code}`;
+  }
+
+  function getPlayStoreLink() {
+    return 'https://play.google.com/store/apps/details?id=com.lokychat.app';
   }
 
   if (openInviteBtn) {
     openInviteBtn.onclick = () => {
-      const link = getMyReferralLink();
+      const link = getPlayStoreLink();
       if (refLinkInput) refLinkInput.value = link;
       if (inviteModal) inviteModal.classList.remove('hidden');
     };
@@ -781,7 +791,7 @@ function setupInviteModal() {
 
   if (copyBtn) {
     copyBtn.onclick = () => {
-      const link = getMyReferralLink();
+      const link = getPlayStoreLink();
       navigator.clipboard.writeText(link).then(() => {
         showGemToast('📋 تم نسخ رابط الدعوة بنجاح!');
       }).catch(() => {
@@ -796,8 +806,9 @@ function setupInviteModal() {
 
   if (shareWpBtn) {
     shareWpBtn.onclick = () => {
-      const link = getMyReferralLink();
-      const text = `⚡ انضم معي الآن على تطبيق "Loky Chat - لوكي شات" لأفضل دردشة فيديو ومحادثات مباشرة! 🎥✨\nسجل وفعل الإشعارات من الرابط التالي:\n${link}`;
+      const playLink = getPlayStoreLink();
+      const webLink = getMyReferralLink();
+      const text = `🔥 انضم معي الآن على تطبيق "Loky Chat - لوكي شات" لأفضل دردشة فيديو عشوائية ومباشرة مع أصدقاء من كل دول العالم! 🎥✨\n\n📲 حمّل التطبيق الرسمي من متجر Google Play:\n${playLink}\n\n🌐 أو ادخل للدردشة المباشرة عبر المتصفح:\n${webLink}`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
   }
@@ -1807,19 +1818,67 @@ function setupWelcomeUI() {
     });
   });
 
+  // Target Country Filter handling
+  const targetCountryCards = $$('.target-country-card');
+  const targetSelectWrapper = $('#target-country-select-wrapper');
+  const targetCustomSelect = $('#target-custom-select');
+
+  targetCountryCards.forEach(card => {
+    card.addEventListener('click', () => {
+      targetCountryCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      selectedTargetCountryMode = card.dataset.target || 'ALL';
+
+      if (selectedTargetCountryMode === 'CUSTOM') {
+        if (targetSelectWrapper) targetSelectWrapper.classList.remove('hidden');
+        if (targetCustomSelect) {
+          selectedTargetCountryCode = targetCustomSelect.value || 'SA';
+          const opt = targetCustomSelect.options[targetCustomSelect.selectedIndex];
+          selectedTargetCountryName = opt ? (opt.dataset.name || opt.text) : 'السعودية';
+          const customLabel = $('#target-custom-label');
+          if (customLabel && selectedTargetCountryName) customLabel.textContent = `📍 ${selectedTargetCountryName}`;
+        }
+      } else if (selectedTargetCountryMode === 'HOME') {
+        if (targetSelectWrapper) targetSelectWrapper.classList.add('hidden');
+        selectedTargetCountryCode = selectedCountry || 'JO';
+        selectedTargetCountryName = selectedCountryName || 'الأردن';
+      } else {
+        if (targetSelectWrapper) targetSelectWrapper.classList.add('hidden');
+        selectedTargetCountryCode = 'ALL';
+        selectedTargetCountryName = 'كل العالم';
+      }
+      validateForm();
+    });
+  });
+
+  if (targetCustomSelect) {
+    targetCustomSelect.addEventListener('change', () => {
+      selectedTargetCountryCode = targetCustomSelect.value;
+      const opt = targetCustomSelect.options[targetCustomSelect.selectedIndex];
+      selectedTargetCountryName = opt ? (opt.dataset.name || opt.text) : targetCustomSelect.value;
+      const customLabel = $('#target-custom-label');
+      if (customLabel) customLabel.textContent = `📍 ${selectedTargetCountryName}`;
+      validateForm();
+    });
+  }
+
   countrySelect.addEventListener('change', () => {
     selectedCountry = countrySelect.value || 'ALL';
     const selectedOption = countrySelect.options[countrySelect.selectedIndex];
     selectedCountryName = selectedOption.dataset.name || selectedOption.text;
+    const targetHomeLabel = $('#target-home-label');
+    if (targetHomeLabel) targetHomeLabel.textContent = `🏠 ${selectedCountryName}`;
     validateForm();
   });
 
   if (changeCountryBtn) {
     changeCountryBtn.addEventListener('click', () => {
+      // Also request GPS if available on user interaction
+      if (navigator.geolocation && navigator.geolocation.getCurrentPosition) {
+        navigator.geolocation.getCurrentPosition(() => {}, () => {});
+      }
       countryDetected.classList.add('hidden');
       countryManual.classList.remove('hidden');
-      selectedCountry = 'ALL';
-      selectedCountryName = 'كل العالم';
       validateForm();
     });
   }
@@ -1993,8 +2052,14 @@ function connectSocket() {
 
     sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
 
-    if (selectedGenderFilter !== 'any') {
-      if (userProfile.gems < FILTER_COST) {
+    let totalCost = 0;
+    if (selectedGenderFilter !== 'any') totalCost += FILTER_COST;
+    if (selectedTargetCountryMode === 'CUSTOM' && selectedTargetCountryCode !== 'ALL' && selectedTargetCountryCode !== selectedCountry) {
+      totalCost += FILTER_COST;
+    }
+
+    if (totalCost > 0) {
+      if (userProfile.gems < totalCost) {
         console.warn('[Gems] Insufficient gems for matched chat');
         cleanupPeerConnection();
         socket.emit('stop_search');
@@ -2003,9 +2068,10 @@ function connectSocket() {
         return;
       }
 
-      userProfile.gems -= FILTER_COST;
+      userProfile.gems -= totalCost;
       saveUserProfile();
       updateProfileUI();
+      showGemToast(`💎 تم استهلاك ${totalCost} جوهرة لتطبيق فلتر البحث`);
     }
 
     showPartnerInfo(data);
@@ -2142,7 +2208,13 @@ async function startChat() {
   saveUserProfile();
   updateSetupSectionVisibility();
 
-  if (selectedGenderFilter !== 'any' && userProfile.gems < FILTER_COST) {
+  let totalCost = 0;
+  if (selectedGenderFilter !== 'any') totalCost += FILTER_COST;
+  if (selectedTargetCountryMode === 'CUSTOM' && selectedTargetCountryCode !== 'ALL' && selectedTargetCountryCode !== selectedCountry) {
+    totalCost += FILTER_COST;
+  }
+
+  if (totalCost > 0 && userProfile.gems < totalCost) {
     if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
     return;
   }
@@ -2153,7 +2225,7 @@ async function startChat() {
   emitWhenReady('register', {
     gender: selectedGender || 'male',
     myCountry: myHomeCountryCode || 'JO',
-    targetCountry: selectedCountry || 'ALL',
+    targetCountry: selectedTargetCountryCode || 'ALL',
     country: selectedCountry || 'ALL',
     countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter,
@@ -2437,10 +2509,20 @@ function setState(state) {
 }
 
 function showPartnerInfo(data) {
-  partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
+  if (partnerFlag) partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
   const nameEl = $('#partner-username');
   if (nameEl) nameEl.textContent = data.partnerUsername || 'مستخدم';
-  partnerGenderIcon.textContent = data.partnerGender === 'male' ? '👨' : '👩';
+
+  const isMale = data.partnerGender === 'male';
+  const badgeEl = $('#partner-gender-badge');
+  const iconEl = $('#partner-gender-icon');
+  const textEl = $('#partner-gender-text');
+
+  if (iconEl) iconEl.textContent = isMale ? '👨' : '👩';
+  if (textEl) textEl.textContent = isMale ? 'ذكر' : 'أنثى';
+  if (badgeEl) {
+    badgeEl.className = `partner-gender-tag ${isMale ? 'gender-male' : 'gender-female'}`;
+  }
 
   const badgesEl = $('#partner-badges-display');
   if (badgesEl && data.partnerBadges) {
