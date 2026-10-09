@@ -696,15 +696,16 @@ io.on('connection', (socket) => {
     const user = users.get(socket.id);
     const targetId = (data && data.targetPartnerId) || (user && user.partnerId);
     if (targetId) {
+      const senderName = (data && data.senderUsername && data.senderUsername.trim()) ? data.senderUsername.trim() : (user && user.username ? user.username : 'مستخدم');
       io.to(targetId).emit('receive_friend_request', {
         senderId: socket.id,
-        senderUsername: (data && data.senderUsername) || (user && user.username) || 'مستخدم',
+        senderUsername: senderName,
         senderGender: (data && data.senderGender) || (user && user.gender) || 'male',
         senderAge: (data && data.senderAge) || (user && user.age) || 22,
         senderCountry: (user && user.country) || 'JO',
         senderCountryName: (user && user.countryName) || 'الأردن'
       });
-      console.log(`[Friend Request] Relayed from ${socket.id} to ${targetId}`);
+      console.log(`[Friend Request] Relayed from ${socket.id} (${senderName}) to ${targetId}`);
     }
   });
 
@@ -712,15 +713,16 @@ io.on('connection', (socket) => {
     const user = users.get(socket.id);
     const targetId = (data && data.targetPartnerId) || (user && user.partnerId);
     if (targetId) {
+      const partnerName = (data && data.partnerUsername && data.partnerUsername.trim()) ? data.partnerUsername.trim() : (user && user.username ? user.username : 'مستخدم');
       io.to(targetId).emit('friend_request_accepted', {
         partnerId: socket.id,
-        partnerUsername: (data && data.partnerUsername) || (user && user.username) || 'مستخدم',
+        partnerUsername: partnerName,
         partnerGender: (user && user.gender) || 'male',
         partnerAge: (user && user.age) || 22,
         partnerCountry: (user && user.country) || 'JO',
         partnerCountryName: (user && user.countryName) || 'الأردن'
       });
-      console.log(`[Friend Accepted] Relayed from ${socket.id} to ${targetId}`);
+      console.log(`[Friend Accepted] Relayed from ${socket.id} (${partnerName}) to ${targetId}`);
     }
   });
 

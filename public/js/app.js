@@ -199,6 +199,44 @@ function showGemToast(message) {
   }, 3000);
 }
 
+// In-Call Alert Notification (Visible during live video call)
+function showInCallAlert(message) {
+  const existing = document.getElementById('in-call-alert-banner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'in-call-alert-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(30, 20, 50, 0.95), rgba(15, 10, 30, 0.98));
+    border: 1.5px solid #ffd700;
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-size: 13.5px;
+    font-weight: 800;
+    z-index: 2000;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 15px rgba(255,215,0,0.4);
+    animation: slideDownInCall 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: auto;
+    text-align: center;
+    max-width: 90vw;
+  `;
+  banner.textContent = message;
+  document.body.appendChild(banner);
+
+  setTimeout(() => {
+    if (banner && banner.parentNode) {
+      banner.style.opacity = '0';
+      banner.style.transition = 'opacity 0.4s ease';
+      setTimeout(() => banner.remove(), 400);
+    }
+  }, 4000);
+}
+
 // =============================================
 // Auto-detect Country from IP (Ultra-fast concurrent with timeout)
 // =============================================
@@ -2528,21 +2566,21 @@ function connectSocket() {
       addBtn.textContent = '✅ وافق على طلب الصداقة';
       addBtn.className = 'hud-btn-friend btn-accept-friend';
     }
+    const senderName = (data && data.senderUsername && data.senderUsername !== 'مستخدم') ? data.senderUsername : (currentPartner && currentPartner.username ? currentPartner.username : 'الشريك');
     if (data && currentPartner) {
-      if (data.senderUsername && data.senderUsername !== 'مستخدم') {
-        currentPartner.username = data.senderUsername;
-        const nameEl = $('#partner-username');
-        if (nameEl) nameEl.textContent = data.senderUsername;
-      }
+      currentPartner.username = senderName;
       if (data.senderGender) currentPartner.gender = data.senderGender;
       if (data.senderAge) currentPartner.age = data.senderAge;
+      const nameEl = $('#partner-username');
+      if (nameEl) nameEl.textContent = senderName;
     }
+    showInCallAlert(`🤝 أرسل لك ${senderName} طلب صداقة! انقر للموافقة ✅`);
   });
 
   socket.on('friend_request_accepted', (data) => {
     console.log('[Socket] Friend request accepted:', data);
+    const friendName = (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') ? data.partnerUsername : ((currentPartner && currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner && currentPartner.name ? currentPartner.name : 'صديق جديد'));
     if (currentPartner && currentPartner.id) {
-      const friendName = (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') ? data.partnerUsername : ((currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد'));
       const newFriend = {
         id: currentPartner.id,
         socketId: currentPartner.socketId || currentPartner.id,
@@ -2560,17 +2598,16 @@ function connectSocket() {
         saveFriendsList();
         renderFriendsAndOnlineUsers();
       }
-      if (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') {
-        currentPartner.username = data.partnerUsername;
-        const nameEl = $('#partner-username');
-        if (nameEl) nameEl.textContent = data.partnerUsername;
-      }
+      currentPartner.username = friendName;
+      const nameEl = $('#partner-username');
+      if (nameEl) nameEl.textContent = friendName;
     }
     const addBtn = $('#add-friend-btn');
     if (addBtn) {
       addBtn.textContent = '✨ أصدقاء';
       addBtn.className = 'hud-btn-friend btn-friends-active';
     }
+    showInCallAlert(`🎉 أصبحتم أصدقاء الآن مع ${friendName}! ✨`);
   });
 
   socket.on('referral_reward_received', (data) => {

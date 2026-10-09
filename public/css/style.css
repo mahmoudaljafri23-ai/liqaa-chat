@@ -623,13 +623,14 @@ body {
 }
 
 .hud-username {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
   color: #fff;
-  max-width: 100px;
+  max-width: 160px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .hud-actions-box {
