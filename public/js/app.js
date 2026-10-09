@@ -537,6 +537,25 @@ function loadUserProfile() {
 
 function saveUserProfile() {
   localStorage.setItem('liqaa_user_profile', JSON.stringify(userProfile));
+  if (socket && socket.connected) {
+    socket.emit('register', {
+      gender: selectedGender || userProfile.gender || 'male',
+      myCountry: myHomeCountryCode || selectedCountry || 'JO',
+      targetCountry: selectedTargetCountryCode || selectedCountry || 'ALL',
+      country: selectedCountry || 'ALL',
+      countryName: selectedCountryName || 'كل العالم',
+      genderFilter: selectedGenderFilter || 'any',
+      username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+      phone: userProfile.phone || '',
+      age: userProfile.age || 22
+    });
+    socket.emit('update_profile', {
+      username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+      phone: userProfile.phone || '',
+      gender: userProfile.gender || 'male',
+      age: userProfile.age || 22
+    });
+  }
 }
 
 function updateSetupSectionVisibility() {
@@ -1411,7 +1430,7 @@ function setupFriendsSystem() {
         const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
         const newFriend = {
           id: currentPartner.id,
-          socketId: currentPartner.socketId,
+          socketId: currentPartner.socketId || currentPartner.id,
           name: friendName,
           username: friendName,
           gender: currentPartner.gender || 'male',
@@ -1427,7 +1446,14 @@ function setupFriendsSystem() {
           renderFriendsAndOnlineUsers();
         }
 
-        if (socket) socket.emit('accept_friend_request');
+        if (socket) {
+          socket.emit('accept_friend_request', {
+            targetPartnerId: currentPartner.id,
+            partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+            partnerGender: userProfile.gender || 'male',
+            partnerAge: userProfile.age || 22
+          });
+        }
         addFriendBtn.textContent = '✨ أصدقاء';
         addFriendBtn.className = 'hud-btn-friend btn-friends-active';
         return;
@@ -1441,7 +1467,14 @@ function setupFriendsSystem() {
       }
 
       // Sending friend request to partner
-      if (socket) socket.emit('send_friend_request');
+      if (socket) {
+        socket.emit('send_friend_request', {
+          targetPartnerId: currentPartner.id,
+          senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+          senderGender: userProfile.gender || 'male',
+          senderAge: userProfile.age || 22
+        });
+      }
       addFriendBtn.textContent = '⏳ تم إرسال الطلب';
       addFriendBtn.className = 'hud-btn-friend';
     };
@@ -2491,23 +2524,32 @@ function connectSocket() {
   socket.on('receive_friend_request', (data) => {
     console.log('[Socket] Friend request received:', data);
     const addBtn = $('#add-friend-btn');
-    if (addBtn && currentState === 'connected') {
-      addBtn.textContent = '✅ قبول الصداقة';
+    if (addBtn) {
+      addBtn.textContent = '✅ وافق على طلب الصداقة';
       addBtn.className = 'hud-btn-friend btn-accept-friend';
+    }
+    if (data && currentPartner) {
+      if (data.senderUsername && data.senderUsername !== 'مستخدم') {
+        currentPartner.username = data.senderUsername;
+        const nameEl = $('#partner-username');
+        if (nameEl) nameEl.textContent = data.senderUsername;
+      }
+      if (data.senderGender) currentPartner.gender = data.senderGender;
+      if (data.senderAge) currentPartner.age = data.senderAge;
     }
   });
 
   socket.on('friend_request_accepted', (data) => {
     console.log('[Socket] Friend request accepted:', data);
     if (currentPartner && currentPartner.id) {
-      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
+      const friendName = (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') ? data.partnerUsername : ((currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد'));
       const newFriend = {
         id: currentPartner.id,
-        socketId: currentPartner.socketId,
+        socketId: currentPartner.socketId || currentPartner.id,
         name: friendName,
         username: friendName,
-        gender: currentPartner.gender || 'male',
-        age: currentPartner.age || 22,
+        gender: (data && data.partnerGender) || currentPartner.gender || 'male',
+        age: (data && data.partnerAge) || currentPartner.age || 22,
         country: currentPartner.country || 'JO',
         countryName: currentPartner.countryName || 'الأردن',
         addedAt: Date.now()
@@ -2517,6 +2559,11 @@ function connectSocket() {
         friendsList.unshift(newFriend);
         saveFriendsList();
         renderFriendsAndOnlineUsers();
+      }
+      if (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') {
+        currentPartner.username = data.partnerUsername;
+        const nameEl = $('#partner-username');
+        if (nameEl) nameEl.textContent = data.partnerUsername;
       }
     }
     const addBtn = $('#add-friend-btn');

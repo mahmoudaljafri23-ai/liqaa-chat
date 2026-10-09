@@ -653,22 +653,25 @@ io.on('connection', (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
   broadcastOnlineCount();
 
-  // User registers with gender and country
+  // User registers with gender, country, and customized username
   socket.on('register', (data) => {
+    let existing = users.get(socket.id) || {};
     users.set(socket.id, {
-      gender: data.gender,
-      myCountry: data.myCountry || 'JO',
-      targetCountry: data.targetCountry || data.country || 'ALL',
-      country: data.myCountry || 'JO',
-      countryName: data.countryName,
-      genderFilter: data.genderFilter || 'any',
-      username: data.username || 'مستخدم',
-      phone: data.phone || '',
-      badges: data.badges || { awesome: 0, handsome: 0, elegant: 0 },
-      partnerId: null
+      ...existing,
+      gender: (data && data.gender) || existing.gender || 'male',
+      myCountry: (data && (data.myCountry || data.country)) || existing.myCountry || 'JO',
+      targetCountry: (data && (data.targetCountry || data.country)) || existing.targetCountry || 'ALL',
+      country: (data && (data.myCountry || data.country)) || existing.country || 'JO',
+      countryName: (data && data.countryName) || existing.countryName || 'الأردن',
+      genderFilter: (data && data.genderFilter) || existing.genderFilter || 'any',
+      username: (data && data.username && data.username.trim()) ? data.username.trim() : (existing.username || 'مستخدم'),
+      phone: (data && data.phone) || existing.phone || '',
+      age: (data && data.age) || existing.age || 22,
+      badges: (data && data.badges) || existing.badges || { awesome: 0, handsome: 0, elegant: 0 },
+      partnerId: existing.partnerId || null
     });
     broadcastOnlineCount();
-    console.log(`[R] Registered: ${socket.id} | ${data.username || 'User'} | Home: ${data.myCountry || 'JO'} | Target: ${data.targetCountry || data.country || 'ALL'}`);
+    console.log(`[R] Registered: ${socket.id} | ${users.get(socket.id).username} | Home: ${users.get(socket.id).myCountry}`);
   });
 
   // Handle giving badges between chat partners
@@ -688,43 +691,48 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Relay interactive friend requests between live partners
-  socket.on('send_friend_request', () => {
+  // Relay interactive friend requests directly to partner
+  socket.on('send_friend_request', (data) => {
     const user = users.get(socket.id);
-    if (user && user.partnerId) {
-      io.to(user.partnerId).emit('receive_friend_request', {
+    const targetId = (data && data.targetPartnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('receive_friend_request', {
         senderId: socket.id,
-        senderUsername: user.username || 'مستخدم',
-        senderGender: user.gender || 'male',
-        senderAge: user.age || 22,
-        senderCountry: user.country || 'JO',
-        senderCountryName: user.countryName || 'الأردن'
+        senderUsername: (data && data.senderUsername) || (user && user.username) || 'مستخدم',
+        senderGender: (data && data.senderGender) || (user && user.gender) || 'male',
+        senderAge: (data && data.senderAge) || (user && user.age) || 22,
+        senderCountry: (user && user.country) || 'JO',
+        senderCountryName: (user && user.countryName) || 'الأردن'
       });
+      console.log(`[Friend Request] Relayed from ${socket.id} to ${targetId}`);
     }
   });
 
-  socket.on('accept_friend_request', () => {
+  socket.on('accept_friend_request', (data) => {
     const user = users.get(socket.id);
-    if (user && user.partnerId) {
-      io.to(user.partnerId).emit('friend_request_accepted', {
+    const targetId = (data && data.targetPartnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('friend_request_accepted', {
         partnerId: socket.id,
-        partnerUsername: user.username || 'مستخدم',
-        partnerGender: user.gender || 'male',
-        partnerAge: user.age || 22,
-        partnerCountry: user.country || 'JO',
-        partnerCountryName: user.countryName || 'الأردن'
+        partnerUsername: (data && data.partnerUsername) || (user && user.username) || 'مستخدم',
+        partnerGender: (user && user.gender) || 'male',
+        partnerAge: (user && user.age) || 22,
+        partnerCountry: (user && user.country) || 'JO',
+        partnerCountryName: (user && user.countryName) || 'الأردن'
       });
+      console.log(`[Friend Accepted] Relayed from ${socket.id} to ${targetId}`);
     }
   });
 
   socket.on('update_profile', (data) => {
-    const user = users.get(socket.id);
-    if (user) {
-      if (data.username) user.username = data.username;
+    let user = users.get(socket.id);
+    if (user && data) {
+      if (data.username && data.username.trim()) user.username = data.username.trim();
       if (data.phone) user.phone = data.phone;
       if (data.gender) user.gender = data.gender;
       if (data.age) user.age = data.age;
       if (data.country) user.country = data.country;
+      console.log(`[Profile Updated] Socket ${socket.id} is now ${user.username}`);
     }
   });
 
@@ -786,7 +794,7 @@ io.on('connection', (socket) => {
         country: (data && (data.myCountry || data.country)) || 'JO',
         countryName: (data && data.countryName) || 'كل العالم',
         genderFilter: (data && data.genderFilter) || 'any',
-        username: (data && data.username) || 'مستخدم',
+        username: (data && data.username && data.username.trim()) ? data.username.trim() : 'مستخدم',
         phone: (data && data.phone) || '',
         badges: { awesome: 0, handsome: 0, elegant: 0 },
         partnerId: null
@@ -798,7 +806,8 @@ io.on('connection', (socket) => {
       if (data.myCountry) user.myCountry = data.myCountry;
       if (data.targetCountry) user.targetCountry = data.targetCountry;
       if (data.genderFilter) user.genderFilter = data.genderFilter;
-      if (data.username) user.username = data.username;
+      if (data.username && data.username.trim()) user.username = data.username.trim();
+      if (data.phone) user.phone = data.phone;
     }
 
     // Disconnect from current partner if any
