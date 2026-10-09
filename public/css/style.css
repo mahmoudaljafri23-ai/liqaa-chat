@@ -594,6 +594,7 @@ body {
   justify-content: space-between;
   z-index: 40;
   pointer-events: auto;
+  direction: ltr;
 }
 
 .partner-meta-box {
@@ -636,14 +637,7 @@ body {
 }
 
 .hud-call-timer {
-  background: rgba(0, 0, 0, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 6px 12px;
-  border-radius: 50px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #4ade80;
-  backdrop-filter: blur(10px);
+  display: none !important;
 }
 
 .hud-btn-friend {
@@ -680,10 +674,10 @@ body {
 /* Floating Picture-in-Picture Window in Fullscreen Call */
 .call-local-pip {
   position: absolute;
-  top: max(80px, calc(env(safe-area-inset-top, 16px) + 65px));
+  top: max(75px, calc(env(safe-area-inset-top, 16px) + 60px));
   right: 14px;
-  width: 105px;
-  height: 155px;
+  width: 100px;
+  height: 148px;
   border-radius: 18px;
   overflow: hidden;
   border: 2px solid #ffd700;
@@ -698,30 +692,72 @@ body {
   object-fit: cover;
 }
 
-/* In-Call Bottom Control Bar */
+/* In-Call Bottom Control Bar - Perfectly Centered & Sized for Mobile */
 .royal-call-controls {
   position: absolute;
-  bottom: max(24px, env(safe-area-inset-bottom, 24px));
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: max(28px, calc(env(safe-area-inset-bottom, 20px) + 20px));
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: fit-content;
+  max-width: calc(100vw - 20px);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  z-index: 45;
-  background: rgba(14, 10, 24, 0.88);
+  gap: 8px;
+  z-index: 50;
+  background: rgba(14, 10, 24, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 8px 18px;
+  padding: 6px 12px;
   border-radius: 50px;
-  border: 1.5px solid rgba(255, 215, 0, 0.4);
+  border: 1.5px solid rgba(255, 215, 0, 0.45);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(255, 215, 0, 0.25);
+  direction: ltr;
   animation: slideUpControls 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.royal-call-controls .control-btn {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  font-size: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.royal-call-controls .control-btn.end-btn {
+  background: radial-gradient(circle at 35% 30%, #ef4444 0%, #b91c1c 100%);
+  border-color: rgba(255, 120, 120, 0.6);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.royal-call-controls .control-btn.next-btn {
+  width: auto;
+  min-width: 82px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #f59e0b 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
 @keyframes slideUpControls {
-  from { transform: translate(-50%, 40px); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .partner-left-hud {

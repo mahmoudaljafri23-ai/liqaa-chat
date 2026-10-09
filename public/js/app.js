@@ -2671,18 +2671,19 @@ async function requestMediaPermission() {
       }
     }
 
-    // Full acquire with Balanced HD 30fps (Cool, battery-efficient, silky smooth)
+    // Balanced mobile video (640x480 @ 24-30fps) - zero lag, low latency, cool phone
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
-        width: { ideal: 640, max: 1280 },
-        height: { ideal: 480, max: 720 },
-        frameRate: { ideal: 30, max: 30 }
+        width: { ideal: 640, max: 854 },
+        height: { ideal: 480, max: 480 },
+        frameRate: { ideal: 24, max: 30 }
       },
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
-        autoGainControl: true
+        autoGainControl: true,
+        channelCount: 1
       }
     });
 
@@ -3022,9 +3023,43 @@ async function flushIceCandidateQueue() {
   }
 }
 
-function setVideoBitrate(sdp, bitrateKbps = 1200) {
+function optimizeSdp(sdp) {
   if (!sdp) return sdp;
-  return sdp.replace(/a=mid:video\r\n/g, `a=mid:video\r\nb=AS:${bitrateKbps}\r\n`);
+  let newSdp = sdp;
+  // Limit video bandwidth to 550kbps to eliminate packet drops, buffer bloat and audio latency on mobile networks
+  newSdp = newSdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:550\r\n');
+  // Enable Opus in-band FEC and low packet time for crystal clear zero-delay voice
+  newSdp = newSdp.replace(/a=fmtp:(\d+)(.*)/g, (match, pt, rest) => {
+    if (!rest.includes('useinbandfec=1')) {
+      return `a=fmtp:${pt} minptime=10;useinbandfec=1;maxaveragebitrate=32000${rest ? ';' + rest.replace(/^;/, '') : ''}`;
+    }
+    return match;
+  });
+  return newSdp;
+}
+
+async function applySenderParameters() {
+  if (!peerConnection) return;
+  try {
+    const senders = peerConnection.getSenders();
+    for (const sender of senders) {
+      if (sender.track && sender.track.kind === 'video') {
+        const params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+        params.encodings[0].maxBitrate = 550000; // 550 kbps for smooth 30fps
+        params.encodings[0].maxFramerate = 30;
+        await sender.setParameters(params).catch(() => {});
+      }
+      if (sender.track && sender.track.kind === 'audio') {
+        const params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+        params.encodings[0].maxBitrate = 32000; // 32 kbps HD audio
+        await sender.setParameters(params).catch(() => {});
+      }
+    }
+  } catch (e) {
+    console.warn('[WebRTC] applySenderParameters warn:', e);
+  }
 }
 
 async function createPeerConnection() {
@@ -3045,6 +3080,7 @@ async function createPeerConnection() {
         const remoteVid = $('#remote-video');
         if (remoteVid) {
           remoteVid.srcObject = event.streams[0];
+          remoteVid.muted = false;
           remoteVid.classList.remove('hidden');
           remoteVid.play().catch(e => console.warn('Remote video play catch:', e));
         }
@@ -3061,6 +3097,7 @@ async function createPeerConnection() {
       console.log('[WebRTC] Connection state:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'connected') {
         console.log('[WebRTC] P2P Video Call Connected Successfully!');
+        applySenderParameters();
       }
     };
 
@@ -3072,7 +3109,7 @@ async function createPeerConnection() {
 async function createAndSendOffer() {
   try {
     const offer = await peerConnection.createOffer();
-    offer.sdp = setVideoBitrate(offer.sdp, 1200);
+    offer.sdp = optimizeSdp(offer.sdp);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
     console.log('[WebRTC] Offer sent');
@@ -3086,7 +3123,7 @@ async function handleOffer(offer) {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     await flushIceCandidateQueue();
     const answer = await peerConnection.createAnswer();
-    answer.sdp = setVideoBitrate(answer.sdp, 1200);
+    answer.sdp = optimizeSdp(answer.sdp);
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', { answer: answer });
     console.log('[WebRTC] Answer sent');
@@ -3110,7 +3147,6 @@ function cleanupPeerConnection() {
     remoteVid.srcObject = null;
     remoteVid.classList.add('hidden');
   }
-  stopCallTimer();
 }
 
 // =============================================
@@ -3122,8 +3158,6 @@ function setState(state) {
   const searchingOverlay = $('#searching-overlay');
   const partnerLeftOverlay = $('#partner-left-overlay');
   const partnerInfo = $('#partner-info');
-  const callTimer = $('#call-timer');
-  const callBadgesBar = $('#call-badges-bar');
   const controlsBar = $('#controls-bar');
   const localVideoWrapper = $('#local-video-wrapper');
   const remoteVid = $('#remote-video');
@@ -3141,8 +3175,6 @@ function setState(state) {
       if (searchingOverlay) searchingOverlay.classList.add('hidden');
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       if (partnerInfo) partnerInfo.classList.add('hidden');
-      if (callTimer) callTimer.classList.add('hidden');
-      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       if (controlsBar) controlsBar.classList.add('hidden');
       if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
       if (remoteVid) {
@@ -3154,7 +3186,6 @@ function setState(state) {
       if (floatingToolbar) floatingToolbar.classList.remove('hidden');
       if (filterRow) filterRow.classList.remove('hidden');
       if (bottomNav) bottomNav.classList.remove('hidden');
-      stopCallTimer();
       break;
 
     case 'searching':
@@ -3165,8 +3196,6 @@ function setState(state) {
       if (searchingOverlay) searchingOverlay.classList.remove('hidden');
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       if (partnerInfo) partnerInfo.classList.add('hidden');
-      if (callTimer) callTimer.classList.add('hidden');
-      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       if (controlsBar) controlsBar.classList.remove('hidden');
       if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
       if (remoteVid) {
@@ -3178,7 +3207,6 @@ function setState(state) {
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.add('hidden');
-      stopCallTimer();
       break;
 
     case 'connected':
@@ -3189,8 +3217,6 @@ function setState(state) {
       if (searchingOverlay) searchingOverlay.classList.add('hidden');
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       if (partnerInfo) partnerInfo.classList.remove('hidden');
-      if (callTimer) callTimer.classList.remove('hidden');
-      if (callBadgesBar) callBadgesBar.classList.remove('hidden');
       if (controlsBar) controlsBar.classList.remove('hidden');
       if (localVideoWrapper) localVideoWrapper.classList.remove('hidden');
       if (remoteVid) remoteVid.classList.remove('hidden');
@@ -3199,7 +3225,6 @@ function setState(state) {
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.add('hidden');
-      startCallTimer();
       break;
 
     case 'partner_left':
@@ -3213,8 +3238,6 @@ function setState(state) {
         if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       }, 2500);
       if (partnerInfo) partnerInfo.classList.add('hidden');
-      if (callTimer) callTimer.classList.add('hidden');
-      if (callBadgesBar) callBadgesBar.classList.add('hidden');
       if (controlsBar) controlsBar.classList.remove('hidden');
       if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
       if (remoteVid) {
@@ -3226,7 +3249,6 @@ function setState(state) {
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.add('hidden');
-      stopCallTimer();
       break;
   }
 }
