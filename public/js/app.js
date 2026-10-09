@@ -1987,13 +1987,14 @@ async function initWelcomeCamera() {
     let stream = null;
     const isBack = (currentCameraFacing === 'environment');
 
-    // Strategy 1: High Definition 720p/1080p (ideal constraints that do NOT throw OverconstrainedError)
+    // Strategy 1: High Definition 720p 30fps (Cool, battery-efficient, silky smooth)
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 },
+          frameRate: { ideal: 30, max: 30 }
         },
         audio: false
       });
@@ -2670,12 +2671,13 @@ async function requestMediaPermission() {
       }
     }
 
-    // Full acquire with High Definition (720p ideal, no overconstrained limits)
+    // Full acquire with Balanced HD 30fps (Cool, battery-efficient, silky smooth)
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
+        width: { ideal: 640, max: 1280 },
+        height: { ideal: 480, max: 720 },
+        frameRate: { ideal: 30, max: 30 }
       },
       audio: {
         echoCancellation: true,
@@ -3020,7 +3022,7 @@ async function flushIceCandidateQueue() {
   }
 }
 
-function setVideoBitrate(sdp, bitrateKbps = 2500) {
+function setVideoBitrate(sdp, bitrateKbps = 1200) {
   if (!sdp) return sdp;
   return sdp.replace(/a=mid:video\r\n/g, `a=mid:video\r\nb=AS:${bitrateKbps}\r\n`);
 }
@@ -3070,7 +3072,7 @@ async function createPeerConnection() {
 async function createAndSendOffer() {
   try {
     const offer = await peerConnection.createOffer();
-    offer.sdp = setVideoBitrate(offer.sdp, 2500);
+    offer.sdp = setVideoBitrate(offer.sdp, 1200);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
     console.log('[WebRTC] Offer sent');
@@ -3084,7 +3086,7 @@ async function handleOffer(offer) {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     await flushIceCandidateQueue();
     const answer = await peerConnection.createAnswer();
-    answer.sdp = setVideoBitrate(answer.sdp, 2500);
+    answer.sdp = setVideoBitrate(answer.sdp, 1200);
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', { answer: answer });
     console.log('[WebRTC] Answer sent');
