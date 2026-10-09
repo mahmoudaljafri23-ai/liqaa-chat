@@ -480,6 +480,38 @@ app.post('/api/admin/dismiss-report', (req, res) => {
   res.json({ success: true, message: 'تم تجاهل البلاغ' });
 });
 
+// Server persistent profiles storage
+const persistentProfiles = new Map();
+
+app.post('/api/profile/update', (req, res) => {
+  try {
+    const { userId, username, phone, gender, age, country, adminPin } = req.body;
+    const key = (phone && phone.trim()) || (username && username.trim()) || userId || 'default';
+    const profile = {
+      username: username || 'مستخدم',
+      phone: phone || '',
+      gender: gender || 'male',
+      age: age || 22,
+      country: country || 'JO',
+      adminPin: adminPin || '',
+      updatedAt: Date.now()
+    };
+    persistentProfiles.set(key, profile);
+    console.log(`[💾 Profile Saved to Server]: ${profile.username} | ${profile.phone} | ${profile.gender} | ${profile.age}`);
+    res.json({ success: true, profile });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/api/profile', (req, res) => {
+  const key = req.query.phone || req.query.username || req.query.userId;
+  if (key && persistentProfiles.has(key)) {
+    return res.json({ success: true, profile: persistentProfiles.get(key) });
+  }
+  res.json({ success: false, message: 'Profile not found' });
+});
+
 // =============================================
 // State Management
 // =============================================
@@ -653,6 +685,46 @@ io.on('connection', (socket) => {
           fromUsername: user.username || 'شريك'
         });
       }
+    }
+  });
+
+  // Relay interactive friend requests between live partners
+  socket.on('send_friend_request', () => {
+    const user = users.get(socket.id);
+    if (user && user.partnerId) {
+      io.to(user.partnerId).emit('receive_friend_request', {
+        senderId: socket.id,
+        senderUsername: user.username || 'مستخدم',
+        senderGender: user.gender || 'male',
+        senderAge: user.age || 22,
+        senderCountry: user.country || 'JO',
+        senderCountryName: user.countryName || 'الأردن'
+      });
+    }
+  });
+
+  socket.on('accept_friend_request', () => {
+    const user = users.get(socket.id);
+    if (user && user.partnerId) {
+      io.to(user.partnerId).emit('friend_request_accepted', {
+        partnerId: socket.id,
+        partnerUsername: user.username || 'مستخدم',
+        partnerGender: user.gender || 'male',
+        partnerAge: user.age || 22,
+        partnerCountry: user.country || 'JO',
+        partnerCountryName: user.countryName || 'الأردن'
+      });
+    }
+  });
+
+  socket.on('update_profile', (data) => {
+    const user = users.get(socket.id);
+    if (user) {
+      if (data.username) user.username = data.username;
+      if (data.phone) user.phone = data.phone;
+      if (data.gender) user.gender = data.gender;
+      if (data.age) user.age = data.age;
+      if (data.country) user.country = data.country;
     }
   });
 

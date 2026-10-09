@@ -185,6 +185,7 @@ function countryCodeToFlag(code) {
 
 // Toast notification helper
 function showGemToast(message) {
+  if (currentState === 'connected') return; // Suppress popup toasts during live video call
   const container = $('#toast-container');
   if (!container) return;
 
@@ -1403,34 +1404,46 @@ function setupFriendsSystem() {
 
   if (addFriendBtn) {
     addFriendBtn.onclick = () => {
-      if (!currentPartner || !currentPartner.id) {
-        showGemToast('❌ لا يوجد شريك متصل الآن');
+      if (!currentPartner || !currentPartner.id) return;
+
+      if (addFriendBtn.classList.contains('btn-accept-friend')) {
+        // Accepting incoming friend request from partner
+        const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
+        const newFriend = {
+          id: currentPartner.id,
+          socketId: currentPartner.socketId,
+          name: friendName,
+          username: friendName,
+          gender: currentPartner.gender || 'male',
+          age: currentPartner.age || 22,
+          country: currentPartner.country || 'JO',
+          countryName: currentPartner.countryName || 'الأردن',
+          addedAt: Date.now()
+        };
+
+        if (!friendsList.some(f => f.id === newFriend.id)) {
+          friendsList.unshift(newFriend);
+          saveFriendsList();
+          renderFriendsAndOnlineUsers();
+        }
+
+        if (socket) socket.emit('accept_friend_request');
+        addFriendBtn.textContent = '✨ أصدقاء';
+        addFriendBtn.className = 'hud-btn-friend btn-friends-active';
         return;
       }
 
       const exists = friendsList.some(f => f.id === currentPartner.id);
       if (exists) {
-        showGemToast('✨ هذا الشخص موجود في قائمة أصدقائك بالفعل');
+        addFriendBtn.textContent = '✨ أصدقاء';
+        addFriendBtn.className = 'hud-btn-friend btn-friends-active';
         return;
       }
 
-      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
-      const newFriend = {
-        id: currentPartner.id,
-        socketId: currentPartner.socketId,
-        name: friendName,
-        username: friendName,
-        gender: currentPartner.gender || 'male',
-        age: currentPartner.age || 22,
-        country: currentPartner.country || 'JO',
-        countryName: currentPartner.countryName || 'الأردن',
-        addedAt: Date.now()
-      };
-
-      friendsList.unshift(newFriend);
-      saveFriendsList();
-      renderFriendsAndOnlineUsers();
-      showGemToast(`➕ تم إضافة ${friendName} (${newFriend.age} سنة) إلى أصدقائك!`);
+      // Sending friend request to partner
+      if (socket) socket.emit('send_friend_request');
+      addFriendBtn.textContent = '⏳ تم إرسال الطلب';
+      addFriendBtn.className = 'hud-btn-friend';
     };
   }
 
@@ -1630,8 +1643,67 @@ function renderPrivateMessages(friendId) {
   container.scrollTop = container.scrollHeight;
 }
 
-function setupSettingsUI() {
+function openSettingsModal() {
+  if (checkBanStatus()) return;
+
+  const settingsUsername = $('#settings-username');
+  const settingsPhone = $('#settings-phone');
+  const settingsAge = $('#settings-age');
   const settingsAdminPin = $('#settings-admin-pin');
+  const settingsGenderMale = $('#settings-gender-male');
+  const settingsGenderFemale = $('#settings-gender-female');
+  const adminPinGroup = $('#settings-admin-pin-group');
+
+  if (settingsUsername) settingsUsername.value = userProfile.username || '';
+  if (settingsPhone) settingsPhone.value = userProfile.phone || '';
+  if (settingsAge) settingsAge.value = userProfile.age || 22;
+  if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
+
+  const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
+  if (adminPinGroup) {
+    if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
+      adminPinGroup.classList.remove('hidden');
+    } else {
+      adminPinGroup.classList.add('hidden');
+    }
+  }
+
+  const currentGen = userProfile.gender || 'male';
+  if (settingsGenderMale && settingsGenderFemale) {
+    if (currentGen === 'female') {
+      settingsGenderFemale.classList.add('selected');
+      settingsGenderMale.classList.remove('selected');
+    } else {
+      settingsGenderMale.classList.add('selected');
+      settingsGenderFemale.classList.remove('selected');
+    }
+
+    settingsGenderMale.onclick = () => {
+      settingsGenderMale.classList.add('selected');
+      settingsGenderFemale.classList.remove('selected');
+    };
+    settingsGenderFemale.onclick = () => {
+      settingsGenderFemale.classList.add('selected');
+      settingsGenderMale.classList.remove('selected');
+    };
+  }
+
+  const adminBroadcastSection = $('#admin-broadcast-section');
+  if (adminBroadcastSection) {
+    adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
+    if (userProfile.isAdmin) {
+      fetchAdminRechargeStats();
+      fetchAdminReports();
+    }
+  }
+
+  const modal = $('#settings-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+window.openSettingsModal = openSettingsModal;
+
+function setupSettingsUI() {
+  const settingsPhone = $('#settings-phone');
   const adminPinGroup = $('#settings-admin-pin-group');
 
   function updateAdminPinVisibility() {
@@ -1650,44 +1722,12 @@ function setupSettingsUI() {
   }
 
   if (openSettingsModalBtn) {
-    openSettingsModalBtn.addEventListener('click', () => {
-      if (checkBanStatus()) return;
+    openSettingsModalBtn.addEventListener('click', openSettingsModal);
+  }
 
-      if (settingsUsername) settingsUsername.value = userProfile.username || '';
-      if (settingsPhone) settingsPhone.value = userProfile.phone || '';
-      if (settingsAge) settingsAge.value = userProfile.age || 22;
-      if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
-      
-      updateAdminPinVisibility();
-
-      let tempGender = userProfile.gender || 'male';
-      if (settingsGenderMale && settingsGenderFemale) {
-        settingsGenderMale.classList.toggle('selected', tempGender === 'male');
-        settingsGenderFemale.classList.toggle('selected', tempGender === 'female');
-
-        settingsGenderMale.onclick = () => {
-          tempGender = 'male';
-          settingsGenderMale.classList.add('selected');
-          settingsGenderFemale.classList.remove('selected');
-        };
-        settingsGenderFemale.onclick = () => {
-          tempGender = 'female';
-          settingsGenderFemale.classList.add('selected');
-          settingsGenderMale.classList.remove('selected');
-        };
-      }
-
-      const adminBroadcastSection = $('#admin-broadcast-section');
-      if (adminBroadcastSection) {
-        adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
-        if (userProfile.isAdmin) {
-          fetchAdminRechargeStats();
-          fetchAdminReports();
-        }
-      }
-
-      if (settingsModal) settingsModal.classList.remove('hidden');
-    });
+  const tabSettings = $('#tab-open-settings');
+  if (tabSettings) {
+    tabSettings.onclick = openSettingsModal;
   }
 
   async function fetchAdminReports() {
@@ -1875,13 +1915,19 @@ function setupSettingsUI() {
   }
 
   if (saveSettingsBtn) {
-    saveSettingsBtn.addEventListener('click', () => {
+    saveSettingsBtn.addEventListener('click', async () => {
+      const settingsUsername = $('#settings-username');
+      const settingsPhone = $('#settings-phone');
+      const settingsAge = $('#settings-age');
+      const settingsAdminPin = $('#settings-admin-pin');
+      const settingsGenderFemale = $('#settings-gender-female');
+
       const newName = settingsUsername ? settingsUsername.value.trim() : '';
       const newPhone = settingsPhone ? settingsPhone.value.trim() : '';
       const newAge = settingsAge ? parseInt(settingsAge.value.trim(), 10) || 22 : 22;
       const newPin = settingsAdminPin ? settingsAdminPin.value.trim() : '';
-      const selectedCard = $('.gender-card[data-settings-gender].selected');
-      const newGender = selectedCard ? selectedCard.dataset.settingsGender : userProfile.gender;
+      const isFemaleSelected = settingsGenderFemale && settingsGenderFemale.classList.contains('selected');
+      const newGender = isFemaleSelected ? 'female' : 'male';
 
       if (newName) userProfile.username = newName;
       userProfile.phone = newPhone;
@@ -1895,7 +1941,7 @@ function setupSettingsUI() {
       if (newPhone !== '0790181802' && !newPhone.includes('0790181802') && !newName.toLowerCase().includes('mahmoud')) {
         userProfile.isAdmin = false;
         userProfile.adminUnlocked = false;
-        userProfile.gems = 50; // Reset infinite gems to 50 for normal user testing
+        userProfile.gems = userProfile.gems || 50;
       } else {
         userProfile.isAdmin = true;
         userProfile.gems = 999999;
@@ -1905,8 +1951,38 @@ function setupSettingsUI() {
       updateProfileUI();
       updateSetupSectionVisibility();
 
+      // Persist to backend server API
+      try {
+        await fetch(API_BASE_URL + '/api/profile/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userProfile.username,
+            username: userProfile.username,
+            phone: userProfile.phone,
+            gender: userProfile.gender,
+            age: userProfile.age,
+            country: selectedCountry || userProfile.country || 'JO',
+            adminPin: userProfile.adminPin || ''
+          })
+        });
+      } catch (e) {
+        console.warn('[Profile Save Server Warn]', e);
+      }
+
+      // Emit to live socket
+      if (socket && socket.connected) {
+        socket.emit('update_profile', {
+          username: userProfile.username,
+          phone: userProfile.phone,
+          gender: userProfile.gender,
+          age: userProfile.age,
+          country: selectedCountry || userProfile.country || 'JO'
+        });
+      }
+
       if (settingsModal) settingsModal.classList.add('hidden');
-      showGemToast('✨ تم تحديث بيانات الحساب بنجاح');
+      showGemToast('✨ تم حفظ بيانات الحساب بنجاح!');
     });
   }
 }
@@ -1963,103 +2039,19 @@ const ROYAL_COUNTRIES = [
 ];
 
 async function initWelcomeCamera() {
+  // Keep camera in standby during idle mode so phone stays cool and battery is saved
   const preview = $('#welcome-camera-preview');
-  const fallback = $('#camera-fallback-bg');
-  if (!preview) return;
-
-  preview.muted = true;
-  preview.defaultMuted = true;
-  preview.setAttribute('playsinline', '');
-  preview.setAttribute('webkit-playsinline', '');
-  preview.setAttribute('autoplay', '');
-
-  // Mirror only for front camera, natural orientation for back camera
-  preview.style.transform = currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none';
-
-  try {
-    if (welcomeCamStream) {
-      welcomeCamStream.getTracks().forEach(t => {
-        try { t.stop(); } catch (e) {}
-      });
-      welcomeCamStream = null;
-    }
-
-    let stream = null;
-    const isBack = (currentCameraFacing === 'environment');
-
-    // Strategy 1: High Definition 720p 30fps (Cool, battery-efficient, silky smooth)
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 30, max: 30 }
-        },
-        audio: false
-      });
-    } catch (e1) {
-      console.warn('[Camera] Strategy 1 failed, trying basic video:', e1);
-      // Strategy 2: Simple video constraint
+  if (preview) {
+    preview.style.display = 'none';
+    if (preview.srcObject) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: isBack ? 'environment' : 'user' },
-          audio: false
-        });
-      } catch (e2) {
-        console.warn('[Camera] Strategy 2 failed, querying device list:', e2);
-        // Strategy 3: Enumerate devices
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter(d => d.kind === 'videoinput');
-          let targetDev = null;
-          if (isBack) {
-            targetDev = videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || (videoDevices.length > 1 ? videoDevices[videoDevices.length - 1] : videoDevices[0]);
-          } else {
-            targetDev = videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0];
-          }
-
-          if (targetDev && targetDev.deviceId) {
-            stream = await navigator.mediaDevices.getUserMedia({
-              video: { deviceId: { exact: targetDev.deviceId } },
-              audio: false
-            });
-          } else {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-          }
-        } catch (e3) {
-          throw e3;
-        }
-      }
+        preview.srcObject.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      preview.srcObject = null;
     }
-
-    welcomeCamStream = stream;
-    preview.srcObject = welcomeCamStream;
-    
-    const markVideoReady = () => {
-      preview.classList.add('video-ready');
-      if (fallback) fallback.style.display = 'none';
-    };
-
-    preview.onloadedmetadata = markVideoReady;
-    preview.onplaying = markVideoReady;
-    preview.onloadeddata = markVideoReady;
-
-    await preview.play().catch(e => console.warn('Preview play catch:', e));
-    markVideoReady();
-
-    // Also feed to local-video in PiP window
-    const localVid = $('#local-video');
-    if (localVid) {
-      localVid.srcObject = welcomeCamStream;
-      localVid.style.transform = currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none';
-      localVid.play().catch(() => {});
-    }
-  } catch (err) {
-    console.warn('[Welcome Camera] Local preview stream error:', err);
-    preview.classList.remove('video-ready');
-    if (fallback) fallback.style.display = 'flex';
   }
+  const fallback = $('#camera-fallback-bg');
+  if (fallback) fallback.style.display = 'flex';
 }
 
 function renderRoyalCountryGrid(searchFilter = '') {
@@ -2494,6 +2486,44 @@ function connectSocket() {
 
     const names = { awesome: '⭐ رائع', handsome: '✨ وسيم', elegant: '🎩 أنيق' };
     showGemToast(`🎉 حصلت على وسام "${names[data.badgeType] || data.badgeType}" من ${data.fromUsername || 'شريك'}!`);
+  });
+
+  socket.on('receive_friend_request', (data) => {
+    console.log('[Socket] Friend request received:', data);
+    const addBtn = $('#add-friend-btn');
+    if (addBtn && currentState === 'connected') {
+      addBtn.textContent = '✅ قبول الصداقة';
+      addBtn.className = 'hud-btn-friend btn-accept-friend';
+    }
+  });
+
+  socket.on('friend_request_accepted', (data) => {
+    console.log('[Socket] Friend request accepted:', data);
+    if (currentPartner && currentPartner.id) {
+      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
+      const newFriend = {
+        id: currentPartner.id,
+        socketId: currentPartner.socketId,
+        name: friendName,
+        username: friendName,
+        gender: currentPartner.gender || 'male',
+        age: currentPartner.age || 22,
+        country: currentPartner.country || 'JO',
+        countryName: currentPartner.countryName || 'الأردن',
+        addedAt: Date.now()
+      };
+
+      if (!friendsList.some(f => f.id === newFriend.id)) {
+        friendsList.unshift(newFriend);
+        saveFriendsList();
+        renderFriendsAndOnlineUsers();
+      }
+    }
+    const addBtn = $('#add-friend-btn');
+    if (addBtn) {
+      addBtn.textContent = '✨ أصدقاء';
+      addBtn.className = 'hud-btn-friend btn-friends-active';
+    }
   });
 
   socket.on('referral_reward_received', (data) => {
@@ -3277,6 +3307,18 @@ function showPartnerInfo(data) {
     if (b.handsome > 0) text += `✨${b.handsome} `;
     if (b.elegant > 0) text += `🎩${b.elegant}`;
     badgesEl.textContent = text;
+  }
+
+  const addBtn = $('#add-friend-btn');
+  if (addBtn) {
+    const isAlreadyFriend = friendsList.some(f => f.id === data.partnerId);
+    if (isAlreadyFriend) {
+      addBtn.textContent = '✨ أصدقاء';
+      addBtn.className = 'hud-btn-friend btn-friends-active';
+    } else {
+      addBtn.textContent = '➕ صديق';
+      addBtn.className = 'hud-btn-friend';
+    }
   }
 }
 
