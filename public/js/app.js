@@ -63,6 +63,7 @@ let isMicOn = true;
 let isCameraOn = true;
 let selectedGender = 'male';
 let selectedGenderFilter = 'any';
+let myHomeCountryCode = 'JO';
 let selectedCountry = 'ALL';
 let selectedCountryName = 'كل العالم';
 let selectedTargetCountryMode = 'ALL'; // 'ALL' | 'HOME' | 'CUSTOM'
