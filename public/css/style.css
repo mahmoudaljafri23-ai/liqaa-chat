@@ -1928,7 +1928,6 @@ video::-webkit-media-controls-volume-slider {
 /* Online Indicator */
 .online-indicator {
   display: none !important;
-  display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-secondary);
@@ -1977,7 +1976,7 @@ video::-webkit-media-controls-volume-slider {
 /* Local Video PiP */
 #local-video-wrapper {
   position: absolute;
-  top: 90px;
+  top: 80px;
   right: 20px;
   width: 140px;
   height: 190px;
@@ -2216,7 +2215,6 @@ video::-webkit-media-controls-volume-slider {
 
 .searching-online {
   display: none !important;
-  display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-secondary);
@@ -2643,8 +2641,116 @@ video::-webkit-media-controls-volume-slider {
   }
 
   #local-video-wrapper {
-  position: absolute;
-  top: 90px;
+    width: 110px;
+    height: 150px;
+    top: 80px;
+    right: 12px;
+  }
+
+  .controls-group {
+    gap: 12px;
+  }
+
+  .control-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .next-btn {
+    padding: 0 18px;
+  }
+
+  .next-label {
+    font-size: 14px;
+  }
+
+  #partner-info {
+    top: 12px;
+    left: 12px;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .filter-cards {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .filter-card {
+    padding: 10px 6px;
+  }
+
+  .filter-card span {
+    font-size: 12px;
+  }
+}
+
+/* Landscape mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  #local-video-wrapper {
+    width: 100px;
+    height: 130px;
+  }
+
+  #controls-bar {
+    padding: 10px 24px 16px;
+  }
+
+  .control-btn {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* PayPal Hosted Buttons Container styling */
+#paypal-hosted-button-container {
+  width: 100% !important;
+  max-width: 320px !important;
+  margin: 15px auto !important;
+  box-sizing: border-box !important;
+}
+
+#paypal-hosted-button-container * {
+  white-space: normal !important;
+  word-break: normal !important;
+}
+
+#paypal-hosted-button-container form {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+#paypal-hosted-button-container iframe {
+  width: 100% !important;
+  min-width: 250px !important;
+}
+
+/* Toast Notification */
+.toast-container {
+  position: fixed;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -2880,7 +2986,7 @@ video::-webkit-media-controls-volume-slider {
 
 .royal-input-group {
   width: 100%;
-  margin-top: 90px;
+  margin-top: 12px;
   text-align: right;
 }
 
