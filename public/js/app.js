@@ -387,28 +387,18 @@ function checkAdminPermissions() {
   }
 
   // Check if username/phone matches Admin identity
-  const isAdminIdentity = uname.includes('mahmoud') || uname.includes('محمود') || uname.includes('admin') || uname.includes('الجعفري') || phone === '0790181802' || phone === '07901818188';
+  const isAdminIdentity = phone === '0790181802' || phone === '07901818188' || uname === 'mahmoud' || uname === 'محمود' || uname === 'admin';
 
   if (isAdminIdentity) {
-    if (userProfile.adminUnlocked) {
-      userProfile.isAdmin = true;
-      userProfile.gems = 999999;
-      delete userProfile.bannedUntil; // Full immunity and unban
-      saveUserProfile();
-      return true;
-    } else {
-      promptAdminPinModal();
-      return false;
-    }
+    userProfile.isAdmin = true;
+    userProfile.adminUnlocked = true;
+    userProfile.gems = 999999;
+    delete userProfile.bannedUntil; // Full immunity
   } else {
     userProfile.isAdmin = false;
     userProfile.adminUnlocked = false;
-    if (userProfile.gems > 1000) {
-      userProfile.gems = 50;
-    }
-    saveUserProfile();
   }
-  return false;
+  return userProfile.isAdmin;
 }
 
 function promptAdminPinModal() {
@@ -1714,62 +1704,161 @@ function renderPrivateMessages(friendId) {
   container.scrollTop = container.scrollHeight;
 }
 
+async function fetchAdminReports() {
+  if (!userProfile || !userProfile.isAdmin) return;
+  try {
+    const res = await fetch(API_BASE_URL + '/api/admin/reports');
+    const data = await res.json();
+    if (data && data.success) {
+      const countEl = $('#admin-pending-reports-count');
+      const listEl = $('#admin-reports-list');
+      const bannedCountEl = $('#admin-banned-count');
+      const bannedListEl = $('#admin-banned-list');
+
+      const pending = (data.reports || []).filter(r => r.status === 'pending');
+      if (countEl) countEl.textContent = pending.length;
+
+      if (listEl) {
+        if (pending.length === 0) {
+          listEl.innerHTML = '<div style="font-size: 11px; color: #aaa; text-align: center; padding: 6px;">لا توجد بلاغات معلقة حالياً ✅</div>';
+        } else {
+          listEl.innerHTML = pending.map(r => `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 8px; font-size: 11px; text-align: right;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <strong style="color: #fca5a5; font-size: 12px;">🚨 ضد: ${r.reportedUsername} (${r.reportedGender === 'female' ? '👩 أنثى' : '👨 ذكر'})</strong>
+                <span style="color: #aaa; font-size: 9px;">${r.date}</span>
+              </div>
+              <div style="color: #ffd700; margin-bottom: 2px;">⚠️ السبب: <b>${r.reason}</b></div>
+              ${r.details ? `<div style="color: #ddd; font-size: 10px; margin-bottom: 4px; background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 4px;">💬 ${r.details}</div>` : ''}
+              <div style="color: #aaa; font-size: 10px; margin-bottom: 6px;">👤 المُبلِّغ: ${r.reporter}</div>
+              <div style="display: flex; gap: 4px; justify-content: flex-end;">
+                <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', 24, '${r.reason}', '${r.id}')" style="background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+                  ⛔ حظر 24 ساعة
+                </button>
+                <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', -1, '${r.reason}', '${r.id}')" style="background: #991b1b; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
+                  🚫 حظر دائم
+                </button>
+                <button onclick="window.adminDismissReport('${r.id}')" style="background: rgba(255,255,255,0.15); color: #ccc; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer;">
+                  ✅ تجاهل
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      if (bannedCountEl) bannedCountEl.textContent = `(${ (data.bannedUsers || []).length } محظور)`;
+      if (bannedListEl) {
+        if (!data.bannedUsers || data.bannedUsers.length === 0) {
+          bannedListEl.innerHTML = '<span style="color:#888;">لا يوجد مستخدمين محظورين</span>';
+        } else {
+          bannedListEl.innerHTML = data.bannedUsers.map(b => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+              <span>🚫 <b>${b.username}</b> <small style="color:#aaa;">(${b.durationText || 'محظور'})</small></span>
+              <button onclick="window.adminUnbanUser('${b.key}')" style="background: #10b981; color: #fff; border: none; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer;">
+                🔓 فك الحظر
+              </button>
+            </div>
+          `).join('');
+        }
+      }
+    }
+  } catch(err) {
+    console.error('[Admin Reports Fetch Error]', err);
+  }
+}
+
+async function fetchAdminRechargeStats() {
+  if (!userProfile || !userProfile.isAdmin) return;
+  try {
+    const res = await fetch(API_BASE_URL + '/api/admin/recharge-stats');
+    const data = await res.json();
+    if (data && data.success) {
+      const revEl = $('#admin-total-revenue');
+      const gemsEl = $('#admin-total-gems-sold');
+      const listEl = $('#admin-purchases-list');
+
+      if (revEl) revEl.textContent = `${data.totalRevenue} $`;
+      if (gemsEl) gemsEl.textContent = Number(data.totalGemsSold).toLocaleString();
+
+      if (listEl) {
+        if (!data.purchases || data.purchases.length === 0) {
+          listEl.innerHTML = 'لا توجد عمليات شحن مسجلة بعد';
+        } else {
+          listEl.innerHTML = data.purchases.map(p => `
+            <div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
+              <span>👤 ${p.username} (${p.gems} 💎)</span>
+              <span style="color: #4ade80; font-weight: bold;">${p.price}$ <small style="color: #aaa; font-weight: normal;">[${p.date}]</small></span>
+            </div>
+          `).join('');
+        }
+      }
+    }
+  } catch(err) {
+    console.error('[Admin Stats Fetch Error]', err);
+  }
+}
+
 function openSettingsModal() {
-  if (checkBanStatus()) return;
+  try {
+    const modal = $('#settings-modal');
+    if (modal) modal.classList.remove('hidden');
 
-  const settingsUsername = $('#settings-username');
-  const settingsPhone = $('#settings-phone');
-  const settingsAge = $('#settings-age');
-  const settingsAdminPin = $('#settings-admin-pin');
-  const settingsGenderMale = $('#settings-gender-male');
-  const settingsGenderFemale = $('#settings-gender-female');
-  const adminPinGroup = $('#settings-admin-pin-group');
+    const settingsUsername = $('#settings-username');
+    const settingsPhone = $('#settings-phone');
+    const settingsAge = $('#settings-age');
+    const settingsAdminPin = $('#settings-admin-pin');
+    const settingsGenderMale = $('#settings-gender-male');
+    const settingsGenderFemale = $('#settings-gender-female');
+    const adminPinGroup = $('#settings-admin-pin-group');
 
-  if (settingsUsername) settingsUsername.value = userProfile.username || '';
-  if (settingsPhone) settingsPhone.value = userProfile.phone || '';
-  if (settingsAge) settingsAge.value = userProfile.age || 22;
-  if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
+    if (settingsUsername) settingsUsername.value = userProfile.username || '';
+    if (settingsPhone) settingsPhone.value = userProfile.phone || '';
+    if (settingsAge) settingsAge.value = userProfile.age || 22;
+    if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
 
-  const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
-  if (adminPinGroup) {
-    if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
-      adminPinGroup.classList.remove('hidden');
-    } else {
-      adminPinGroup.classList.add('hidden');
-    }
-  }
-
-  const currentGen = userProfile.gender || 'male';
-  if (settingsGenderMale && settingsGenderFemale) {
-    if (currentGen === 'female') {
-      settingsGenderFemale.classList.add('selected');
-      settingsGenderMale.classList.remove('selected');
-    } else {
-      settingsGenderMale.classList.add('selected');
-      settingsGenderFemale.classList.remove('selected');
+    const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
+    if (adminPinGroup) {
+      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
+        adminPinGroup.classList.remove('hidden');
+      } else {
+        adminPinGroup.classList.add('hidden');
+      }
     }
 
-    settingsGenderMale.onclick = () => {
-      settingsGenderMale.classList.add('selected');
-      settingsGenderFemale.classList.remove('selected');
-    };
-    settingsGenderFemale.onclick = () => {
-      settingsGenderFemale.classList.add('selected');
-      settingsGenderMale.classList.remove('selected');
-    };
-  }
+    const currentGen = userProfile.gender || 'male';
+    if (settingsGenderMale && settingsGenderFemale) {
+      if (currentGen === 'female') {
+        settingsGenderFemale.classList.add('selected');
+        settingsGenderMale.classList.remove('selected');
+      } else {
+        settingsGenderMale.classList.add('selected');
+        settingsGenderFemale.classList.remove('selected');
+      }
 
-  const adminBroadcastSection = $('#admin-broadcast-section');
-  if (adminBroadcastSection) {
-    adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
-    if (userProfile.isAdmin) {
-      fetchAdminRechargeStats();
-      fetchAdminReports();
+      settingsGenderMale.onclick = () => {
+        settingsGenderMale.classList.add('selected');
+        settingsGenderFemale.classList.remove('selected');
+      };
+      settingsGenderFemale.onclick = () => {
+        settingsGenderFemale.classList.add('selected');
+        settingsGenderMale.classList.remove('selected');
+      };
     }
-  }
 
-  const modal = $('#settings-modal');
-  if (modal) modal.classList.remove('hidden');
+    const adminBroadcastSection = $('#admin-broadcast-section');
+    if (adminBroadcastSection) {
+      adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
+      if (userProfile.isAdmin) {
+        fetchAdminRechargeStats();
+        fetchAdminReports();
+      }
+    }
+  } catch (err) {
+    console.error('[openSettingsModal Error]', err);
+    const modal = $('#settings-modal');
+    if (modal) modal.classList.remove('hidden');
+  }
 }
 window.openSettingsModal = openSettingsModal;
 
@@ -1792,78 +1881,12 @@ function setupSettingsUI() {
     settingsPhone.addEventListener('input', updateAdminPinVisibility);
   }
 
-  if (openSettingsModalBtn) {
-    openSettingsModalBtn.addEventListener('click', openSettingsModal);
-  }
-
-  const tabSettings = $('#tab-open-settings');
-  if (tabSettings) {
-    tabSettings.onclick = openSettingsModal;
-  }
-
-  async function fetchAdminReports() {
-    if (!userProfile || !userProfile.isAdmin) return;
-    try {
-      const res = await fetch(API_BASE_URL + '/api/admin/reports');
-      const data = await res.json();
-      if (data && data.success) {
-        const countEl = $('#admin-pending-reports-count');
-        const listEl = $('#admin-reports-list');
-        const bannedCountEl = $('#admin-banned-count');
-        const bannedListEl = $('#admin-banned-list');
-
-        const pending = (data.reports || []).filter(r => r.status === 'pending');
-        if (countEl) countEl.textContent = pending.length;
-
-        if (listEl) {
-          if (pending.length === 0) {
-            listEl.innerHTML = '<div style="font-size: 11px; color: #aaa; text-align: center; padding: 6px;">لا توجد بلاغات معلقة حالياً ✅</div>';
-          } else {
-            listEl.innerHTML = pending.map(r => `
-              <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 8px; font-size: 11px; text-align: right;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                  <strong style="color: #fca5a5; font-size: 12px;">🚨 ضد: ${r.reportedUsername} (${r.reportedGender === 'female' ? '👩 أنثى' : '👨 ذكر'})</strong>
-                  <span style="color: #aaa; font-size: 9px;">${r.date}</span>
-                </div>
-                <div style="color: #ffd700; margin-bottom: 2px;">⚠️ السبب: <b>${r.reason}</b></div>
-                ${r.details ? `<div style="color: #ddd; font-size: 10px; margin-bottom: 4px; background: rgba(0,0,0,0.4); padding: 3px 6px; border-radius: 4px;">💬 ${r.details}</div>` : ''}
-                <div style="color: #aaa; font-size: 10px; margin-bottom: 6px;">👤 المُبلِّغ: ${r.reporter}</div>
-                <div style="display: flex; gap: 4px; justify-content: flex-end;">
-                  <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', 24, '${r.reason}', '${r.id}')" style="background: #ef4444; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
-                    ⛔ حظر 24 ساعة
-                  </button>
-                  <button onclick="window.adminBanUser('${r.reportedUsername}', '${r.reportedSocketId}', -1, '${r.reason}', '${r.id}')" style="background: #991b1b; color: #fff; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer;">
-                    🚫 حظر دائم
-                  </button>
-                  <button onclick="window.adminDismissReport('${r.id}')" style="background: rgba(255,255,255,0.15); color: #ccc; border: none; padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer;">
-                    ✅ تجاهل
-                  </button>
-                </div>
-              </div>
-            `).join('');
-          }
-        }
-
-        if (bannedCountEl) bannedCountEl.textContent = `(${ (data.bannedUsers || []).length } محظور)`;
-        if (bannedListEl) {
-          if (!data.bannedUsers || data.bannedUsers.length === 0) {
-            bannedListEl.innerHTML = '<span style="color:#888;">لا يوجد مستخدمين محظورين</span>';
-          } else {
-            bannedListEl.innerHTML = data.bannedUsers.map(b => `
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
-                <span>🚫 <b>${b.username}</b> <small style="color:#aaa;">(${b.durationText || 'محظور'})</small></span>
-                <button onclick="window.adminUnbanUser('${b.key}')" style="background: #10b981; color: #fff; border: none; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer;">
-                  🔓 فك الحظر
-                </button>
-              </div>
-            `).join('');
-          }
-        }
-      }
-    } catch(err) {
-      console.error('[Admin Reports Fetch Error]', err);
-    }
-  }
+  $$('#open-settings-modal-btn, [id="open-settings-modal-btn"], #tab-open-settings, [id="tab-open-settings"]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openSettingsModal();
+    };
+  });
 
   window.adminBanUser = async (username, socketId, hours, reason, reportId) => {
     try {
@@ -1912,37 +1935,6 @@ function setupSettingsUI() {
   const refreshReportsBtn = $('#refresh-admin-reports-btn');
   if (refreshReportsBtn) {
     refreshReportsBtn.onclick = fetchAdminReports;
-  }
-
-  async function fetchAdminRechargeStats() {
-    if (!userProfile || !userProfile.isAdmin) return;
-    try {
-      const res = await fetch(API_BASE_URL + '/api/admin/recharge-stats');
-      const data = await res.json();
-      if (data && data.success) {
-        const revEl = $('#admin-total-revenue');
-        const gemsEl = $('#admin-total-gems-sold');
-        const listEl = $('#admin-purchases-list');
-
-        if (revEl) revEl.textContent = `${data.totalRevenue} $`;
-        if (gemsEl) gemsEl.textContent = Number(data.totalGemsSold).toLocaleString();
-
-        if (listEl) {
-          if (!data.purchases || data.purchases.length === 0) {
-            listEl.innerHTML = 'لا توجد عمليات شحن مسجلة بعد';
-          } else {
-            listEl.innerHTML = data.purchases.map(p => `
-              <div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;">
-                <span>👤 ${p.username} (${p.gems} 💎)</span>
-                <span style="color: #4ade80; font-weight: bold;">${p.price}$ <small style="color: #aaa; font-weight: normal;">[${p.date}]</small></span>
-              </div>
-            `).join('');
-          }
-        }
-      }
-    } catch(err) {
-      console.error('[Admin Stats Fetch Error]', err);
-    }
   }
 
   const refreshStatsBtn = $('#refresh-admin-stats-btn');
