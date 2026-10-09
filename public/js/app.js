@@ -2502,56 +2502,73 @@ function connectSocket() {
       updateProfileUI();
     }
     showGemToast(`🎁 مبروك! انضم ${data.friendUsername || 'صديقك'} عبر رابطك وفعل الإشعارات! تم إضافة +50 مجوهرة لرصيدك 💎`);
-    sendLocalPushNotification('🎁 هدية دعوة صديق!', `انضم ${data.friendUsername || 'صديقك'} وتم إضافة +50 مجوهرة لرصيدك!`);
   });
 
-  // Matched event -> Deduct 10 gems per connected match if gender filter active
-  socket.on('matched', async (data) => {
-    console.log('[Socket] Matched with:', data.partnerId);
-    isInitiator = data.isInitiator;
-    currentPartner = {
-      id: data.partnerId,
-      socketId: data.partnerId,
-      username: data.partnerUsername || 'مستخدم',
-      gender: data.partnerGender,
-      country: data.partnerCountry,
-      countryName: data.partnerCountryName,
-      badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
-    };
-
-    sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
-
-    let totalCost = 0;
-    if (selectedGenderFilter !== 'any') totalCost += FILTER_COST;
-    if (selectedTargetCountryMode === 'CUSTOM' && selectedTargetCountryCode !== 'ALL' && selectedTargetCountryCode !== selectedCountry) {
-      totalCost += FILTER_COST;
+function sendLocalPushNotification(title, body) {
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(title, { body: body, icon: 'icons/icon-192.png' });
     }
+  } catch (e) {
+    console.log('[Notification] Local notification suppressed:', e);
+  }
+}
 
-    if (totalCost > 0) {
-      if (userProfile.gems < totalCost) {
-        console.warn('[Gems] Insufficient gems for matched chat');
-        cleanupPeerConnection();
-        socket.emit('stop_search');
-        if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
-        setState('idle');
-        return;
+  // Matched event -> Deduct gems if filtered and transition immediately to video call
+  socket.on('matched', async (data) => {
+    try {
+      console.log('[Socket] Matched with partner:', data);
+      isInitiator = data.isInitiator;
+      currentPartner = {
+        id: data.partnerId,
+        socketId: data.partnerId,
+        username: data.partnerUsername || 'مستخدم',
+        gender: data.partnerGender,
+        country: data.partnerCountry,
+        countryName: data.partnerCountryName,
+        badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
+      };
+
+      sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
+
+      let totalCost = 0;
+      if (selectedGenderFilter !== 'any') totalCost += FILTER_COST;
+      if (selectedTargetCountryMode === 'CUSTOM' && selectedTargetCountryCode !== 'ALL' && selectedTargetCountryCode !== selectedCountry) {
+        totalCost += FILTER_COST;
       }
 
-      userProfile.gems -= totalCost;
-      saveUserProfile();
-      updateProfileUI();
-      showGemToast(`💎 تم استهلاك ${totalCost} جوهرة لتطبيق فلتر البحث`);
+      if (totalCost > 0) {
+        if (userProfile.gems < totalCost) {
+          console.warn('[Gems] Insufficient gems for matched chat');
+          cleanupPeerConnection();
+          socket.emit('stop_search');
+          if (insufficientGemsModal) insufficientGemsModal.classList.remove('hidden');
+          setState('idle');
+          return;
+        }
+
+        userProfile.gems -= totalCost;
+        saveUserProfile();
+        updateProfileUI();
+        showGemToast(`💎 تم استهلاك ${totalCost} جوهرة لتطبيق فلتر البحث`);
+      }
+
+      // 1. Immediately switch UI state to connected
+      setState('connected');
+      showPartnerInfo(data);
+      startNextButtonCooldown();
+
+      // 2. Establish WebRTC Peer Connection
+      await createPeerConnection();
+
+      // 3. Initiator creates offer
+      if (isInitiator) {
+        await createAndSendOffer();
+      }
+    } catch (err) {
+      console.error('[Socket] Error in matched handler:', err);
+      setState('connected');
     }
-
-    showPartnerInfo(data);
-    startNextButtonCooldown();
-    await createPeerConnection();
-
-    if (isInitiator) {
-      await createAndSendOffer();
-    }
-
-    setState('connected');
   });
 
   socket.on('offer', async (data) => {
