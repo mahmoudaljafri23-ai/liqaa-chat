@@ -58,574 +58,308 @@
   <!-- ============ Welcome Screen ============ -->
   <div id="welcome-screen" class="screen active">
     <div class="welcome-bg"></div>
-    <div class="welcome-content">
-      <!-- User Header Bar (WhatsApp Style Unified Navigation Bar) -->
-      <div id="user-header-bar" class="user-header-bar">
-        <!-- Profile Pill -->
-        <div class="header-nav-pill profile-pill" id="open-settings-modal-btn" title="تعديل إعدادات الحساب">
-          <span class="pill-icon">👤</span>
-          <span id="user-display-name" class="pill-text">مستخدم جديد</span>
-          <span style="font-size:10px; opacity:0.7;">⚙️</span>
+    <div class="welcome-modern-container">
+      
+      <!-- Top Luxury Header Bar -->
+      <div class="modern-header-bar">
+        <!-- Right: Profile Avatar Button (Hidden by user request) -->
+        <div class="header-profile-btn hidden" id="open-settings-modal-btn" title="حسابي والإعدادات" style="display: none !important;">
+          <div class="profile-avatar-circle">
+            <span id="user-avatar-icon">👤</span>
+            <span class="avatar-online-dot"></span>
+          </div>
+          <span id="user-display-name" class="header-username">مستخدم</span>
         </div>
 
-        <!-- Friends Pill -->
-        <div class="header-nav-pill friends-pill" id="open-friends-modal-btn" title="قائمة الأصدقاء والدردشة الخاصة">
-          <span class="pill-icon">💬</span>
-          <span class="pill-text">الأصدقاء</span>
-        </div>
+        <!-- Center: Get VIP / Max Pill -->
+        <button class="header-max-pill" id="open-max-pill-btn" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
+          <span class="max-star">❇️</span>
+          <span>احصل على Max</span>
+        </button>
 
-        <!-- Invite Pill -->
-        <div class="header-nav-pill invite-pill" id="open-invite-modal-btn" title="دعوة أصدقاء وكسب جواهر">
-          <span class="pill-icon">🎁</span>
-          <span class="pill-text">دعوة (+50💎)</span>
-        </div>
+        <!-- Left: Gems Count & Bell Notification -->
+        <div class="header-left-group">
+          <!-- Gems Pill -->
+          <div class="header-gems-pill" onclick="document.getElementById('recharge-modal').classList.remove('hidden')" title="رصيد الجواهر">
+            <span class="gem-icon">💎</span>
+            <span id="gems-balance-count">50</span>
+          </div>
 
-        <!-- Download Android APK Pill -->
-        <a href="/LokyChat.apk" download="LokyChat.apk" class="header-nav-pill download-pill" style="text-decoration: none; color: inherit; background: rgba(34, 197, 94, 0.18); border: 1px solid rgba(34, 197, 94, 0.45); cursor: pointer;" title="تحميل تطبيق الأندرويد المباشر">
-          <span class="pill-icon">🤖</span>
-          <span class="pill-text" style="color: #4ade80; font-weight: bold;">تطبيق APK</span>
-        </a>
-
-        <!-- Gems Balance Pill -->
-        <div class="header-nav-pill gems-pill" id="open-recharge-modal" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
-          <span class="pill-icon">💎</span>
-          <span id="gems-balance-count" class="pill-text">50</span>
-          <button class="pill-add-btn" onclick="document.getElementById('recharge-modal').classList.remove('hidden'); event.stopPropagation();">+</button>
+          <!-- Notification Bell -->
+          <div class="header-bell-btn" id="open-notifications-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')" title="الإشعارات والمكافآت">
+            <span class="bell-icon">🔔</span>
+            <span class="bell-badge">2</span>
+          </div>
         </div>
       </div>
 
-      <!-- Logo -->
-      <div class="logo-container">
-        <div class="logo-icon">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#FF6B6B"/>
-                <stop offset="100%" style="stop-color:#FF8E53"/>
-              </linearGradient>
-            </defs>
-            <circle cx="50" cy="50" r="45" fill="url(#logoGrad)"/>
-            <path d="M35 35 L45 50 L35 65 M55 35 L65 50 L55 65" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="50" cy="50" r="8" fill="white" opacity="0.9"/>
-          </svg>
-        </div>
-        <h1 class="app-title">Loky Chat</h1>
-        <p class="app-subtitle">لوكي شات - دردشة فيديو عشوائية ومباشرة مع أشخاص من كل العالم</p>
-      </div>
+      <!-- Main Live Camera Card (Full visual center - Clean, Ultra HD, Unified Interface) -->
+      <div class="welcome-camera-card" id="welcome-camera-card">
+        <!-- 1. Full-screen Local Camera Video (Idle / Search) -->
+        <video id="welcome-camera-preview" autoplay playsinline muted poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>"></video>
 
-      <!-- Setup Form -->
-      <div class="setup-form">
-        <!-- Initial Profile Setup Section (Hidden once user completes setup) -->
-        <div id="initial-profile-setup-section">
-          <!-- User Profile Form -->
-          <div class="form-section">
-            <h3 class="section-title">
-              <span class="title-icon">📝</span>
-              معلومات الحساب
-            </h3>
-            <div class="input-group">
-              <label for="username-input">الاسم / اسم المستخدم</label>
-              <input type="text" id="username-input" placeholder="أدخل اسمك..." dir="auto">
-            </div>
-            <div class="input-group" style="margin-top: 10px;">
-              <label for="phone-input">رقم الهاتف</label>
-              <input type="tel" id="phone-input" placeholder="07XXXXXXXX" dir="ltr">
-            </div>
-          </div>
+        <!-- 2. Full-screen Partner Remote Video (Active Call) -->
+        <video id="remote-video" autoplay playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" class="call-remote-video hidden"></video>
 
-          <!-- Gender Selection -->
-          <div class="form-section">
-            <h3 class="section-title">
-              <span class="title-icon">👤</span>
-              اختر جنسك
-            </h3>
-            <div class="gender-cards">
-              <div class="gender-card" data-gender="male" id="gender-male">
-                <div class="gender-icon">👨</div>
-                <span>ذكر</span>
-                <span class="gender-en">Male</span>
-              </div>
-              <div class="gender-card" data-gender="female" id="gender-female">
-                <div class="gender-icon">👩</div>
-                <span>أنثى</span>
-                <span class="gender-en">Female</span>
-              </div>
-            </div>
-          </div>
+        <!-- 3. Local Camera Floating Picture-in-Picture (PiP) Window (Active Call) -->
+        <div id="local-video-wrapper" class="call-local-pip hidden">
+          <video id="local-video" autoplay playsinline muted poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>"></video>
+          <div class="pip-gold-glow"></div>
         </div>
 
-        <!-- Gender Filter -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <span class="title-icon">👥</span>
-            أريد التحدث مع جنس
-          </h3>
-          <div class="filter-cards">
-            <div class="filter-card active" data-filter="any" id="filter-any">
-              <span>الكل</span>
-              <span class="badge-free">مجانى ✨</span>
-            </div>
-            <div class="filter-card" data-filter="male" id="filter-male">
-              <span>👨 ذكور</span>
-              <span class="badge-price">10 💎 / اتصال</span>
-            </div>
-            <div class="filter-card" data-filter="female" id="filter-female">
-              <span>👩 إناث</span>
-              <span class="badge-price">10 💎 / اتصال</span>
-            </div>
-          </div>
+        <!-- 4. Camera Fallback Background (when starting / switching) -->
+        <div id="camera-fallback-bg" class="camera-fallback-bg">
+          <div class="camera-fallback-glow"></div>
+          <div class="camera-fallback-avatar">👑</div>
+          <div class="camera-status-hint">الكاميرا جاهزة للبث ✨</div>
         </div>
 
-        <!-- Target Country Filter -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <span class="title-icon">🎯</span>
-            أريد التحدث مع دولة
-          </h3>
-          <div class="target-country-cards">
-            <div class="target-country-card active" data-target="ALL" id="target-country-all">
-              <span>🌍 كل العالم</span>
-              <span class="badge-free">مجانى ✨</span>
-            </div>
-            <div class="target-country-card" data-target="HOME" id="target-country-home">
-              <span id="target-home-label">🏠 بلدي الحالي</span>
-              <span class="badge-free">مجانى ✨</span>
-            </div>
-            <div class="target-country-card" data-target="CUSTOM" id="target-country-custom">
-              <span id="target-custom-label">📍 دولة محددة</span>
-              <span class="badge-price">10 💎 / اتصال</span>
-            </div>
-          </div>
-          <div id="target-country-select-wrapper" class="hidden" style="margin-top: 10px;">
-            <div class="select-wrapper">
-              <select id="target-custom-select">
-                <option value="" disabled selected>اختر الدولة التي تريد محادثة أشخاص منها...</option>
-                <option value="SA" data-name="السعودية">🇸🇦 السعودية - Saudi Arabia</option>
-                <option value="EG" data-name="مصر">🇪🇬 مصر - Egypt</option>
-                <option value="AE" data-name="الإمارات">🇦🇪 الإمارات - UAE</option>
-                <option value="JO" data-name="الأردن">🇯🇴 الأردن - Jordan</option>
-                <option value="IQ" data-name="العراق">🇮🇶 العراق - Iraq</option>
-                <option value="DZ" data-name="الجزائر">🇩🇿 الجزائر - Algeria</option>
-                <option value="MA" data-name="المغرب">🇲🇦 المغرب - Morocco</option>
-                <option value="KW" data-name="الكويت">🇰🇼 الكويت - Kuwait</option>
-                <option value="QA" data-name="قطر">🇶🇦 قطر - Qatar</option>
-                <option value="OM" data-name="عمان">🇴🇲 عمان - Oman</option>
-                <option value="BH" data-name="البحرين">🇧🇭 البحرين - Bahrain</option>
-                <option value="LB" data-name="لبنان">🇱🇧 لبنان - Lebanon</option>
-                <option value="SY" data-name="سوريا">🇸🇾 سوريا - Syria</option>
-                <option value="PS" data-name="فلسطين">🇵🇸 فلسطين - Palestine</option>
-                <option value="YE" data-name="اليمن">🇾🇪 اليمن - Yemen</option>
-                <option value="TN" data-name="تونس">🇹🇳 تونس - Tunisia</option>
-                <option value="LY" data-name="ليبيا">🇱🇾 ليبيا - Libya</option>
-                <option value="SD" data-name="السودان">🇸🇩 السودان - Sudan</option>
-                <option value="TR" data-name="تركيا">🇹🇷 تركيا - Turkey</option>
-                <option value="US" data-name="الولايات المتحدة">🇺🇸 الولايات المتحدة - USA</option>
-                <option value="GB" data-name="المملكة المتحدة">🇬🇧 بريطانيا - UK</option>
-                <option value="DE" data-name="ألمانيا">🇩🇪 ألمانيا - Germany</option>
-                <option value="FR" data-name="فرنسا">🇫🇷 فرنسا - France</option>
-                <option value="IT" data-name="إيطاليا">🇮🇹 إيطاليا - Italy</option>
-                <option value="ES" data-name="إسبانيا">🇪🇸 إسبانيا - Spain</option>
-                <option value="RU" data-name="روسيا">🇷🇺 روسيا - Russia</option>
-                <option value="BR" data-name="البرازيل">🇧🇷 البرازيل - Brazil</option>
-                <option value="IN" data-name="الهند">🇮🇳 الهند - India</option>
-                <option value="ID" data-name="إندونيسيا">🇮🇩 إندونيسيا - Indonesia</option>
-                <option value="PK" data-name="باكستان">🇵🇰 باكستان - Pakistan</option>
-                <option value="IR" data-name="إيران">🇮🇷 إيران - Iran</option>
-                <option value="CA" data-name="كندا">🇨🇦 كندا - Canada</option>
-                <option value="SE" data-name="السويد">🇸🇪 السويد - Sweden</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Store Quick Button -->
-        <div class="form-section">
-          <button type="button" class="action-button" style="width: 100%; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; font-weight: 800; font-size: 16px; border: none; justify-content: center; gap: 8px;" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
-            <span>💎 متجر شحن الجواهر</span>
+        <!-- 5. Floating Left Toolbar (Idle State) -->
+        <div class="camera-floating-toolbar" id="camera-floating-toolbar">
+          <button type="button" class="royal-bubble-item bubble-gold" id="btn-cam-filters" title="فلاتر وتجميل">
+            <span class="royal-bubble-orb">✨</span>
+          </button>
+          <button type="button" class="royal-bubble-item bubble-emerald" id="btn-cam-toggle" title="تشغيل/إيقاف الكاميرا">
+            <span class="royal-bubble-orb" id="cam-toggle-icon">📹</span>
+          </button>
+          <button type="button" class="royal-bubble-item bubble-sapphire" id="btn-cam-flip" title="تبديل الكاميرا الأمامية/الخلفية">
+            <span class="royal-bubble-orb">🔄</span>
+          </button>
+          <button type="button" class="royal-bubble-item bubble-ruby" id="btn-cam-gifts" onclick="document.getElementById('recharge-modal').classList.remove('hidden')" title="متجر الهدايا والجواهر">
+            <span class="royal-bubble-orb">🎁</span>
           </button>
         </div>
 
-        <!-- Country Detection -->
-        <div class="form-section">
-          <h3 class="section-title">
-            <span class="title-icon">🌍</span>
-            بلدك
-          </h3>
-          <div id="country-detecting" class="country-auto">
-            <div class="detecting-spinner"></div>
-            <span>جاري تحديد موقعك...</span>
+        <!-- 6. Royal Holographic Radar Searching Overlay (Directly on Home View!) -->
+        <div id="searching-overlay" class="royal-radar-overlay hidden">
+          <div class="radar-scan-container">
+            <div class="radar-pulse-ring r-ring-1"></div>
+            <div class="radar-pulse-ring r-ring-2"></div>
+            <div class="radar-pulse-ring r-ring-3"></div>
+            <div class="radar-sweep-beam"></div>
+            <div class="radar-center-crown">
+              <span class="radar-crown-icon">👑</span>
+            </div>
           </div>
-          <div id="country-detected" class="country-auto hidden">
-            <span id="detected-flag" class="detected-flag"></span>
-            <span id="detected-name" class="detected-name"></span>
-            <button id="change-country-btn" class="change-country-btn">تغيير</button>
+          <div class="radar-info-box">
+            <h3 class="radar-title">جاري البحث والمطابقة مع شريك...</h3>
+            <p class="radar-sub">Searching for a partner live...</p>
           </div>
-          <div id="country-manual" class="hidden">
-          <div class="select-wrapper">
-            <select id="country-select">
-              <option value="ALL" data-name="كل العالم" selected>🌍 كل العالم / جميع الدول - Global (All Countries)</option>
-              <option value="AF" data-name="أفغانستان">🇦🇫 أفغانستان - Afghanistan</option>
-              <option value="AL" data-name="ألبانيا">🇦🇱 ألبانيا - Albania</option>
-              <option value="DZ" data-name="الجزائر">🇩🇿 الجزائر - Algeria</option>
-              <option value="AD" data-name="أندورا">🇦🇩 أندورا - Andorra</option>
-              <option value="AO" data-name="أنغولا">🇦🇴 أنغولا - Angola</option>
-              <option value="AG" data-name="أنتيغوا وبربودا">🇦🇬 أنتيغوا وبربودا - Antigua & Barbuda</option>
-              <option value="AR" data-name="الأرجنتين">🇦🇷 الأرجنتين - Argentina</option>
-              <option value="AM" data-name="أرمينيا">🇦🇲 أرمينيا - Armenia</option>
-              <option value="AU" data-name="أستراليا">🇦🇺 أستراليا - Australia</option>
-              <option value="AT" data-name="النمسا">🇦🇹 النمسا - Austria</option>
-              <option value="AZ" data-name="أذربيجان">🇦🇿 أذربيجان - Azerbaijan</option>
-              <option value="BS" data-name="الباهاما">🇧🇸 الباهاما - Bahamas</option>
-              <option value="BH" data-name="البحرين">🇧🇭 البحرين - Bahrain</option>
-              <option value="BD" data-name="بنغلاديش">🇧🇩 بنغلاديش - Bangladesh</option>
-              <option value="BB" data-name="باربادوس">🇧🇧 باربادوس - Barbados</option>
-              <option value="BY" data-name="بيلاروسيا">🇧🇾 بيلاروسيا - Belarus</option>
-              <option value="BE" data-name="بلجيكا">🇧🇪 بلجيكا - Belgium</option>
-              <option value="BZ" data-name="بليز">🇧🇿 بليز - Belize</option>
-              <option value="BJ" data-name="بنين">🇧🇯 بنين - Benin</option>
-              <option value="BT" data-name="بوتان">🇧🇹 بوتان - Bhutan</option>
-              <option value="BO" data-name="بوليفيا">🇧🇴 بوليفيا - Bolivia</option>
-              <option value="BA" data-name="البوسنة والهرسك">🇧🇦 البوسنة والهرسك - Bosnia & Herzegovina</option>
-              <option value="BW" data-name="بوتسوانا">🇧🇼 بوتسوانا - Botswana</option>
-              <option value="BR" data-name="البرازيل">🇧🇷 البرازيل - Brazil</option>
-              <option value="BN" data-name="بروناي">🇧🇳 بروناي - Brunei</option>
-              <option value="BG" data-name="بلغاريا">🇧🇬 بلغاريا - Bulgaria</option>
-              <option value="BF" data-name="بوركينا فاسو">🇧🇫 بوركينا فاسو - Burkina Faso</option>
-              <option value="BI" data-name="بوروندي">🇧🇮 بوروندي - Burundi</option>
-              <option value="KH" data-name="كمبوديا">🇰🇭 كمبوديا - Cambodia</option>
-              <option value="CM" data-name="الكاميرون">🇨🇲 الكاميرون - Cameroon</option>
-              <option value="CA" data-name="كندا">🇨🇦 كندا - Canada</option>
-              <option value="CV" data-name="الرأس الأخضر">🇨🇻 الرأس الأخضر - Cape Verde</option>
-              <option value="CF" data-name="أفريقيا الوسطى">🇨🇫 أفريقيا الوسطى - Central African Republic</option>
-              <option value="TD" data-name="تشاد">🇹🇩 تشاد - Chad</option>
-              <option value="CL" data-name="تشيلي">🇨🇱 تشيلي - Chile</option>
-              <option value="CN" data-name="الصين">🇨🇳 الصين - China</option>
-              <option value="CO" data-name="كولومبيا">🇨🇴 كولومبيا - Colombia</option>
-              <option value="KM" data-name="جزر القمر">🇰🇲 جزر القمر - Comoros</option>
-              <option value="CG" data-name="الكونغو">🇨🇬 الكونغو - Congo</option>
-              <option value="CD" data-name="الكونغو الديمقراطية">🇨🇩 الكونغو الديمقراطية - DR Congo</option>
-              <option value="CR" data-name="كوستاريكا">🇨🇷 كوستاريكا - Costa Rica</option>
-              <option value="HR" data-name="كرواتيا">🇭🇷 كرواتيا - Croatia</option>
-              <option value="CU" data-name="كوبا">🇨🇺 كوبا - Cuba</option>
-              <option value="CY" data-name="قبرص">🇨🇾 قبرص - Cyprus</option>
-              <option value="CZ" data-name="التشيك">🇨🇿 التشيك - Czech Republic</option>
-              <option value="DK" data-name="الدنمارك">🇩🇰 الدنمارك - Denmark</option>
-              <option value="DJ" data-name="جيبوتي">🇩🇯 جيبوتي - Djibouti</option>
-              <option value="DM" data-name="دومينيكا">🇩🇲 دومينيكا - Dominica</option>
-              <option value="DO" data-name="جمهورية الدومينيكان">🇩🇴 جمهورية الدومينيكان - Dominican Republic</option>
-              <option value="EC" data-name="الإكوادور">🇪🇨 الإكوادور - Ecuador</option>
-              <option value="EG" data-name="مصر">🇪🇬 مصر - Egypt</option>
-              <option value="SV" data-name="السلفادور">🇸🇻 السلفادور - El Salvador</option>
-              <option value="GQ" data-name="غينيا الاستوائية">🇬🇶 غينيا الاستوائية - Equatorial Guinea</option>
-              <option value="ER" data-name="إريتريا">🇪🇷 إريتريا - Eritrea</option>
-              <option value="EE" data-name="إستونيا">🇪🇪 إستونيا - Estonia</option>
-              <option value="SZ" data-name="إسواتيني">🇸🇿 إسواتيني - Eswatini</option>
-              <option value="ET" data-name="إثيوبيا">🇪🇹 إثيوبيا - Ethiopia</option>
-              <option value="FJ" data-name="فيجي">🇫🇯 فيجي - Fiji</option>
-              <option value="FI" data-name="فنلندا">🇫🇮 فنلندا - Finland</option>
-              <option value="FR" data-name="فرنسا">🇫🇷 فرنسا - France</option>
-              <option value="GA" data-name="الغابون">🇬🇦 الغابون - Gabon</option>
-              <option value="GM" data-name="غامبيا">🇬🇲 غامبيا - Gambia</option>
-              <option value="GE" data-name="جورجيا">🇬🇪 جورجيا - Georgia</option>
-              <option value="DE" data-name="ألمانيا">🇩🇪 ألمانيا - Germany</option>
-              <option value="GH" data-name="غانا">🇬🇭 غانا - Ghana</option>
-              <option value="GR" data-name="اليونان">🇬🇷 اليونان - Greece</option>
-              <option value="GD" data-name="غرينادا">🇬🇩 غرينادا - Grenada</option>
-              <option value="GT" data-name="غواتيمالا">🇬🇹 غواتيمالا - Guatemala</option>
-              <option value="GN" data-name="غينيا">🇬🇳 غينيا - Guinea</option>
-              <option value="GW" data-name="غينيا بيساو">🇬🇼 غينيا بيساو - Guinea-Bissau</option>
-              <option value="GY" data-name="غيانا">🇬🇾 غيانا - Guyana</option>
-              <option value="HT" data-name="هايتي">🇭🇹 هايتي - Haiti</option>
-              <option value="HN" data-name="هندوراس">🇭🇳 هندوراس - Honduras</option>
-              <option value="HU" data-name="المجر">🇭🇺 المجر - Hungary</option>
-              <option value="IS" data-name="آيسلندا">🇮🇸 آيسلندا - Iceland</option>
-              <option value="IN" data-name="الهند">🇮🇳 الهند - India</option>
-              <option value="ID" data-name="إندونيسيا">🇮🇩 إندونيسيا - Indonesia</option>
-              <option value="IR" data-name="إيران">🇮🇷 إيران - Iran</option>
-              <option value="IQ" data-name="العراق">🇮🇶 العراق - Iraq</option>
-              <option value="IE" data-name="أيرلندا">🇮🇪 أيرلندا - Ireland</option>
-              <option value="IL" data-name="إسرائيل">🇮🇱 إسرائيل - Israel</option>
-              <option value="IT" data-name="إيطاليا">🇮🇹 إيطاليا - Italy</option>
-              <option value="CI" data-name="ساحل العاج">🇨🇮 ساحل العاج - Ivory Coast</option>
-              <option value="JM" data-name="جامايكا">🇯🇲 جامايكا - Jamaica</option>
-              <option value="JP" data-name="اليابان">🇯🇵 اليابان - Japan</option>
-              <option value="JO" data-name="الأردن">🇯🇴 الأردن - Jordan</option>
-              <option value="KZ" data-name="كازاخستان">🇰🇿 كازاخستان - Kazakhstan</option>
-              <option value="KE" data-name="كينيا">🇰🇪 كينيا - Kenya</option>
-              <option value="KI" data-name="كيريباتي">🇰🇮 كيريباتي - Kiribati</option>
-              <option value="KW" data-name="الكويت">🇰🇼 الكويت - Kuwait</option>
-              <option value="KG" data-name="قيرغيزستان">🇰🇬 قيرغيزستان - Kyrgyzstan</option>
-              <option value="LA" data-name="لاوس">🇱🇦 لاوس - Laos</option>
-              <option value="LV" data-name="لاتفيا">🇱🇻 لاتفيا - Latvia</option>
-              <option value="LB" data-name="لبنان">🇱🇧 لبنان - Lebanon</option>
-              <option value="LS" data-name="ليسوتو">🇱🇸 ليسوتو - Lesotho</option>
-              <option value="LR" data-name="ليبيريا">🇱🇷 ليبيريا - Liberia</option>
-              <option value="LY" data-name="ليبيا">🇱🇾 ليبيا - Libya</option>
-              <option value="LI" data-name="ليختنشتاين">🇱🇮 ليختنشتاين - Liechtenstein</option>
-              <option value="LT" data-name="ليتوانيا">🇱🇹 ليتوانيا - Lithuania</option>
-              <option value="LU" data-name="لوكسمبورغ">🇱🇺 لوكسمبورغ - Luxembourg</option>
-              <option value="MG" data-name="مدغشقر">🇲🇬 مدغشقر - Madagascar</option>
-              <option value="MW" data-name="مالاوي">🇲🇼 مالاوي - Malawi</option>
-              <option value="MY" data-name="ماليزيا">🇲🇾 ماليزيا - Malaysia</option>
-              <option value="MV" data-name="المالديف">🇲🇻 المالديف - Maldives</option>
-              <option value="ML" data-name="مالي">🇲🇱 مالي - Mali</option>
-              <option value="MT" data-name="مالطا">🇲🇹 مالطا - Malta</option>
-              <option value="MH" data-name="جزر مارشال">🇲🇭 جزر مارشال - Marshall Islands</option>
-              <option value="MR" data-name="موريتانيا">🇲🇷 موريتانيا - Mauritania</option>
-              <option value="MU" data-name="موريشيوس">🇲🇺 موريشيوس - Mauritius</option>
-              <option value="MX" data-name="المكسيك">🇲🇽 المكسيك - Mexico</option>
-              <option value="FM" data-name="ميكرونيسيا">🇫🇲 ميكرونيسيا - Micronesia</option>
-              <option value="MD" data-name="مولدوفا">🇲🇩 مولدوفا - Moldova</option>
-              <option value="MC" data-name="موناكو">🇲🇨 موناكو - Monaco</option>
-              <option value="MN" data-name="منغوليا">🇲🇳 منغوليا - Mongolia</option>
-              <option value="ME" data-name="الجبل الأسود">🇲🇪 الجبل الأسود - Montenegro</option>
-              <option value="MA" data-name="المغرب">🇲🇦 المغرب - Morocco</option>
-              <option value="MZ" data-name="موزمبيق">🇲🇿 موزمبيق - Mozambique</option>
-              <option value="MM" data-name="ميانمار">🇲🇲 ميانمار - Myanmar</option>
-              <option value="NA" data-name="ناميبيا">🇳🇦 ناميبيا - Namibia</option>
-              <option value="NR" data-name="ناورو">🇳🇷 ناورو - Nauru</option>
-              <option value="NP" data-name="نيبال">🇳🇵 نيبال - Nepal</option>
-              <option value="NL" data-name="هولندا">🇳🇱 هولندا - Netherlands</option>
-              <option value="NZ" data-name="نيوزيلندا">🇳🇿 نيوزيلندا - New Zealand</option>
-              <option value="NI" data-name="نيكاراغوا">🇳🇮 نيكاراغوا - Nicaragua</option>
-              <option value="NE" data-name="النيجر">🇳🇪 النيجر - Niger</option>
-              <option value="NG" data-name="نيجيريا">🇳🇬 نيجيريا - Nigeria</option>
-              <option value="KP" data-name="كوريا الشمالية">🇰🇵 كوريا الشمالية - North Korea</option>
-              <option value="MK" data-name="مقدونيا الشمالية">🇲🇰 مقدونيا الشمالية - North Macedonia</option>
-              <option value="NO" data-name="النرويج">🇳🇴 النرويج - Norway</option>
-              <option value="OM" data-name="عمان">🇴🇲 عمان - Oman</option>
-              <option value="PK" data-name="باكستان">🇵🇰 باكستان - Pakistan</option>
-              <option value="PW" data-name="بالاو">🇵🇼 بالاو - Palau</option>
-              <option value="PS" data-name="فلسطين">🇵🇸 فلسطين - Palestine</option>
-              <option value="PA" data-name="بنما">🇵🇦 بنما - Panama</option>
-              <option value="PG" data-name="بابوا غينيا الجديدة">🇵🇬 بابوا غينيا الجديدة - Papua New Guinea</option>
-              <option value="PY" data-name="باراغواي">🇵🇾 باراغواي - Paraguay</option>
-              <option value="PE" data-name="بيرو">🇵🇪 بيرو - Peru</option>
-              <option value="PH" data-name="الفلبين">🇵🇭 الفلبين - Philippines</option>
-              <option value="PL" data-name="بولندا">🇵🇱 بولندا - Poland</option>
-              <option value="PT" data-name="البرتغال">🇵🇹 البرتغال - Portugal</option>
-              <option value="QA" data-name="قطر">🇶🇦 قطر - Qatar</option>
-              <option value="RO" data-name="رومانيا">🇷🇴 رومانيا - Romania</option>
-              <option value="RU" data-name="روسيا">🇷🇺 روسيا - Russia</option>
-              <option value="RW" data-name="رواندا">🇷🇼 رواندا - Rwanda</option>
-              <option value="KN" data-name="سانت كيتس ونيفيس">🇰🇳 سانت كيتس ونيفيس - Saint Kitts & Nevis</option>
-              <option value="LC" data-name="سانت لوسيا">🇱🇨 سانت لوسيا - Saint Lucia</option>
-              <option value="VC" data-name="سانت فنسنت">🇻🇨 سانت فنسنت - Saint Vincent</option>
-              <option value="WS" data-name="ساموا">🇼🇸 ساموا - Samoa</option>
-              <option value="SM" data-name="سان مارينو">🇸🇲 سان مارينو - San Marino</option>
-              <option value="ST" data-name="ساو تومي وبرينسيبي">🇸🇹 ساو تومي وبرينسيبي - São Tomé & Príncipe</option>
-              <option value="SA" data-name="السعودية">🇸🇦 السعودية - Saudi Arabia</option>
-              <option value="SN" data-name="السنغال">🇸🇳 السنغال - Senegal</option>
-              <option value="RS" data-name="صربيا">🇷🇸 صربيا - Serbia</option>
-              <option value="SC" data-name="سيشل">🇸🇨 سيشل - Seychelles</option>
-              <option value="SL" data-name="سيراليون">🇸🇱 سيراليون - Sierra Leone</option>
-              <option value="SG" data-name="سنغافورة">🇸🇬 سنغافورة - Singapore</option>
-              <option value="SK" data-name="سلوفاكيا">🇸🇰 سلوفاكيا - Slovakia</option>
-              <option value="SI" data-name="سلوفينيا">🇸🇮 سلوفينيا - Slovenia</option>
-              <option value="SB" data-name="جزر سليمان">🇸🇧 جزر سليمان - Solomon Islands</option>
-              <option value="SO" data-name="الصومال">🇸🇴 الصومال - Somalia</option>
-              <option value="ZA" data-name="جنوب أفريقيا">🇿🇦 جنوب أفريقيا - South Africa</option>
-              <option value="KR" data-name="كوريا الجنوبية">🇰🇷 كوريا الجنوبية - South Korea</option>
-              <option value="SS" data-name="جنوب السودان">🇸🇸 جنوب السودان - South Sudan</option>
-              <option value="ES" data-name="إسبانيا">🇪🇸 إسبانيا - Spain</option>
-              <option value="LK" data-name="سريلانكا">🇱🇰 سريلانكا - Sri Lanka</option>
-              <option value="SD" data-name="السودان">🇸🇩 السودان - Sudan</option>
-              <option value="SR" data-name="سورينام">🇸🇷 سورينام - Suriname</option>
-              <option value="SE" data-name="السويد">🇸🇪 السويد - Sweden</option>
-              <option value="CH" data-name="سويسرا">🇨🇭 سويسرا - Switzerland</option>
-              <option value="SY" data-name="سوريا">🇸🇾 سوريا - Syria</option>
-              <option value="TW" data-name="تايوان">🇹🇼 تايوان - Taiwan</option>
-              <option value="TJ" data-name="طاجيكستان">🇹🇯 طاجيكستان - Tajikistan</option>
-              <option value="TZ" data-name="تنزانيا">🇹🇿 تنزانيا - Tanzania</option>
-              <option value="TH" data-name="تايلاند">🇹🇭 تايلاند - Thailand</option>
-              <option value="TL" data-name="تيمور الشرقية">🇹🇱 تيمور الشرقية - Timor-Leste</option>
-              <option value="TG" data-name="توغو">🇹🇬 توغو - Togo</option>
-              <option value="TO" data-name="تونغا">🇹🇴 تونغا - Tonga</option>
-              <option value="TT" data-name="ترينيداد وتوباغو">🇹🇹 ترينيداد وتوباغو - Trinidad & Tobago</option>
-              <option value="TN" data-name="تونس">🇹🇳 تونس - Tunisia</option>
-              <option value="TR" data-name="تركيا">🇹🇷 تركيا - Turkey</option>
-              <option value="TM" data-name="تركمانستان">🇹🇲 تركمانستان - Turkmenistan</option>
-              <option value="TV" data-name="توفالو">🇹🇻 توفالو - Tuvalu</option>
-              <option value="UG" data-name="أوغندا">🇺🇬 أوغندا - Uganda</option>
-              <option value="UA" data-name="أوكرانيا">🇺🇦 أوكرانيا - Ukraine</option>
-              <option value="AE" data-name="الإمارات">🇦🇪 الإمارات - United Arab Emirates</option>
-              <option value="GB" data-name="المملكة المتحدة">🇬🇧 المملكة المتحدة - United Kingdom</option>
-              <option value="US" data-name="الولايات المتحدة">🇺🇸 الولايات المتحدة - United States</option>
-              <option value="UY" data-name="أوروغواي">🇺🇾 أوروغواي - Uruguay</option>
-              <option value="UZ" data-name="أوزبكستان">🇺🇿 أوزبكستان - Uzbekistan</option>
-              <option value="VU" data-name="فانواتو">🇻🇺 فانواتو - Vanuatu</option>
-              <option value="VA" data-name="الفاتيكان">🇻🇦 الفاتيكان - Vatican City</option>
-              <option value="VE" data-name="فنزويلا">🇻🇪 فنزويلا - Venezuela</option>
-              <option value="VN" data-name="فيتنام">🇻🇳 فيتنام - Vietnam</option>
-              <option value="YE" data-name="اليمن">🇾🇪 اليمن - Yemen</option>
-              <option value="ZM" data-name="زامبيا">🇿🇲 زامبيا - Zambia</option>
-              <option value="ZW" data-name="زيمبابوي">🇿🇼 زيمبابوي - Zimbabwe</option>
-            </select>
+          <button type="button" id="cancel-search-btn" class="radar-cancel-btn">
+            <span>✕ إلغاء البحث والرجوع</span>
+          </button>
+        </div>
+
+        <!-- 7. In-Call Partner Info HUD (Top of Camera) -->
+        <div id="partner-info" class="royal-partner-hud hidden">
+          <div class="partner-meta-box">
+            <span id="partner-flag" class="hud-flag">🌍</span>
+            <div class="hud-user-details">
+              <span id="partner-username" class="hud-username">مستخدم</span>
+              <div id="partner-gender-badge" class="partner-gender-tag gender-male">
+                <span id="partner-gender-icon">👨</span>
+                <span id="partner-gender-text">ذكر</span>
+              </div>
+            </div>
           </div>
+          <div class="hud-actions-box">
+            <div id="call-timer" class="hud-call-timer">
+              <span id="timer-display">00:00</span>
+            </div>
+            <button id="add-friend-btn" class="hud-btn-friend" title="إضافة صديق">➕ صديق</button>
+            <button id="report-partner-btn" class="hud-btn-report" title="إبلاغ">🚩</button>
           </div>
         </div>
 
-        <!-- Start Button -->
-        <button id="start-btn" class="start-button" disabled>
-          <span class="btn-icon">🎥</span>
-          <span class="btn-text">ابدأ الدردشة</span>
-          <span class="btn-text-en">Start Chat</span>
-        </button>
+        <!-- 8. Interactive Badges Bar (Floating Under Partner Info) -->
+        <div id="call-badges-bar" class="royal-badges-hud hidden">
+          <button class="give-badge-btn" data-badge="awesome">⭐ رائع</button>
+          <button class="give-badge-btn" data-badge="handsome">✨ وسيم</button>
+          <button class="give-badge-btn" data-badge="elegant">🎩 أنيق</button>
+        </div>
+
+        <!-- 9. Partner Left Auto-Toast -->
+        <div id="partner-left-overlay" class="partner-left-hud hidden">
+          <div class="partner-left-pill">
+            <span>👋 غادر الشريك.. جاري البحث التلقائي عن شريك جديد...</span>
+          </div>
+        </div>
+
+        <!-- 10. In-Call 3D Royal Control Bar (Bottom of Camera when Connected) -->
+        <div id="controls-bar" class="royal-call-controls hidden">
+          <button id="end-btn" class="control-btn end-btn" title="إنهاء المكالمة">
+            <span>✕</span>
+          </button>
+          <button id="mic-btn" class="control-btn" title="كتم/تشغيل الميكروفون">
+            <span class="mic-on">🎙️</span>
+            <span class="mic-off hidden">🔇</span>
+          </button>
+          <button id="camera-btn" class="control-btn" title="إيقاف/تشغيل الكاميرا">
+            <span class="cam-on">📹</span>
+            <span class="cam-off hidden">🚫</span>
+          </button>
+          <button id="flip-cam-btn" class="control-btn" title="تبديل الكاميرا">
+            <span>🔄</span>
+          </button>
+          <button id="next-btn" class="control-btn next-btn" title="التالي / Next">
+            <span>⏭️</span>
+            <span class="next-label">التالي</span>
+          </button>
+        </div>
+
+        <!-- 11. Floating Matching Action Trigger Button (Idle State) -->
+        <div class="camera-match-trigger" id="camera-match-trigger" onclick="window.startChat && window.startChat()">
+          <span class="match-pulse-dot"></span>
+          <span>🎥 انقر أو اسحب للبحث عن شريك</span>
+          <span class="match-arrow">👈</span>
+        </div>
+
+        <!-- Hidden start-btn for backward compatibility -->
+        <button id="start-btn" class="hidden"></button>
       </div>
 
-      <!-- Online Count -->
-      <div class="online-indicator">
-        <div class="online-dot"></div>
-        <span><span id="welcome-online-count">0</span> متصل الآن</span>
+      <!-- Floating Filter Buttons Row -->
+      <div class="modern-filter-row">
+        <!-- Country Selector Pill -->
+        <div class="modern-filter-pill" id="btn-open-country-modal" onclick="window.openRoyalCountryModal && window.openRoyalCountryModal()">
+          <span class="filter-chevron">⌃</span>
+          <div class="filter-pill-info">
+            <span class="filter-pill-title">البلد</span>
+            <span class="filter-pill-value" id="pill-selected-country-text">🌍 كل العالم</span>
+          </div>
+          <span class="filter-pill-icon">🌍</span>
+        </div>
+
+        <!-- Gender Selector Pill -->
+        <div class="modern-filter-pill" id="btn-open-gender-modal" onclick="window.openRoyalGenderModal && window.openRoyalGenderModal()">
+          <span class="filter-chevron">⌃</span>
+          <div class="filter-pill-info">
+            <span class="filter-pill-title">النوع</span>
+            <span class="filter-pill-value" id="pill-selected-gender-text">الكل ⚧</span>
+          </div>
+          <span class="filter-pill-icon">⚧</span>
+        </div>
+      </div>
+
+      <!-- Fixed Bottom Navigation Bar -->
+      <div class="modern-bottom-nav">
+        <div class="bottom-nav-tab active" id="tab-video-chat">
+          <div class="nav-tab-icon">📹</div>
+          <span class="nav-tab-text">دردشة فيديو</span>
+        </div>
+        <div class="bottom-nav-tab" id="open-friends-modal-btn" onclick="document.getElementById('friends-modal').classList.remove('hidden')">
+          <div class="nav-tab-icon">👥</div>
+          <span class="nav-tab-text">الأصدقاء</span>
+        </div>
+        <div class="bottom-nav-tab" id="open-invite-modal-btn" onclick="window.openInviteModal && window.openInviteModal()">
+          <div class="nav-tab-icon">🎁</div>
+          <span class="nav-tab-text">دعوة (+50💎)</span>
+        </div>
+        <div class="bottom-nav-tab" id="tab-open-settings" onclick="document.getElementById('settings-modal').classList.remove('hidden')">
+          <div class="nav-tab-icon">⚙️</div>
+          <span class="nav-tab-text">الإعدادات</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ Royal Country Selector Modal ============ -->
+  <div id="royal-country-modal" class="modal hidden" style="z-index: 100000; align-items: flex-end; padding-bottom: 0;">
+    <div class="royal-sheet-container">
+      <div class="royal-sheet-handle"></div>
+      <div class="royal-sheet-header">
+        <div class="sheet-title-group">
+          <span class="sheet-crown">👑</span>
+          <div>
+            <h3 class="royal-sheet-title">اختر وجهة المحادثة (الدولة)</h3>
+            <p class="royal-sheet-sub">اختر الدولة التي تريد مطابقتها والدردشة معها</p>
+          </div>
+        </div>
+        <button type="button" class="royal-sheet-close" id="close-royal-country-btn" onclick="document.getElementById('royal-country-modal').classList.add('hidden')">✕</button>
+      </div>
+
+      <!-- Quick Fast Choices -->
+      <div class="royal-quick-choices">
+        <div class="royal-quick-card active" data-country-mode="ALL" id="royal-opt-all">
+          <div class="quick-card-icon">🌍</div>
+          <div class="quick-card-text">
+            <strong>كل العالم (عشوائي)</strong>
+            <span>محادثات فورية من جميع الدول</span>
+          </div>
+          <span class="royal-badge-free">مجانى ✨</span>
+        </div>
+
+        <div class="royal-quick-card" data-country-mode="HOME" id="royal-opt-home">
+          <div class="quick-card-icon">🏠</div>
+          <div class="quick-card-text">
+            <strong id="royal-home-country-name">بلدي الحالي</strong>
+            <span>الدردشة مع أبناء بلدك فقط</span>
+          </div>
+          <span class="royal-badge-free">مجانى ✨</span>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="royal-search-wrapper">
+        <span class="royal-search-icon">🔍</span>
+        <input type="text" id="royal-country-search" placeholder="ابحث عن أي دولة (مصر، السعودية، تركيا...)" autocomplete="off">
+      </div>
+
+      <!-- Specific Country Header -->
+      <div class="royal-section-divider">
+        <span>⭐ دول محددة (10 💎 / اتصال)</span>
+      </div>
+
+      <!-- Royal Countries Grid -->
+      <div class="royal-country-grid" id="royal-country-grid">
+        <!-- Will be populated dynamically & with default luxury list -->
       </div>
     </div>
   </div>
 
-  <!-- ============ Chat Screen ============ -->
-  <div id="chat-screen" class="screen">
-    <!-- Chat Screen Top Navigation Bar -->
-    <div id="chat-header-bar" style="position: absolute; top: 16px; left: 16px; z-index: 35; display: flex; align-items: center; gap: 8px;">
-      <button id="chat-back-home-btn" onclick="window.endCall && window.endCall()" class="action-button" style="background: rgba(18, 18, 30, 0.85); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
-        <span>🔙 الرئيسية</span>
-      </button>
-    </div>
-
-    <!-- Video Container -->
-    <div id="videos-container">
-      <video id="remote-video" autoplay playsinline></video>
-      <div id="local-video-wrapper">
-        <video id="local-video" autoplay playsinline muted></video>
-      </div>
-
-      <!-- Interactive Badges Bar on Video Call -->
-      <div id="call-badges-bar" class="hidden" style="position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 18; display: flex; gap: 6px; background: rgba(18, 18, 30, 0.85); backdrop-filter: blur(10px); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);">
-        <span style="font-size: 11px; color: #aaa; align-self: center; margin-left: 2px;">أوسمة:</span>
-        <button class="give-badge-btn" data-badge="awesome" style="background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; color: #ffd700; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
-          ⭐ رائع
-        </button>
-        <button class="give-badge-btn" data-badge="handsome" style="background: rgba(236, 72, 153, 0.2); border: 1px solid #ec4899; color: #f472b6; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
-          ✨ وسيم
-        </button>
-        <button class="give-badge-btn" data-badge="elegant" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #c084fc; padding: 4px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Tajawal', sans-serif;">
-          🎩 أنيق
-        </button>
-      </div>
-
-      <!-- Partner Info Badge -->
-      <div id="partner-info" class="hidden">
-        <span id="partner-flag"></span>
-        <span id="partner-username" style="font-weight: 800; color: #fff; margin: 0 4px;">مستخدم</span>
-        <div id="partner-gender-badge" class="partner-gender-tag gender-male">
-          <span id="partner-gender-icon">👨</span>
-          <span id="partner-gender-text">ذكر</span>
-        </div>
-        <span id="partner-badges-display" style="font-size: 11px; color: #ffd700; margin: 0 4px;"></span>
-        <button id="add-friend-btn" class="action-button" style="padding: 4px 10px; font-size: 11px; border-radius: 10px; margin-right: 6px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); box-shadow: none;">
-          ➕ إضافة صديق
-        </button>
-        <button id="report-partner-btn" class="action-button" style="padding: 4px 10px; font-size: 11px; border-radius: 10px; margin-right: 4px; background: rgba(239, 68, 68, 0.25); border: 1px solid #ef4444; color: #fca5a5; box-shadow: none; cursor: pointer;">
-          🚩 إبلاغ
-        </button>
-      </div>
-
-      <!-- Connection Timer -->
-      <div id="call-timer" class="hidden">
-        <span id="timer-display">00:00</span>
-      </div>
-    </div>
-
-    <!-- Searching Overlay -->
-    <div id="searching-overlay" class="hidden">
-      <div class="searching-content">
-        <div class="searching-animation">
-          <div class="search-ring ring1"></div>
-          <div class="search-ring ring2"></div>
-          <div class="search-ring ring3"></div>
-          <div class="search-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="m21 21-4.35-4.35"/>
-            </svg>
+  <!-- ============ Royal Gender Selector Modal ============ -->
+  <div id="royal-gender-modal" class="modal hidden" style="z-index: 100000; align-items: flex-end; padding-bottom: 0;">
+    <div class="royal-sheet-container gender-sheet">
+      <div class="royal-sheet-handle"></div>
+      <div class="royal-sheet-header">
+        <div class="sheet-title-group">
+          <span class="sheet-crown">⚧</span>
+          <div>
+            <h3 class="royal-sheet-title">تحديد الجنس للدردشة</h3>
+            <p class="royal-sheet-sub">اختر نوع الأشخاص الذين تفضل التحدث معهم</p>
           </div>
         </div>
-        <h2 class="searching-text">جاري البحث عن شخص...</h2>
-        <p class="searching-subtext">Searching for someone...</p>
-        <div class="searching-online">
-          <div class="online-dot"></div>
-          <span><span id="search-online-count">0</span> متصل الآن</span>
+        <button type="button" class="royal-sheet-close" id="close-royal-gender-btn" onclick="document.getElementById('royal-gender-modal').classList.add('hidden')">✕</button>
+      </div>
+
+      <div class="royal-gender-options">
+        <div class="royal-gender-card active" data-gender-choice="any" id="royal-gender-opt-any">
+          <div class="gender-card-avatar">👥</div>
+          <div class="gender-card-meta">
+            <strong>الجميع (ذكور وإناث)</strong>
+            <span>مطابقة سريعة وعشوائية مجاناً</span>
+          </div>
+          <span class="royal-badge-free">مجانى ✨</span>
         </div>
 
-        <div style="margin-top: 25px;">
-          <button id="cancel-search-btn" onclick="window.endCall && window.endCall()" class="action-button secondary-btn" style="background: rgba(255, 255, 255, 0.18); color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); padding: 12px 28px; border-radius: 30px; font-weight: bold; font-size: 15px; cursor: pointer; backdrop-filter: blur(8px); position: relative; z-index: 35; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-            <span>🔙 إلغاء البحث والعودة</span>
-          </button>
+        <div class="royal-gender-card" data-gender-choice="female" id="royal-gender-opt-female">
+          <div class="gender-card-avatar pink-avatar">👩</div>
+          <div class="gender-card-meta">
+            <strong>بنات وإناث فقط</strong>
+            <span>مطابقة حصرية مع إناث</span>
+          </div>
+          <span class="royal-badge-gem">10 💎 / اتصال</span>
         </div>
-      </div>
-    </div>
 
-    <!-- Partner Left Overlay -->
-    <div id="partner-left-overlay" class="hidden">
-      <div class="partner-left-content">
-        <div class="partner-left-icon">👋</div>
-        <h2>انتهت المحادثة</h2>
-        <p>الشخص الآخر غادر</p>
-        <button id="find-new-btn" class="action-button">
-          <span>🔍</span> ابحث عن شخص جديد
-        </button>
-      </div>
-    </div>
-
-    <!-- Controls Bar -->
-    <div id="controls-bar">
-      <div class="controls-group">
-        <button id="end-btn" class="control-btn end-btn" title="إنهاء المكالمة">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.1-1.1a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.93 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
-            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2.5"/>
-          </svg>
-        </button>
-
-        <button id="mic-btn" class="control-btn" title="كتم/تشغيل الميكروفون">
-          <svg class="mic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-          <svg class="mic-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="1" y1="1" x2="23" y2="23"/>
-            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.48-.36 2.15"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-        </button>
-
-        <button id="camera-btn" class="control-btn" title="إيقاف/تشغيل الكاميرا">
-          <svg class="cam-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="23 7 16 12 23 17 23 7"/>
-            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-          </svg>
-          <svg class="cam-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
-          </svg>
-        </button>
-
-        <button id="flip-cam-btn" class="control-btn" title="تبديل الكاميرا (أمامية/خلفية)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8M4 14c0 4.418 3.582 8 8 8s8-3.582 8-8"/>
-            <path d="M4 6l-3 4 3 4M20 18l3-4-3-4"/>
-          </svg>
-        </button>
-
-        <button id="next-btn" class="control-btn next-btn" title="التالي / Next">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="5 4 15 12 5 20 5 4"/>
-            <line x1="19" y1="5" x2="19" y2="19"/>
-          </svg>
-          <span class="next-label">التالي</span>
-        </button>
+        <div class="royal-gender-card" data-gender-choice="male" id="royal-gender-opt-male">
+          <div class="gender-card-avatar blue-avatar">👨</div>
+          <div class="gender-card-meta">
+            <strong>شباب وذكور فقط</strong>
+            <span>مطابقة حصرية مع ذكور</span>
+          </div>
+          <span class="royal-badge-gem">10 💎 / اتصال</span>
+        </div>
       </div>
     </div>
   </div>
@@ -769,33 +503,41 @@
     </div>
   </div>
 
-  <!-- Account Settings Modal -->
-  <div id="settings-modal" class="modal hidden">
-    <div class="modal-content" style="max-width: 400px; width: 92%; padding: 18px 16px;">
-      <div class="modal-icon" style="font-size:36px; margin-bottom: 2px;">⚙️</div>
-      <h2 style="font-size:18px; margin:0;">إعدادات الملف الشخصي</h2>
-      <p style="font-size:12px; color:#aaa; margin-bottom:10px;">يمكنك تعديل بياناتك الشخصية في أي وقت</p>
+  <!-- Account Settings Modal (Royal Luxury Redesign) -->
+  <div id="settings-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);">
+    <div class="modal-content royal-settings-content">
+      <!-- Royal Header -->
+      <div class="royal-settings-header">
+        <div class="royal-settings-icon-wrap">
+          <span class="royal-settings-icon">⚙️</span>
+          <span class="royal-icon-glow"></span>
+        </div>
+        <h2 class="royal-settings-title">إعدادات الملف الشخصي</h2>
+        <p class="royal-settings-sub">تخصيص الهوية الملكية وبيانات الحساب</p>
+      </div>
 
       <!-- Google / Account Sign In Trigger -->
-      <div style="width:100%; margin-bottom:12px;">
-        <button id="open-auth-modal-btn" class="action-button" style="width:100%; background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:#fff; font-size:12px; font-weight:800; padding:10px; border-radius:10px; border:none; cursor:pointer; margin:0;">
-          🔑 تسجيل الدخول بـ جوجل
+      <div class="royal-auth-trigger-wrap">
+        <button id="open-auth-modal-btn" class="royal-google-signin-btn">
+          <span class="google-btn-icon">🔑</span>
+          <span>تسجيل الدخول بـ Google لحفظ رصيدك</span>
+          <span class="google-btn-badge">حماية 💎</span>
         </button>
       </div>
 
       <!-- Admin Push Broadcast Section (Moved to TOP for Admin) -->
-      <div id="admin-broadcast-section" class="hidden" style="width:100%; margin-bottom: 12px; text-align:right; border: 1px dashed rgba(255,215,0,0.5); padding: 10px 12px; border-radius: 12px; background: rgba(255, 215, 0, 0.05);">
+      <div id="admin-broadcast-section" class="hidden" style="width:100%; margin-bottom: 12px; text-align:right; border: 1.5px dashed rgba(255,215,0,0.6); padding: 12px; border-radius: 16px; background: rgba(255, 215, 0, 0.08);">
         <label style="color:#ffd700; font-weight:bold; font-size: 12px; display:block;">📢 إرسال إشعار عام لكل المستخدمين بالعالم (Push Notification)</label>
-        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:6px; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.5); border:1px solid #ffd700; color:#fff; font-size:12px;" dir="rtl">
-        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:8px; padding:8px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; border:none; font-size:13px;">
+        <input type="text" id="admin-broadcast-text" placeholder="اكتب نص الإشعار هنا..." style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.6); border:1px solid #ffd700; color:#fff; font-size:12px;" dir="rtl">
+        <button id="admin-send-broadcast-btn" class="action-button" style="width:100%; margin-top:8px; padding:10px; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; border:none; font-size:13px; border-radius:10px;">
           🚀 إرسال الإشعار للجميع الآن
         </button>
 
         <div style="margin-top: 10px; border-top: 1px dashed rgba(255,215,0,0.3); padding-top: 8px;">
           <label style="color:#ffd700; font-weight:bold; font-size: 12px; display:block;">💎 شحن وتزويد جواهر فوراً (Admin Tool)</label>
           <div style="display:flex; gap:6px; margin-top:4px;">
-            <input type="number" id="admin-add-gems-amount" placeholder="عدد الجواهر (مثلاً 3000)" value="3000" style="flex:1; padding:6px 8px; border-radius:8px; background:rgba(0,0,0,0.5); border:1px solid #ffd700; color:#fff; font-size:12px;" dir="ltr">
-            <button id="admin-add-gems-btn" style="padding:6px 12px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-weight:800; border:none; border-radius:8px; font-size:12px; cursor:pointer; white-space:nowrap;">+ إضافة لرصيدي</button>
+            <input type="number" id="admin-add-gems-amount" placeholder="عدد الجواهر (مثلاً 3000)" value="3000" style="flex:1; padding:8px 10px; border-radius:10px; background:rgba(0,0,0,0.6); border:1px solid #ffd700; color:#fff; font-size:12px;" dir="ltr">
+            <button id="admin-add-gems-btn" style="padding:8px 14px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; font-weight:800; border:none; border-radius:10px; font-size:12px; cursor:pointer; white-space:nowrap;">+ إضافة لرصيدي</button>
           </div>
         </div>
 
@@ -847,43 +589,91 @@
         </div>
       </div>
 
-      <div class="input-group" style="width:100%; text-align:right;">
-        <label for="settings-username" style="font-size:12px;">الاسم / اسم المستخدم</label>
-        <input type="text" id="settings-username" placeholder="أدخل اسمك..." dir="auto" style="padding:8px 12px; font-size:13px;">
+      <!-- Royal Input: Username -->
+      <div class="royal-input-group">
+        <label for="settings-username" class="royal-input-label">
+          <span>👤</span> الاسم / اسم المستخدم
+        </label>
+        <div class="royal-input-box">
+          <input type="text" id="settings-username" placeholder="أدخل اسمك الملكي..." dir="auto" autocomplete="off">
+          <span class="input-shine-glow"></span>
+        </div>
       </div>
-      <div class="input-group" style="width:100%; margin-top: 8px; text-align:right;">
-        <label for="settings-phone" style="font-size:12px;">رقم الهاتف</label>
-        <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr" style="padding:8px 12px; font-size:13px;">
+
+      <!-- Royal Input: Phone -->
+      <div class="royal-input-group">
+        <label for="settings-phone" class="royal-input-label">
+          <span>📱</span> رقم الهاتف
+        </label>
+        <div class="royal-input-box">
+          <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr" autocomplete="off">
+          <span class="input-shine-glow"></span>
+        </div>
       </div>
+
+      <!-- Royal Input: Age -->
+      <div class="royal-input-group">
+        <label for="settings-age" class="royal-input-label">
+          <span>🎂</span> العمر (السن)
+        </label>
+        <div class="royal-input-box">
+          <input type="number" id="settings-age" placeholder="مثال: 22" min="18" max="99" value="22" dir="ltr" autocomplete="off">
+          <span class="input-shine-glow"></span>
+        </div>
+      </div>
+
       <!-- Hidden by default, reveals ONLY when typing Admin Phone 0790181802 -->
-      <div class="input-group hidden" id="settings-admin-pin-group" style="width:100%; margin-top: 8px; text-align:right;">
-        <label for="settings-admin-pin" style="color:#ffd700; font-size:12px;">🔐 الرمز السري لمنشئ التطبيق (Admin PIN)</label>
-        <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr" style="padding:8px 12px; font-size:13px;">
+      <div class="royal-input-group hidden" id="settings-admin-pin-group">
+        <label for="settings-admin-pin" class="royal-input-label" style="color:#ffd700;">
+          <span>🔐</span> الرمز السري لمنشئ التطبيق (Admin PIN)
+        </label>
+        <div class="royal-input-box">
+          <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr">
+        </div>
       </div>
-      <div class="form-section" style="width:100%; margin-top: 10px; text-align:right;">
-        <label style="font-size:12px; font-weight:bold; color:#ccc;">الجنس:</label>
-        <div class="gender-cards" style="margin-top:4px;">
-          <div class="gender-card" data-settings-gender="male" id="settings-gender-male" style="padding:8px;">
-            <div class="gender-icon" style="font-size:24px;">👨</div>
-            <span style="font-size:12px;">ذكر</span>
+
+      <!-- Royal Gender Selection Cards -->
+      <div class="royal-settings-section">
+        <label class="royal-input-label">
+          <span>👑</span> الجنس في الدردشة:
+        </label>
+        <div class="royal-settings-gender-grid">
+          <div class="gender-card royal-settings-gender" data-settings-gender="male" id="settings-gender-male">
+            <div class="gender-icon">👨</div>
+            <span class="gender-name">ذكر</span>
+            <span class="gender-check-indicator">✓</span>
           </div>
-          <div class="gender-card" data-settings-gender="female" id="settings-gender-female" style="padding:8px;">
-            <div class="gender-icon" style="font-size:24px;">👩</div>
-            <span style="font-size:12px;">أنثى</span>
+          <div class="gender-card royal-settings-gender" data-settings-gender="female" id="settings-gender-female">
+            <div class="gender-icon">👩</div>
+            <span class="gender-name">أنثى</span>
+            <span class="gender-check-indicator">✓</span>
           </div>
         </div>
       </div>
 
-      <!-- Policy & Safety Links -->
-      <div style="width: 100%; margin-top: 12px; padding: 10px; background: rgba(255,255,255,0.04); border-radius: 10px; text-align: center; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
-        <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/child-safety.html" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: bold;">🛡️ معايير سلامة الأطفال ومكافحة الاستغلال (CSAE)</a>
-        <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/privacy.html" target="_blank" style="color: #94a3b8; text-decoration: none;">🔒 سياسة الخصوصية (Privacy Policy)</a>
-        <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/delete-account.html" target="_blank" style="color: #f87171; text-decoration: none;">🗑️ حذف الحساب والبيانات</a>
+      <!-- Royal Policy & Safety Badges Box -->
+      <div class="royal-policy-box">
+        <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/child-safety.html" target="_blank" class="policy-pill-item policy-csae">
+          <span>🛡️</span> معايير سلامة الأطفال ومكافحة الاستغلال (CSAE)
+        </a>
+        <div class="policy-sub-row">
+          <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/privacy.html" target="_blank" class="policy-pill-item">
+            <span>🔒</span> سياسة الخصوصية
+          </a>
+          <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/delete-account.html" target="_blank" class="policy-pill-item policy-danger">
+            <span>🗑️</span> حذف الحساب
+          </a>
+        </div>
       </div>
 
-      <div class="permission-buttons" style="display:flex; gap:8px; width:100%; margin-top: 14px;">
-        <button id="save-settings-btn" class="action-button" style="flex:1; margin:0; padding:10px; font-size:13px; font-weight:800;">💾 حفظ التغيرات</button>
-        <button id="close-settings-btn" class="action-button secondary-btn" style="flex:1; margin:0; padding:10px; font-size:13px;">إلغاء</button>
+      <!-- Royal Action Buttons -->
+      <div class="royal-modal-actions">
+        <button id="save-settings-btn" class="royal-btn-primary">
+          <span>💾</span> حفظ التغييرات
+        </button>
+        <button id="close-settings-btn" class="royal-btn-secondary">
+          إلغاء
+        </button>
       </div>
     </div>
   </div>
@@ -932,57 +722,85 @@
     </div>
   </div>
 
-  <!-- WhatsApp Style Full-Screen Friends & Online Users Modal -->
-  <div id="friends-modal" class="modal hidden" style="z-index: 9999; backdrop-filter: blur(16px);">
-    <div class="modal-content messenger-modal-content" style="max-width: 780px; width: 95%; height: 85vh; padding: 0; text-align: right; background: #0e0f1b; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+  <!-- Royal WhatsApp Style Friends & Online Messenger Modal -->
+  <div id="friends-modal" class="modal hidden" style="z-index: 9999; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+    <div class="modal-content royal-messenger-content">
       
-      <!-- Messenger Header Bar -->
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #16182c; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:22px;">💬</span>
+      <!-- Messenger Royal Header Bar -->
+      <div class="royal-messenger-header">
+        <div class="messenger-header-title-box">
+          <div class="messenger-header-icon-wrap">
+            <span>💬</span>
+          </div>
           <div>
-            <h2 style="font-size: 18px; margin: 0; color: #fff; font-weight:800;">محادثات المتصلين والأصدقاء</h2>
-            <span style="font-size:12px; color:#3b82f6;" id="messenger-online-status">🌐 جميع المستخدمين المتصلين الآن بالعالم</span>
+            <h2 class="messenger-title">محادثات المتصلين والأصدقاء</h2>
+            <span class="messenger-subtitle" id="messenger-online-status">✨ قائمة الأصدقاء والمحادثات المباشرة</span>
           </div>
         </div>
-        <button id="close-friends-btn" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width:34px; height:34px; border-radius:50%; font-size: 18px; cursor: pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+        <button id="close-friends-btn" class="royal-close-round-btn" title="إغلاق">✕</button>
       </div>
 
-      <!-- Main Body: Responsive Split View / Single Screen -->
-      <div style="flex: 1; display: flex; overflow: hidden;" id="messenger-body-container">
+      <!-- Main Body: Split View / Single Screen -->
+      <div class="royal-messenger-body" id="messenger-body-container">
         
         <!-- Users & Friends Sidebar List View -->
-        <div id="friends-list-view" style="flex: 1; display: flex; flex-direction: column; border-left: 1px solid rgba(255,255,255,0.08); background: #121324;">
+        <div id="friends-list-view" class="royal-friends-list-pane">
           
           <!-- Search & Filter Bar -->
-          <div style="padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <input type="text" id="messenger-search-input" placeholder="🔍 ابحث عن اسم أي شخص متصل بالدردشة..." style="width:100%; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:#fff; font-size:13px;" dir="rtl">
+          <div class="royal-messenger-search-bar">
+            <span class="messenger-search-icon">🔍</span>
+            <input type="text" id="messenger-search-input" placeholder="ابحث عن اسم أي صديق..." autocomplete="off">
           </div>
 
           <!-- Active Users / Friends Cards Scroll Area -->
-          <div id="friends-container" style="flex:1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
+          <div id="friends-container" class="royal-friends-scroll-area">
+            <!-- Empty state fallback when no friends -->
+            <div id="friends-empty-msg" class="royal-friends-empty-card">
+              <div class="empty-crown-wrap">
+                <span class="empty-crown-icon">👑</span>
+              </div>
+              <h4 class="empty-title">لا يوجد أصدقاء متصلون حالياً</h4>
+              <p class="empty-desc">أضف أصدقاء أثناء مكالمات الفيديو أو شارك رابط التطبيق للدردشة المباشرة معهم!</p>
+              <button class="royal-invite-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
+                <span>🎁</span> دعوة أصدقاء وكسب 50 💎
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Direct Private Chat Conversation Window -->
-        <div id="private-chat-view" class="hidden" style="flex: 1.3; display: flex; flex-direction: column; background: #090a14;">
+        <div id="private-chat-view" class="royal-private-chat-pane hidden">
           
           <!-- Chat Header -->
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08);">
-            <button id="back-to-friends-list-btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; font-weight: bold; cursor: pointer; font-size: 13px; padding: 6px 12px; border-radius: 8px;">← القائمة</button>
-            <div style="text-align:center;">
-              <span style="color: #fff; font-weight: 800; font-size:15px; display:block;" id="private-chat-friend-name">صديق</span>
-              <span style="font-size:11px; color:#22c55e;">🟢 متصل الآن بالدردشة الخاصة</span>
+          <div class="royal-private-chat-header">
+            <button id="back-to-friends-list-btn" class="royal-back-btn">
+              <span>← رجوع</span>
+            </button>
+            <div class="private-chat-meta">
+              <div class="private-friend-top-row">
+                <span id="private-chat-friend-name" class="private-friend-name">صديق</span>
+                <span id="private-chat-friend-tag" class="private-friend-tag">👨 ذكر • 22 سنة</span>
+              </div>
+              <span class="private-online-pill">
+                <span class="online-green-dot"></span> متصل الآن بالدردشة
+              </span>
             </div>
-            <div style="width:40px;"></div>
+            <div class="private-chat-header-actions">
+              <button id="btn-clear-chat" class="chat-tool-icon-btn" title="مسح المحادثة">🧹 مسح</button>
+              <button id="btn-remove-friend" class="chat-tool-icon-btn btn-danger-tool" title="إزالة الصديق">🗑️ حذف</button>
+            </div>
           </div>
 
           <!-- Messages Scroll List -->
-          <div id="private-chat-messages" style="flex: 1; overflow-y: auto; background: #0d0e1a; padding: 16px; display: flex; flex-direction: column; gap: 10px;"></div>
+          <div id="private-chat-messages" class="royal-chat-messages-scroll"></div>
 
           <!-- Message Input Bar -->
-          <div style="display: flex; gap: 8px; padding: 12px 16px; background: #141528; border-top: 1px solid rgba(255,255,255,0.08);">
-            <input type="text" id="private-chat-input" placeholder="اكتب رسالتك الخاصة هنا..." style="flex: 1; padding: 12px 16px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size:14px; font-family: 'Tajawal', sans-serif;" dir="auto">
-            <button id="send-private-msg-btn" class="action-button" style="padding: 12px 22px; border-radius: 24px; font-weight:800; background: linear-gradient(135deg, #3b82f6, #2563eb); margin: 0;">إرسال 🚀</button>
+          <div class="royal-chat-input-bar">
+            <input type="text" id="private-chat-input" placeholder="اكتب رسالتك الخاصة هنا..." dir="auto">
+            <button id="send-private-msg-btn" class="royal-send-msg-btn">
+              <span>إرسال</span>
+              <span>🚀</span>
+            </button>
           </div>
         </div>
 

@@ -6,10 +6,14 @@
 // =============================================
 // Configuration - Fast WebRTC STUN & TURN
 // =============================================
-const SERVER_URL = (window.location.hostname === 'localhost' || window.location.protocol === 'capacitor:' || window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1')
-  ? 'https://liqaa-chat.onrender.com'
-  : '';
-const API_BASE_URL = SERVER_URL || '';
+const SERVER_URL = (typeof window !== 'undefined' && (
+  window.location.protocol === 'capacitor:' || 
+  window.location.protocol === 'file:' || 
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1' || 
+  !window.location.hostname.includes('onrender.com')
+)) ? 'https://liqaa-chat.onrender.com' : (window.location.origin || 'https://liqaa-chat.onrender.com');
+const API_BASE_URL = SERVER_URL || 'https://liqaa-chat.onrender.com';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -75,6 +79,7 @@ let controlsSetup = false;
 let userProfile = {
   username: '',
   phone: '',
+  age: 22,
   gender: '',
   country: 'ALL',
   gems: 50,
@@ -106,6 +111,7 @@ const initialSetupSection = $('#initial-profile-setup-section');
 const settingsModal = $('#settings-modal');
 const settingsUsername = $('#settings-username');
 const settingsPhone = $('#settings-phone');
+const settingsAge = $('#settings-age');
 const settingsGenderMale = $('#settings-gender-male');
 const settingsGenderFemale = $('#settings-gender-female');
 const saveSettingsBtn = $('#save-settings-btn');
@@ -249,34 +255,80 @@ function applyCountry(code, name) {
   selectedCountry = code;
   selectedCountryName = name || AR_COUNTRY_NAMES[code] || code;
 
-  if (detectedFlag) detectedFlag.textContent = countryCodeToFlag(code);
-  if (detectedName) detectedName.textContent = selectedCountryName;
+  const royalHomeName = $('#royal-home-country-name');
+  if (royalHomeName) royalHomeName.textContent = `بلدي (${selectedCountryName} ${countryCodeToFlag(code)})`;
 
-  const targetHomeLabel = $('#target-home-label');
-  if (targetHomeLabel) targetHomeLabel.textContent = `🏠 ${selectedCountryName}`;
+  if (selectedTargetCountryMode === 'HOME') {
+    selectedTargetCountryCode = code;
+    selectedTargetCountryName = selectedCountryName;
+    const pillText = $('#pill-selected-country-text');
+    if (pillText) pillText.textContent = `🏠 ${selectedCountryName}`;
+  }
 
-  if (countryDetecting) countryDetecting.classList.add('hidden');
-  if (countryDetected) countryDetected.classList.remove('hidden');
-  if (countryManual) countryManual.classList.add('hidden');
   validateForm();
 }
 
+// Native Android Location Bridge Listener
+window.onNativeLocationDetected = function(code, name, lat, lon) {
+  console.log('[Native Location] Received from Android:', code, name, lat, lon);
+  if (code) {
+    const finalName = name || AR_COUNTRY_NAMES[code] || code;
+    applyCountry(code, finalName);
+    showGemToast(`📍 تم تحديد بلدك تلقائياً عبر GPS: ${finalName} ${countryCodeToFlag(code)}`);
+  }
+};
+
 async function autoDetectCountry() {
-  // 1. Instant detection in 0ms (no loading spinner delay)
+  // 1. Instant 0ms fallback from timezone
   const instant = getInstantCountry();
   applyCountry(instant.code, instant.name);
 
-  // 2. Background refine from IP (optional, non-blocking)
+  // 2. Request native Android GPS via Java Bridge
+  try {
+    if (window.AndroidBridge && window.AndroidBridge.requestNativeLocation) {
+      window.AndroidBridge.requestNativeLocation();
+    }
+  } catch (e) {
+    console.warn('[Native Location] Bridge call:', e);
+  }
+
+  // 3. Request Android/Browser GPS Geolocation & reverse-geocode
+  if (typeof navigator !== 'undefined' && navigator.geolocation && navigator.geolocation.getCurrentPosition) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ar`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.countryCode) {
+              const code = data.countryCode.toUpperCase();
+              const name = AR_COUNTRY_NAMES[code] || data.countryName || code;
+              applyCountry(code, name);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('[GPS] Reverse geocoding error:', e);
+        }
+      },
+      (err) => {
+        console.warn('[GPS] Geolocation permission/fetch error:', err);
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+
+  // 4. Background IP refinement
   try {
     const result = await Promise.race([
       detectCountry(),
-      new Promise(resolve => setTimeout(() => resolve(null), 1500))
+      new Promise(resolve => setTimeout(() => resolve(null), 2000))
     ]);
 
     if (result && result.code) {
-      const option = countrySelect ? countrySelect.querySelector(`option[value="${result.code}"]`) : null;
-      const cName = option ? (option.dataset.name || option.textContent) : (AR_COUNTRY_NAMES[result.code] || result.name || result.code);
-      applyCountry(result.code, cName);
+      applyCountry(result.code, AR_COUNTRY_NAMES[result.code] || result.name || result.code);
     }
   } catch (e) {
     console.warn('[Geo] Background IP check skipped:', e);
@@ -758,30 +810,31 @@ function checkAndClaimReferralReward() {
   }
 }
 
+function openInviteModal() {
+  const link = 'https://play.google.com/store/apps/details?id=com.lokychat.app';
+  const refLinkInput = $('#referral-link-input');
+  if (refLinkInput) refLinkInput.value = link;
+  const inviteModal = $('#invite-modal');
+  if (inviteModal) inviteModal.classList.remove('hidden');
+}
+window.openInviteModal = openInviteModal;
+
 function setupInviteModal() {
-  const openInviteBtn = $('#open-invite-modal-btn');
   const inviteModal = $('#invite-modal');
   const closeInviteBtn = $('#close-invite-modal-btn');
   const refLinkInput = $('#referral-link-input');
   const copyBtn = $('#copy-ref-link-btn');
   const shareWpBtn = $('#share-whatsapp-btn');
 
-  function getMyReferralLink() {
-    const code = encodeURIComponent(userProfile.username || userProfile.phone || 'friend');
-    return `https://loky-chat.onrender.com/?ref=${code}`;
-  }
+  // Pre-fill link immediately
+  if (refLinkInput) refLinkInput.value = 'https://play.google.com/store/apps/details?id=com.lokychat.app';
 
-  function getPlayStoreLink() {
-    return 'https://play.google.com/store/apps/details?id=com.lokychat.app';
-  }
-
-  if (openInviteBtn) {
-    openInviteBtn.onclick = () => {
-      const link = getPlayStoreLink();
-      if (refLinkInput) refLinkInput.value = link;
-      if (inviteModal) inviteModal.classList.remove('hidden');
+  $$('#open-invite-modal-btn, [id="open-invite-modal-btn"]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openInviteModal();
     };
-  }
+  });
 
   if (closeInviteBtn) {
     closeInviteBtn.onclick = () => {
@@ -791,7 +844,8 @@ function setupInviteModal() {
 
   if (copyBtn) {
     copyBtn.onclick = () => {
-      const link = getPlayStoreLink();
+      const link = 'https://play.google.com/store/apps/details?id=com.lokychat.app';
+      if (refLinkInput) refLinkInput.value = link;
       navigator.clipboard.writeText(link).then(() => {
         showGemToast('📋 تم نسخ رابط الدعوة بنجاح!');
       }).catch(() => {
@@ -806,8 +860,8 @@ function setupInviteModal() {
 
   if (shareWpBtn) {
     shareWpBtn.onclick = () => {
-      const playLink = getPlayStoreLink();
-      const webLink = getMyReferralLink();
+      const playLink = 'https://play.google.com/store/apps/details?id=com.lokychat.app';
+      const webLink = `https://loky-chat.onrender.com/?ref=${encodeURIComponent(userProfile.username || 'friend')}`;
       const text = `🔥 انضم معي الآن على تطبيق "Loky Chat - لوكي شات" لأفضل دردشة فيديو عشوائية ومباشرة مع أصدقاء من كل دول العالم! 🎥✨\n\n📲 حمّل التطبيق الرسمي من متجر Google Play:\n${playLink}\n\n🌐 أو ادخل للدردشة المباشرة عبر المتصفح:\n${webLink}`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
     };
@@ -1366,16 +1420,17 @@ function setupFriendsSystem() {
         socketId: currentPartner.socketId,
         name: friendName,
         username: friendName,
-        gender: currentPartner.gender,
-        country: currentPartner.country,
-        countryName: currentPartner.countryName,
+        gender: currentPartner.gender || 'male',
+        age: currentPartner.age || 22,
+        country: currentPartner.country || 'JO',
+        countryName: currentPartner.countryName || 'الأردن',
         addedAt: Date.now()
       };
 
       friendsList.unshift(newFriend);
       saveFriendsList();
       renderFriendsAndOnlineUsers();
-      showGemToast(`➕ تم إضافة ${friendName} إلى قائمة أصدقائك!`);
+      showGemToast(`➕ تم إضافة ${friendName} (${newFriend.age} سنة) إلى أصدقائك!`);
     };
   }
 
@@ -1420,6 +1475,28 @@ function setupFriendsSystem() {
   }
 }
 
+function removeFriend(friendId) {
+  const friend = friendsList.find(f => f.id === friendId);
+  const name = friend ? friend.name : 'الصديق';
+  if (!confirm(`هل أنت متأكد من رغبتك في إزالة ${name} من قائمة الأصدقاء؟`)) return;
+
+  friendsList = friendsList.filter(f => f.id !== friendId);
+  saveFriendsList();
+  $('#private-chat-view').classList.add('hidden');
+  $('#friends-list-view').classList.remove('hidden');
+  renderFriendsList();
+  showGemToast(`🗑️ تم إزالة ${name} من قائمة الأصدقاء`);
+}
+window.removeFriend = removeFriend;
+
+function clearPrivateChat(friendId) {
+  if (!confirm('هل أنت متأكد من مسح جميع رسائل هذه المحادثة؟')) return;
+  localStorage.removeItem(`liqaa_chat_${friendId}`);
+  renderPrivateMessages(friendId);
+  showGemToast('🧹 تم مسح المحادثة بالكامل');
+}
+window.clearPrivateChat = clearPrivateChat;
+
 function renderFriendsList() {
   const container = $('#friends-container');
   const emptyMsg = $('#friends-empty-msg');
@@ -1434,18 +1511,35 @@ function renderFriendsList() {
 
   friendsList.forEach(friend => {
     const item = document.createElement('div');
-    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; border:1px solid var(--border);';
+    const isMale = friend.gender !== 'female';
+    const genderIcon = isMale ? '👨' : '👩';
+    const genderLabel = isMale ? 'ذكر' : 'أنثى';
+    const age = friend.age || 22;
+    const flag = countryCodeToFlag(friend.country || 'JO');
+
+    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(20,10,30,0.6) 100%); padding:12px 14px; border-radius:18px; border:1.5px solid rgba(255,215,0,0.25); box-shadow: 0 4px 15px rgba(0,0,0,0.4);';
     item.innerHTML = `
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:24px;">${friend.gender === 'female' ? '👩' : '👨'}</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #a855f7, #ec4899); display:flex; align-items:center; justify-content:center; font-size:22px; border:1.5px solid #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.35); flex-shrink:0;">
+          ${genderIcon}
+        </div>
         <div style="text-align:right;">
-          <div style="font-weight:bold; color:#fff; font-size:14px;">${friend.name} ${countryCodeToFlag(friend.country)}</div>
-          <div style="font-size:11px; color:#aaa;">${friend.countryName || 'متصل'}</div>
+          <div style="font-weight:800; color:#fff; font-size:14.5px;">${friend.name} ${flag}</div>
+          <div style="font-size:11.5px; color:#fef08a; font-weight:700; display:flex; align-items:center; gap:6px; margin-top:2px;">
+            <span>${genderIcon} ${genderLabel}</span>
+            <span>•</span>
+            <span>🎂 ${age} سنة</span>
+          </div>
         </div>
       </div>
-      <button class="action-button" style="padding:6px 14px; font-size:12px; border-radius:14px; margin:0;" onclick="openPrivateChat('${friend.id}')">
-        💬 دردشة خاصة
-      </button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="royal-invite-btn" style="padding:8px 14px; font-size:12px; margin:0;" onclick="openPrivateChat('${friend.id}')">
+          💬 دردشة
+        </button>
+        <button onclick="window.removeFriend('${friend.id}')" title="إزالة الصديق" style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; width:34px; height:34px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.2s ease;">
+          🗑️
+        </button>
+      </div>
     `;
     container.appendChild(item);
   });
@@ -1458,7 +1552,29 @@ function openPrivateChat(friendId) {
   activeFriendChat = friend;
   $('#friends-list-view').classList.add('hidden');
   $('#private-chat-view').classList.remove('hidden');
-  $('#private-chat-friend-name').textContent = `${friend.name} ${countryCodeToFlag(friend.country)}`;
+
+  const isMale = friend.gender !== 'female';
+  const genderIcon = isMale ? '👨' : '👩';
+  const genderLabel = isMale ? 'ذكر' : 'أنثى';
+  const age = friend.age || 22;
+  const flag = countryCodeToFlag(friend.country || 'JO');
+
+  const nameEl = $('#private-chat-friend-name');
+  if (nameEl) nameEl.textContent = `${friend.name} ${flag}`;
+  
+  const tagEl = $('#private-chat-friend-tag');
+  if (tagEl) {
+    tagEl.textContent = `${genderIcon} ${genderLabel} • ${age} سنة`;
+  }
+
+  const btnClear = $('#btn-clear-chat');
+  if (btnClear) {
+    btnClear.onclick = () => clearPrivateChat(friendId);
+  }
+  const btnRemove = $('#btn-remove-friend');
+  if (btnRemove) {
+    btnRemove.onclick = () => removeFriend(friendId);
+  }
 
   renderPrivateMessages(friendId);
 }
@@ -1487,16 +1603,28 @@ function renderPrivateMessages(friendId) {
   const msgs = getPrivateMessages(friendId);
 
   if (msgs.length === 0) {
-    container.innerHTML = '<div style="text-align:center; color:#666; font-size:12px; margin-top:80px;">بداية المحادثة الخاصة...</div>';
+    container.innerHTML = `
+      <div style="text-align:center; color:#94a3b8; font-size:12.5px; margin-top:60px; padding:20px; background:rgba(255,255,255,0.02); border-radius:16px; border:1px dashed rgba(255,215,0,0.2);">
+        <div style="font-size:30px; margin-bottom:8px;">👑💬</div>
+        <div style="font-weight:800; color:#ffd700; margin-bottom:4px;">بداية المحادثة الملكية الخاصة</div>
+        <div>اكتب رسالتك وتحدث بحرية وبأمان تام ✨</div>
+      </div>
+    `;
     return;
   }
 
   msgs.forEach(msg => {
-    const bubble = document.createElement('div');
+    const row = document.createElement('div');
     const isMe = msg.sender === 'me';
-    bubble.style.cssText = `max-width: 80%; padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 500; align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--gradient)' : 'rgba(255,255,255,0.1)'}; color: #fff; margin: 2px 0;`;
-    bubble.textContent = msg.text;
-    container.appendChild(bubble);
+    row.className = `chat-msg-row ${isMe ? 'is-me' : 'is-other'}`;
+
+    const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+    row.innerHTML = `
+      <div class="chat-bubble-card">${msg.text}</div>
+      <span class="chat-msg-time">${timeStr}</span>
+    `;
+    container.appendChild(row);
   });
 
   container.scrollTop = container.scrollHeight;
@@ -1527,6 +1655,7 @@ function setupSettingsUI() {
 
       if (settingsUsername) settingsUsername.value = userProfile.username || '';
       if (settingsPhone) settingsPhone.value = userProfile.phone || '';
+      if (settingsAge) settingsAge.value = userProfile.age || 22;
       if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
       
       updateAdminPinVisibility();
@@ -1749,12 +1878,14 @@ function setupSettingsUI() {
     saveSettingsBtn.addEventListener('click', () => {
       const newName = settingsUsername ? settingsUsername.value.trim() : '';
       const newPhone = settingsPhone ? settingsPhone.value.trim() : '';
+      const newAge = settingsAge ? parseInt(settingsAge.value.trim(), 10) || 22 : 22;
       const newPin = settingsAdminPin ? settingsAdminPin.value.trim() : '';
       const selectedCard = $('.gender-card[data-settings-gender].selected');
       const newGender = selectedCard ? selectedCard.dataset.settingsGender : userProfile.gender;
 
       if (newName) userProfile.username = newName;
       userProfile.phone = newPhone;
+      userProfile.age = newAge;
       if (newPin) userProfile.adminPin = newPin;
       userProfile.gender = newGender;
       selectedGender = newGender;
@@ -1781,109 +1912,440 @@ function setupSettingsUI() {
 }
 
 // =============================================
-// Welcome Screen UI
+// Welcome Screen UI & Live Camera Controller
 // =============================================
-function setupWelcomeUI() {
-  if (usernameInput) {
-    usernameInput.addEventListener('input', (e) => {
-      userProfile.username = e.target.value.trim() || 'مستخدم جديد';
-      saveUserProfile();
-      updateProfileUI();
-    });
-  }
+let welcomeCamStream = null;
+let currentCameraFacing = 'user';
+let isCameraMuted = false;
+let currentFilterIndex = 0;
+const VIDEO_FILTERS = [
+  'none',
+  'contrast(1.1) brightness(1.06) saturate(1.2)', // Natural Beauty
+  'sepia(0.18) contrast(1.15) brightness(1.05)',  // Warm Tone
+  'hue-rotate(15deg) saturate(1.3) brightness(1.05)', // Vibrant
+  'grayscale(1) contrast(1.25)' // Black & White
+];
 
-  if (phoneInput) {
-    phoneInput.addEventListener('input', (e) => {
-      userProfile.phone = e.target.value.trim();
-      saveUserProfile();
-    });
-  }
+const ROYAL_COUNTRIES = [
+  { code: 'SA', name: 'السعودية', flag: '🇸🇦' },
+  { code: 'EG', name: 'مصر', flag: '🇪🇬' },
+  { code: 'AE', name: 'الإمارات', flag: '🇦🇪' },
+  { code: 'JO', name: 'الأردن', flag: '🇯🇴' },
+  { code: 'IQ', name: 'العراق', flag: '🇮🇶' },
+  { code: 'DZ', name: 'الجزائر', flag: '🇩🇿' },
+  { code: 'MA', name: 'المغرب', flag: '🇲🇦' },
+  { code: 'KW', name: 'الكويت', flag: '🇰🇼' },
+  { code: 'QA', name: 'قطر', flag: '🇶🇦' },
+  { code: 'OM', name: 'عمان', flag: '🇴🇲' },
+  { code: 'BH', name: 'البحرين', flag: '🇧🇭' },
+  { code: 'LB', name: 'لبنان', flag: '🇱🇧' },
+  { code: 'SY', name: 'سوريا', flag: '🇸🇾' },
+  { code: 'PS', name: 'فلسطين', flag: '🇵🇸' },
+  { code: 'YE', name: 'اليمن', flag: '🇾🇪' },
+  { code: 'TN', name: 'تونس', flag: '🇹🇳' },
+  { code: 'LY', name: 'ليبيا', flag: '🇱🇾' },
+  { code: 'SD', name: 'السودان', flag: '🇸🇩' },
+  { code: 'TR', name: 'تركيا', flag: '🇹🇷' },
+  { code: 'US', name: 'الولايات المتحدة', flag: '🇺🇸' },
+  { code: 'GB', name: 'بريطانيا', flag: '🇬🇧' },
+  { code: 'DE', name: 'ألمانيا', flag: '🇩🇪' },
+  { code: 'FR', name: 'فرنسا', flag: '🇫🇷' },
+  { code: 'IT', name: 'إيطاليا', flag: '🇮🇹' },
+  { code: 'ES', name: 'إسبانيا', flag: '🇪🇸' },
+  { code: 'RU', name: 'روسيا', flag: '🇷🇺' },
+  { code: 'BR', name: 'البرازيل', flag: '🇧🇷' },
+  { code: 'CA', name: 'كندا', flag: '🇨🇦' },
+  { code: 'SE', name: 'السويد', flag: '🇸🇪' },
+  { code: 'IN', name: 'الهند', flag: '🇮🇳' },
+  { code: 'ID', name: 'إندونيسيا', flag: '🇮🇩' },
+  { code: 'PK', name: 'باكستان', flag: '🇵🇰' },
+  { code: 'IR', name: 'إيران', flag: '🇮🇷' }
+];
 
-  genderCards.forEach(card => {
-    card.addEventListener('click', () => {
-      genderCards.forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedGender = card.dataset.gender;
-      userProfile.gender = selectedGender;
-      saveUserProfile();
-      validateForm();
-    });
-  });
+async function initWelcomeCamera() {
+  const preview = $('#welcome-camera-preview');
+  const fallback = $('#camera-fallback-bg');
+  if (!preview) return;
 
-  filterCards.forEach(card => {
-    card.addEventListener('click', () => {
-      filterCards.forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      selectedGenderFilter = card.dataset.filter;
-    });
-  });
+  preview.muted = true;
+  preview.defaultMuted = true;
+  preview.setAttribute('playsinline', '');
+  preview.setAttribute('webkit-playsinline', '');
+  preview.setAttribute('autoplay', '');
 
-  // Target Country Filter handling
-  const targetCountryCards = $$('.target-country-card');
-  const targetSelectWrapper = $('#target-country-select-wrapper');
-  const targetCustomSelect = $('#target-custom-select');
+  // Mirror only for front camera, natural orientation for back camera
+  preview.style.transform = currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none';
 
-  targetCountryCards.forEach(card => {
-    card.addEventListener('click', () => {
-      targetCountryCards.forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      selectedTargetCountryMode = card.dataset.target || 'ALL';
+  try {
+    if (welcomeCamStream) {
+      welcomeCamStream.getTracks().forEach(t => {
+        try { t.stop(); } catch (e) {}
+      });
+      welcomeCamStream = null;
+    }
 
-      if (selectedTargetCountryMode === 'CUSTOM') {
-        if (targetSelectWrapper) targetSelectWrapper.classList.remove('hidden');
-        if (targetCustomSelect) {
-          selectedTargetCountryCode = targetCustomSelect.value || 'SA';
-          const opt = targetCustomSelect.options[targetCustomSelect.selectedIndex];
-          selectedTargetCountryName = opt ? (opt.dataset.name || opt.text) : 'السعودية';
-          const customLabel = $('#target-custom-label');
-          if (customLabel && selectedTargetCountryName) customLabel.textContent = `📍 ${selectedTargetCountryName}`;
+    let stream = null;
+    const isBack = (currentCameraFacing === 'environment');
+
+    // Strategy 1: High Definition 720p/1080p (ideal constraints that do NOT throw OverconstrainedError)
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+    } catch (e1) {
+      console.warn('[Camera] Strategy 1 failed, trying basic video:', e1);
+      // Strategy 2: Simple video constraint
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: isBack ? 'environment' : 'user' },
+          audio: false
+        });
+      } catch (e2) {
+        console.warn('[Camera] Strategy 2 failed, querying device list:', e2);
+        // Strategy 3: Enumerate devices
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(d => d.kind === 'videoinput');
+          let targetDev = null;
+          if (isBack) {
+            targetDev = videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || (videoDevices.length > 1 ? videoDevices[videoDevices.length - 1] : videoDevices[0]);
+          } else {
+            targetDev = videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0];
+          }
+
+          if (targetDev && targetDev.deviceId) {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { deviceId: { exact: targetDev.deviceId } },
+              audio: false
+            });
+          } else {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          }
+        } catch (e3) {
+          throw e3;
         }
-      } else if (selectedTargetCountryMode === 'HOME') {
-        if (targetSelectWrapper) targetSelectWrapper.classList.add('hidden');
-        selectedTargetCountryCode = selectedCountry || 'JO';
-        selectedTargetCountryName = selectedCountryName || 'الأردن';
-      } else {
-        if (targetSelectWrapper) targetSelectWrapper.classList.add('hidden');
-        selectedTargetCountryCode = 'ALL';
-        selectedTargetCountryName = 'كل العالم';
       }
+    }
+
+    welcomeCamStream = stream;
+    preview.srcObject = welcomeCamStream;
+    
+    const markVideoReady = () => {
+      preview.classList.add('video-ready');
+      if (fallback) fallback.style.display = 'none';
+    };
+
+    preview.onloadedmetadata = markVideoReady;
+    preview.onplaying = markVideoReady;
+    preview.onloadeddata = markVideoReady;
+
+    await preview.play().catch(e => console.warn('Preview play catch:', e));
+    markVideoReady();
+
+    // Also feed to local-video in PiP window
+    const localVid = $('#local-video');
+    if (localVid) {
+      localVid.srcObject = welcomeCamStream;
+      localVid.style.transform = currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none';
+      localVid.play().catch(() => {});
+    }
+  } catch (err) {
+    console.warn('[Welcome Camera] Local preview stream error:', err);
+    preview.classList.remove('video-ready');
+    if (fallback) fallback.style.display = 'flex';
+  }
+}
+
+function renderRoyalCountryGrid(searchFilter = '') {
+  const grid = $('#royal-country-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const query = searchFilter.trim().toLowerCase();
+  const list = ROYAL_COUNTRIES.filter(c => 
+    !query || c.name.toLowerCase().includes(query) || c.code.toLowerCase().includes(query)
+  );
+
+  list.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'royal-country-item';
+    if (selectedTargetCountryMode === 'CUSTOM' && selectedTargetCountryCode === c.code) {
+      item.classList.add('active');
+    }
+    item.innerHTML = `
+      <div class="country-item-meta">
+        <span class="country-item-flag">${c.flag}</span>
+        <span class="country-item-name">${c.name}</span>
+      </div>
+      <span class="country-item-gem">10 💎</span>
+    `;
+
+    item.addEventListener('click', () => {
+      selectedTargetCountryMode = 'CUSTOM';
+      selectedTargetCountryCode = c.code;
+      selectedTargetCountryName = c.name;
+
+      const pillText = $('#pill-selected-country-text');
+      if (pillText) pillText.textContent = `${c.flag} ${c.name} (10💎)`;
+
+      $('#royal-opt-all')?.classList.remove('active');
+      $('#royal-opt-home')?.classList.remove('active');
+      $$('.royal-country-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+
+      const modal = $('#royal-country-modal');
+      if (modal) modal.classList.add('hidden');
       validateForm();
     });
-  });
 
-  if (targetCustomSelect) {
-    targetCustomSelect.addEventListener('change', () => {
-      selectedTargetCountryCode = targetCustomSelect.value;
-      const opt = targetCustomSelect.options[targetCustomSelect.selectedIndex];
-      selectedTargetCountryName = opt ? (opt.dataset.name || opt.text) : targetCustomSelect.value;
-      const customLabel = $('#target-custom-label');
-      if (customLabel) customLabel.textContent = `📍 ${selectedTargetCountryName}`;
-      validateForm();
+    grid.appendChild(item);
+  });
+}
+
+function openRoyalCountryModal() {
+  const modal = $('#royal-country-modal');
+  if (modal) {
+    renderRoyalCountryGrid();
+    modal.classList.remove('hidden');
+  }
+}
+window.openRoyalCountryModal = openRoyalCountryModal;
+
+function openRoyalGenderModal() {
+  const modal = $('#royal-gender-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
+}
+window.openRoyalGenderModal = openRoyalGenderModal;
+
+function setupSwipeGestures() {
+  // Swipe on Welcome Screen Camera Card to Start Video Chat (ONLY when idle)
+  const welcomeCard = $('#welcome-camera-card');
+  if (welcomeCard) {
+    let startX = 0, startY = 0;
+    welcomeCard.addEventListener('touchstart', (e) => {
+      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar')) {
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    welcomeCard.addEventListener('touchend', (e) => {
+      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar')) {
+        return;
+      }
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        console.log('[Swipe] Swipe detected on home camera -> starting chat!');
+        startChat();
+      }
+    }, { passive: true });
+  }
+
+  // Swipe on Live Video Call Screen to Match Next Partner
+  const chatVideosContainer = $('#videos-container');
+  if (chatVideosContainer) {
+    let callStartX = 0, callStartY = 0;
+    chatVideosContainer.addEventListener('touchstart', (e) => {
+      callStartX = e.touches[0].clientX;
+      callStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    chatVideosContainer.addEventListener('touchend', (e) => {
+      const callEndX = e.changedTouches[0].clientX;
+      const callEndY = e.changedTouches[0].clientY;
+      const deltaX = callEndX - callStartX;
+      const deltaY = callEndY - callStartY;
+
+      if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        console.log('[Swipe] Swiped on video call -> next partner!');
+        if (nextBtn && !nextBtn.disabled) {
+          nextBtn.click();
+        }
+      }
+    }, { passive: true });
+  }
+}
+
+function setupWelcomeUI() {
+  // Start camera preview immediately
+  initWelcomeCamera();
+  setupSwipeGestures();
+
+  // Camera floating toolbar buttons
+  const btnFilters = $('#btn-cam-filters');
+  if (btnFilters) {
+    btnFilters.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentFilterIndex = (currentFilterIndex + 1) % VIDEO_FILTERS.length;
+      const preview = $('#welcome-camera-preview');
+      if (preview) preview.style.filter = VIDEO_FILTERS[currentFilterIndex];
+      showGemToast(`✨ تم تفعيل الفلتر ${currentFilterIndex + 1}`);
     });
   }
 
-  countrySelect.addEventListener('change', () => {
-    selectedCountry = countrySelect.value || 'ALL';
-    const selectedOption = countrySelect.options[countrySelect.selectedIndex];
-    selectedCountryName = selectedOption.dataset.name || selectedOption.text;
-    const targetHomeLabel = $('#target-home-label');
-    if (targetHomeLabel) targetHomeLabel.textContent = `🏠 ${selectedCountryName}`;
-    validateForm();
-  });
-
-  if (changeCountryBtn) {
-    changeCountryBtn.addEventListener('click', () => {
-      // Also request GPS if available on user interaction
-      if (navigator.geolocation && navigator.geolocation.getCurrentPosition) {
-        navigator.geolocation.getCurrentPosition(() => {}, () => {});
+  const btnCamToggle = $('#btn-cam-toggle');
+  if (btnCamToggle) {
+    btnCamToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isCameraMuted = !isCameraMuted;
+      if (welcomeCamStream) {
+        welcomeCamStream.getVideoTracks().forEach(t => t.enabled = !isCameraMuted);
       }
-      countryDetected.classList.add('hidden');
-      countryManual.classList.remove('hidden');
-      validateForm();
+      const icon = $('#cam-toggle-icon');
+      if (icon) icon.textContent = isCameraMuted ? '🚫' : '📹';
     });
   }
 
-  startBtn.addEventListener('click', startChat);
+  const btnCamFlip = $('#btn-cam-flip');
+  if (btnCamFlip) {
+    btnCamFlip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
+      initWelcomeCamera();
+    });
+  }
+
+  // Start chat on Camera Card Tap (ONLY when idle)
+  const welcomeCamCard = $('#welcome-camera-card');
+  if (welcomeCamCard) {
+    welcomeCamCard.addEventListener('click', (e) => {
+      if (currentState !== 'idle') return;
+      if (e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar') || e.target.closest('#welcome-floating-toolbar') || e.target.closest('#camera-match-trigger')) {
+        return;
+      }
+      startChat();
+    });
+  }
+
+  // Cancel Search Button (Direct binding on startup with stopPropagation)
+  const cancelSearchBtn = $('#cancel-search-btn');
+  if (cancelSearchBtn) {
+    const handleCancel = (e) => {
+      e.stopPropagation();
+      if (e.cancelable) e.preventDefault();
+      console.log('[App] Cancel search clicked!');
+      endCall();
+    };
+    cancelSearchBtn.addEventListener('click', handleCancel);
+    cancelSearchBtn.addEventListener('touchend', handleCancel);
+  }
+
+  // Royal Country Selector Modal Logic
+  const openCountryBtn = $('#btn-open-country-modal');
+  const royalCountryModal = $('#royal-country-modal');
+  const closeCountryBtn = $('#close-royal-country-btn');
+  const countrySearchInput = $('#royal-country-search');
+
+  if (openCountryBtn) {
+    openCountryBtn.onclick = (e) => {
+      e.stopPropagation();
+      openRoyalCountryModal();
+    };
+  }
+  if (closeCountryBtn && royalCountryModal) {
+    closeCountryBtn.onclick = () => {
+      royalCountryModal.classList.add('hidden');
+    };
+  }
+  if (countrySearchInput) {
+    countrySearchInput.addEventListener('input', (e) => {
+      renderRoyalCountryGrid(e.target.value);
+    });
+  }
+
+  // Royal Country Quick Cards (All / Home)
+  const optAll = $('#royal-opt-all');
+  const optHome = $('#royal-opt-home');
+  if (optAll) {
+    optAll.onclick = () => {
+      selectedTargetCountryMode = 'ALL';
+      selectedTargetCountryCode = 'ALL';
+      selectedTargetCountryName = 'كل العالم';
+      const pillText = $('#pill-selected-country-text');
+      if (pillText) pillText.textContent = '🌍 كل العالم';
+
+      optAll.classList.add('active');
+      optHome?.classList.remove('active');
+      $$('.royal-country-item').forEach(el => el.classList.remove('active'));
+      royalCountryModal?.classList.add('hidden');
+      validateForm();
+    };
+  }
+  if (optHome) {
+    optHome.onclick = () => {
+      selectedTargetCountryMode = 'HOME';
+      selectedTargetCountryCode = selectedCountry || 'JO';
+      selectedTargetCountryName = selectedCountryName || 'الأردن';
+      const pillText = $('#pill-selected-country-text');
+      if (pillText) pillText.textContent = `🏠 ${selectedTargetCountryName}`;
+
+      optHome.classList.add('active');
+      optAll?.classList.remove('active');
+      $$('.royal-country-item').forEach(el => el.classList.remove('active'));
+      royalCountryModal?.classList.add('hidden');
+      validateForm();
+    };
+  }
+
+  // Royal Gender Selector Modal Logic
+  const openGenderBtn = $('#btn-open-gender-modal');
+  const royalGenderModal = $('#royal-gender-modal');
+  const closeGenderBtn = $('#close-royal-gender-btn');
+
+  if (openGenderBtn) {
+    openGenderBtn.onclick = (e) => {
+      e.stopPropagation();
+      openRoyalGenderModal();
+    };
+  }
+  if (closeGenderBtn && royalGenderModal) {
+    closeGenderBtn.onclick = () => {
+      royalGenderModal.classList.add('hidden');
+    };
+  }
+
+  const genderCards = $$('.royal-gender-card');
+  genderCards.forEach(card => {
+    card.onclick = () => {
+      genderCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      selectedGenderFilter = card.dataset.genderChoice || 'any';
+
+      const pillGenderText = $('#pill-selected-gender-text');
+      if (pillGenderText) {
+        if (selectedGenderFilter === 'female') pillGenderText.textContent = '👩 إناث (10💎)';
+        else if (selectedGenderFilter === 'male') pillGenderText.textContent = '👨 ذكور (10💎)';
+        else pillGenderText.textContent = 'الكل ⚧ (مجاني)';
+      }
+      royalGenderModal?.classList.add('hidden');
+      validateForm();
+    };
+  });
+
+  // Bottom Nav settings tab
+  const tabSettings = $('#tab-open-settings');
+  if (tabSettings) {
+    tabSettings.onclick = () => {
+      const modal = $('#settings-modal');
+      if (modal) modal.classList.remove('hidden');
+    };
+  }
+
+  if (startBtn) {
+    startBtn.addEventListener('click', startChat);
+  }
 
   if (closeRechargeBtn) {
     closeRechargeBtn.addEventListener('click', () => {
@@ -1959,21 +2421,28 @@ function connectSocket() {
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket.id);
     
-    if (currentState !== 'idle' && selectedGender) {
-      socket.emit('register', {
-        gender: selectedGender,
+    // Always register identity with server on connect/reconnect
+    socket.emit('register', {
+      gender: selectedGender || userProfile.gender || 'male',
+      myCountry: myHomeCountryCode || 'JO',
+      targetCountry: selectedTargetCountryCode || selectedCountry || 'ALL',
+      country: selectedCountry || 'ALL',
+      countryName: selectedCountryName || 'كل العالم',
+      genderFilter: selectedGenderFilter || 'any',
+      username: userProfile.username || 'مستخدم',
+      phone: userProfile.phone || ''
+    });
+    
+    if (currentState === 'searching') {
+      socket.emit('find_partner', {
+        gender: selectedGender || userProfile.gender || 'male',
         myCountry: myHomeCountryCode || 'JO',
-        targetCountry: selectedCountry || 'ALL',
+        targetCountry: selectedTargetCountryCode || selectedCountry || 'ALL',
         country: selectedCountry || 'ALL',
         countryName: selectedCountryName || 'كل العالم',
-        genderFilter: selectedGenderFilter,
-        username: userProfile.username,
-        phone: userProfile.phone
+        genderFilter: selectedGenderFilter || 'any',
+        username: userProfile.username || 'مستخدم'
       });
-      
-      if (currentState === 'searching') {
-        socket.emit('find_partner');
-      }
     }
   });
 
@@ -2134,54 +2603,105 @@ function emitWhenReady(event, data) {
 }
 
 // =============================================
-// Media Stream Permission
+// Media Stream Permission & Ultra HD Setup
 // =============================================
 async function requestMediaPermission() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showPermissionError(
       'متصفحك لا يدعم الكاميرا',
-      'يرجى استخدام متصفح Chrome أو Firefox أو Edge حديث. تأكد من أنك تستخدم HTTPS.',
+      'يرجى استخدام متصفح حديث أو منح الإذن للكاميرا والميكروفون.',
       false
     );
     return false;
   }
 
+  // If localStream already has active tracks, return true immediately (0 delay, 0 restart)
+  if (localStream && localStream.active && localStream.getVideoTracks().length > 0 && localStream.getAudioTracks().length > 0) {
+    return true;
+  }
+
+  const isBack = (currentCameraFacing === 'environment');
+
   try {
+    // If we have welcomeCamStream already active, just attach microphone without killing video (zero lag!)
+    if (welcomeCamStream && welcomeCamStream.active && welcomeCamStream.getVideoTracks().length > 0) {
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        const videoTrack = welcomeCamStream.getVideoTracks()[0];
+        const audioTrack = audioStream.getAudioTracks()[0];
+        localStream = new MediaStream([videoTrack, audioTrack]);
+        if (localVideo) {
+          localVideo.srcObject = localStream;
+          localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+          localVideo.play().catch(() => {});
+        }
+        return true;
+      } catch (eAudio) {
+        console.warn('Audio only acquire failed, will request full stream:', eAudio);
+      }
+    }
+
+    // Full acquire with High Definition (720p ideal, no overconstrained limits)
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 1280, min: 640 },
-        height: { ideal: 720, min: 480 },
-        facingMode: 'user'
+        facingMode: isBack ? { ideal: 'environment' } : { ideal: 'user' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       },
       audio: {
         echoCancellation: true,
-        noiseSuppression: true
+        noiseSuppression: true,
+        autoGainControl: true
       }
     });
 
-    localVideo.srcObject = localStream;
-    console.log('[Media] Stream acquired successfully');
+    if (localVideo) {
+      localVideo.srcObject = localStream;
+      localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+      await localVideo.play().catch(() => {});
+    }
+    const welcomePreview = $('#welcome-camera-preview');
+    if (welcomePreview) {
+      welcomePreview.srcObject = localStream;
+      welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
+      welcomePreview.classList.add('video-ready');
+      welcomePreview.play().catch(() => {});
+    }
+    welcomeCamStream = localStream;
     return true;
 
   } catch (err) {
-    console.error('[Media] Permission error:', err.name, err.message);
-
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      showPermissionError(
-        '🚫 تم رفض إذن الكاميرا',
-        'يرجى السماح بالوصول للكاميرا والميكروفون من إعدادات المتصفح.',
-        true
-      );
-    } else {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    console.warn('[Media] 720p getUserMedia failed, trying fallback basic:', err);
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: isBack ? 'environment' : 'user' },
+        audio: true
+      });
+      if (localVideo) {
         localVideo.srcObject = localStream;
-        return true;
-      } catch (err2) {
-        showPermissionError('❌ مشكلة الكاميرا', 'تعذر الحصول على صورة الكاميرا.', true);
+        localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+        await localVideo.play().catch(() => {});
       }
+      const welcomePreview = $('#welcome-camera-preview');
+      if (welcomePreview) {
+        welcomePreview.srcObject = localStream;
+        welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
+        welcomePreview.classList.add('video-ready');
+        welcomePreview.play().catch(() => {});
+      }
+      welcomeCamStream = localStream;
+      return true;
+    } catch (err2) {
+      console.error('[Media] All media requests failed:', err2);
+      showPermissionError('🚫 إذن الكاميرا والميكروفون', 'يرجى السماح بالوصول للكاميرا والميكروفون للبدء في الدردشة.', true);
+      return false;
     }
-    return false;
   }
 }
 
@@ -2198,12 +2718,15 @@ function showPermissionError(title, message, showSteps) {
 }
 
 // =============================================
-// Start Chat
+// Start Chat (Unified Single-Screen Matching)
 // =============================================
 async function startChat() {
   if (checkBanStatus()) return;
+  if (currentState === 'searching' || currentState === 'connected') return;
 
-  // Mark setup completed when user starts chat & hide setup section
+  console.log('[App] startChat() triggered on royal single-screen interface!');
+  showGemToast('🔍 جاري تشغيل الرادار والبحث عن شريك...');
+
   userProfile.hasCompletedSetup = true;
   saveUserProfile();
   updateSetupSectionVisibility();
@@ -2220,21 +2743,10 @@ async function startChat() {
   }
 
   const hasPermission = await requestMediaPermission();
-  if (!hasPermission) return;
-
-  emitWhenReady('register', {
-    gender: selectedGender || 'male',
-    myCountry: myHomeCountryCode || 'JO',
-    targetCountry: selectedTargetCountryCode || 'ALL',
-    country: selectedCountry || 'ALL',
-    countryName: selectedCountryName || 'كل العالم',
-    genderFilter: selectedGenderFilter,
-    username: userProfile.username,
-    phone: userProfile.phone
-  });
-
-  welcomeScreen.classList.remove('active');
-  chatScreen.classList.add('active');
+  if (!hasPermission) {
+    console.warn('[App] Media permission was not acquired');
+    return;
+  }
 
   if (!controlsSetup) {
     setupControls();
@@ -2242,9 +2754,23 @@ async function startChat() {
   }
 
   startNudityScanner();
-  emitWhenReady('find_partner');
+
+  const matchPayload = {
+    gender: selectedGender || userProfile.gender || 'male',
+    myCountry: myHomeCountryCode || 'JO',
+    targetCountry: selectedTargetCountryCode || selectedCountry || 'ALL',
+    country: selectedCountry || 'ALL',
+    countryName: selectedCountryName || 'كل العالم',
+    genderFilter: selectedGenderFilter || 'any',
+    username: userProfile.username || 'مستخدم',
+    phone: userProfile.phone || ''
+  };
+
+  emitWhenReady('register', matchPayload);
+  emitWhenReady('find_partner', matchPayload);
   setState('searching');
 }
+window.startChat = startChat;
 
 // =============================================
 // Control Buttons
@@ -2344,6 +2870,85 @@ function toggleCamera() {
   }
 }
 
+async function switchCamera() {
+  if (!localStream) return;
+  currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
+  const isBack = (currentCameraFacing === 'environment');
+  
+  try {
+    localStream.getVideoTracks().forEach(t => {
+      try { t.stop(); } catch(e) {}
+    });
+
+    let newVideoStream = null;
+    try {
+      newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: isBack ? { ideal: 'environment' } : 'user',
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 },
+          frameRate: { ideal: 60, min: 30 }
+        },
+        audio: false
+      });
+    } catch(e1) {
+      try {
+        newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: isBack ? 'environment' : 'user' },
+          audio: false
+        });
+      } catch (e2) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        const targetDev = isBack 
+          ? (videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || (videoDevices.length > 1 ? videoDevices[videoDevices.length - 1] : videoDevices[0]))
+          : (videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0]);
+        
+        if (targetDev && targetDev.deviceId) {
+          newVideoStream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: targetDev.deviceId } },
+            audio: false
+          });
+        } else {
+          newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+      }
+    }
+
+    const newVideoTrack = newVideoStream.getVideoTracks()[0];
+    if (newVideoTrack) {
+      const oldVideoTrack = localStream.getVideoTracks()[0];
+      if (oldVideoTrack) {
+        localStream.removeTrack(oldVideoTrack);
+      }
+      localStream.addTrack(newVideoTrack);
+
+      if (peerConnection) {
+        const senders = peerConnection.getSenders();
+        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (videoSender) {
+          videoSender.replaceTrack(newVideoTrack);
+        }
+      }
+
+      if (localVideo) {
+        localVideo.srcObject = localStream;
+        localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+      }
+      const welcomePreview = $('#welcome-camera-preview');
+      if (welcomePreview) {
+        welcomePreview.srcObject = localStream;
+        welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
+      }
+      showGemToast(isBack ? '📷 تم التبديل للكاميرا الخلفية' : '🤳 تم التبديل للكاميرا الأمامية');
+    }
+  } catch (err) {
+    console.error('[App] Failed to switch camera:', err);
+    showGemToast('❌ تعذر تبديل الكاميرا');
+  }
+}
+window.switchCamera = switchCamera;
+
 function endCall() {
   console.log('[App] Ending call / returning to home screen...');
   stopNudityScanner();
@@ -2352,24 +2957,6 @@ function endCall() {
   if (socket && socket.connected) {
     socket.emit('stop_search');
   }
-
-  if (localStream) {
-    try {
-      localStream.getTracks().forEach(track => {
-        track.stop();
-        track.enabled = false;
-      });
-    } catch (e) {
-      console.warn('Error stopping tracks:', e);
-    }
-    localStream = null;
-  }
-
-  if (localVideo) localVideo.srcObject = null;
-  if (remoteVideo) remoteVideo.srcObject = null;
-
-  if (chatScreen) chatScreen.classList.remove('active');
-  if (welcomeScreen) welcomeScreen.classList.add('active');
 
   setState('idle');
 
@@ -2384,25 +2971,40 @@ function endCall() {
 
   validateForm();
   updateProfileUI();
+
+  if (!welcomeCamStream || !welcomeCamStream.active) {
+    initWelcomeCamera();
+  }
 }
 window.endCall = endCall;
 
 // =============================================
-// WebRTC Peer Connection
+// WebRTC Peer Connection (Ultra HD Optimization)
 // =============================================
+function setVideoBitrate(sdp, bitrateKbps = 2500) {
+  if (!sdp) return sdp;
+  return sdp.replace(/a=mid:video\r\n/g, `a=mid:video\r\nb=AS:${bitrateKbps}\r\n`);
+}
+
 async function createPeerConnection() {
   cleanupPeerConnection();
 
   try {
     peerConnection = new RTCPeerConnection(ICE_SERVERS);
 
-    localStream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream);
-    });
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+    }
 
     peerConnection.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
-        remoteVideo.srcObject = event.streams[0];
+        const remoteVid = $('#remote-video');
+        if (remoteVid) {
+          remoteVid.srcObject = event.streams[0];
+          remoteVid.play().catch(e => console.warn('Remote video play catch:', e));
+        }
       }
     };
 
@@ -2429,9 +3031,10 @@ async function createPeerConnection() {
 async function createAndSendOffer() {
   try {
     const offer = await peerConnection.createOffer();
+    offer.sdp = setVideoBitrate(offer.sdp, 2500);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
-    console.log('[WebRTC] Offer sent');
+    console.log('[WebRTC] Ultra HD Offer sent');
   } catch (err) {
     console.error('[WebRTC] Error creating offer:', err);
   }
@@ -2441,9 +3044,10 @@ async function handleOffer(offer) {
   try {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await peerConnection.createAnswer();
+    answer.sdp = setVideoBitrate(answer.sdp, 2500);
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', { answer: answer });
-    console.log('[WebRTC] Answer sent');
+    console.log('[WebRTC] Ultra HD Answer sent');
   } catch (err) {
     console.error('[WebRTC] Error handling offer:', err);
   }
@@ -2458,51 +3062,124 @@ function cleanupPeerConnection() {
     peerConnection.close();
     peerConnection = null;
   }
-  if (remoteVideo) remoteVideo.srcObject = null;
+  const remoteVid = $('#remote-video');
+  if (remoteVid) remoteVid.srcObject = null;
   stopCallTimer();
 }
 
 // =============================================
-// UI State Management
+// UI State Management (Unified Single-Screen)
 // =============================================
 function setState(state) {
   currentState = state;
+  const welcomeCamCard = $('#welcome-camera-card');
+  const searchingOverlay = $('#searching-overlay');
+  const partnerLeftOverlay = $('#partner-left-overlay');
+  const partnerInfo = $('#partner-info');
+  const callTimer = $('#call-timer');
   const callBadgesBar = $('#call-badges-bar');
+  const controlsBar = $('#controls-bar');
+  const localVideoWrapper = $('#local-video-wrapper');
+  const remoteVid = $('#remote-video');
+  const welcomePreview = $('#welcome-camera-preview');
+  const idleTrigger = $('#camera-match-trigger');
+  const floatingToolbar = $('#welcome-floating-toolbar');
+  const filterRow = $('.modern-filter-row');
+  const bottomNav = $('.modern-bottom-nav');
 
   switch (state) {
     case 'idle':
-      searchingOverlay.classList.add('hidden');
-      partnerLeftOverlay.classList.add('hidden');
-      partnerInfo.classList.add('hidden');
-      callTimer.classList.add('hidden');
+      if (welcomeCamCard) {
+        welcomeCamCard.classList.remove('in-call', 'is-searching');
+      }
+      if (searchingOverlay) searchingOverlay.classList.add('hidden');
+      if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
+      if (partnerInfo) partnerInfo.classList.add('hidden');
+      if (callTimer) callTimer.classList.add('hidden');
       if (callBadgesBar) callBadgesBar.classList.add('hidden');
+      if (controlsBar) controlsBar.classList.add('hidden');
+      if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
+      if (remoteVid) {
+        remoteVid.classList.add('hidden');
+        remoteVid.srcObject = null;
+      }
+      if (welcomePreview) welcomePreview.style.display = 'block';
+      if (idleTrigger) idleTrigger.classList.remove('hidden');
+      if (floatingToolbar) floatingToolbar.classList.remove('hidden');
+      if (filterRow) filterRow.classList.remove('hidden');
+      if (bottomNav) bottomNav.classList.remove('hidden');
       stopCallTimer();
       break;
 
     case 'searching':
-      searchingOverlay.classList.remove('hidden');
-      partnerLeftOverlay.classList.add('hidden');
-      partnerInfo.classList.add('hidden');
-      callTimer.classList.add('hidden');
+      if (welcomeCamCard) {
+        welcomeCamCard.classList.add('is-searching');
+        welcomeCamCard.classList.remove('in-call');
+      }
+      if (searchingOverlay) searchingOverlay.classList.remove('hidden');
+      if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
+      if (partnerInfo) partnerInfo.classList.add('hidden');
+      if (callTimer) callTimer.classList.add('hidden');
       if (callBadgesBar) callBadgesBar.classList.add('hidden');
+      if (controlsBar) controlsBar.classList.remove('hidden');
+      if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
+      if (remoteVid) {
+        remoteVid.classList.add('hidden');
+        remoteVid.srcObject = null;
+      }
+      if (welcomePreview) welcomePreview.style.display = 'block';
+      if (idleTrigger) idleTrigger.classList.add('hidden');
+      if (floatingToolbar) floatingToolbar.classList.add('hidden');
+      if (filterRow) filterRow.classList.add('hidden');
+      if (bottomNav) bottomNav.classList.add('hidden');
       stopCallTimer();
       break;
 
     case 'connected':
-      searchingOverlay.classList.add('hidden');
-      partnerLeftOverlay.classList.add('hidden');
-      partnerInfo.classList.remove('hidden');
-      callTimer.classList.remove('hidden');
+      if (welcomeCamCard) {
+        welcomeCamCard.classList.add('in-call');
+        welcomeCamCard.classList.remove('is-searching');
+      }
+      if (searchingOverlay) searchingOverlay.classList.add('hidden');
+      if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
+      if (partnerInfo) partnerInfo.classList.remove('hidden');
+      if (callTimer) callTimer.classList.remove('hidden');
       if (callBadgesBar) callBadgesBar.classList.remove('hidden');
+      if (controlsBar) controlsBar.classList.remove('hidden');
+      if (localVideoWrapper) localVideoWrapper.classList.remove('hidden');
+      if (remoteVid) remoteVid.classList.remove('hidden');
+      if (welcomePreview) welcomePreview.style.display = 'none';
+      if (idleTrigger) idleTrigger.classList.add('hidden');
+      if (floatingToolbar) floatingToolbar.classList.add('hidden');
+      if (filterRow) filterRow.classList.add('hidden');
+      if (bottomNav) bottomNav.classList.add('hidden');
       startCallTimer();
       break;
 
     case 'partner_left':
-      searchingOverlay.classList.remove('hidden');
-      partnerLeftOverlay.classList.add('hidden');
-      partnerInfo.classList.add('hidden');
-      callTimer.classList.add('hidden');
+      if (welcomeCamCard) {
+        welcomeCamCard.classList.add('is-searching');
+        welcomeCamCard.classList.remove('in-call');
+      }
+      if (searchingOverlay) searchingOverlay.classList.remove('hidden');
+      if (partnerLeftOverlay) partnerLeftOverlay.classList.remove('hidden');
+      setTimeout(() => {
+        if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
+      }, 2500);
+      if (partnerInfo) partnerInfo.classList.add('hidden');
+      if (callTimer) callTimer.classList.add('hidden');
       if (callBadgesBar) callBadgesBar.classList.add('hidden');
+      if (controlsBar) controlsBar.classList.remove('hidden');
+      if (localVideoWrapper) localVideoWrapper.classList.add('hidden');
+      if (remoteVid) {
+        remoteVid.classList.add('hidden');
+        remoteVid.srcObject = null;
+      }
+      if (welcomePreview) welcomePreview.style.display = 'block';
+      if (idleTrigger) idleTrigger.classList.add('hidden');
+      if (floatingToolbar) floatingToolbar.classList.add('hidden');
+      if (filterRow) filterRow.classList.add('hidden');
+      if (bottomNav) bottomNav.classList.add('hidden');
       stopCallTimer();
       break;
   }

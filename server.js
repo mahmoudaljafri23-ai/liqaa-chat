@@ -509,18 +509,22 @@ function findMatch(socketId) {
 
     // Check gender filter compatibility
     const userWantsCandidateGender =
-      user.genderFilter === 'any' || user.genderFilter === candidate.gender;
+      !user.genderFilter || user.genderFilter === 'any' || user.genderFilter === candidate.gender;
     const candidateWantsUserGender =
-      candidate.genderFilter === 'any' || candidate.genderFilter === user.gender;
+      !candidate.genderFilter || candidate.genderFilter === 'any' || candidate.genderFilter === user.gender;
 
     // Check country filter compatibility:
-    // User wants candidate if user's targetCountry is ALL, OR matches candidate's home country
+    // User wants candidate if user's targetCountry is ALL, or candidate's home country matches
     const userWantsCandidateCountry =
-      !user.targetCountry || user.targetCountry === 'ALL' || user.targetCountry === candidate.myCountry;
+      !user.targetCountry || user.targetCountry === 'ALL' || 
+      !candidate.myCountry || candidate.myCountry === 'ALL' || 
+      user.targetCountry === candidate.myCountry;
     
-    // Candidate wants user if candidate's targetCountry is ALL, OR matches user's home country
+    // Candidate wants user if candidate's targetCountry is ALL, or user's home country matches
     const candidateWantsUserCountry =
-      !candidate.targetCountry || candidate.targetCountry === 'ALL' || candidate.targetCountry === user.myCountry;
+      !candidate.targetCountry || candidate.targetCountry === 'ALL' || 
+      !user.myCountry || user.myCountry === 'ALL' || 
+      candidate.targetCountry === user.myCountry;
 
     if (userWantsCandidateGender && candidateWantsUserGender && userWantsCandidateCountry && candidateWantsUserCountry) {
       if (!user.recentPartners.includes(candidateId)) {
@@ -700,9 +704,30 @@ io.on('connection', (socket) => {
   });
 
   // User requests to find a partner
-  socket.on('find_partner', () => {
-    const user = users.get(socket.id);
-    if (!user) return;
+  socket.on('find_partner', (data) => {
+    let user = users.get(socket.id);
+    if (!user) {
+      user = {
+        gender: (data && data.gender) || 'male',
+        myCountry: (data && (data.myCountry || data.country)) || 'JO',
+        targetCountry: (data && (data.targetCountry || data.country)) || 'ALL',
+        country: (data && (data.myCountry || data.country)) || 'JO',
+        countryName: (data && data.countryName) || 'كل العالم',
+        genderFilter: (data && data.genderFilter) || 'any',
+        username: (data && data.username) || 'مستخدم',
+        phone: (data && data.phone) || '',
+        badges: { awesome: 0, handsome: 0, elegant: 0 },
+        partnerId: null
+      };
+      users.set(socket.id, user);
+      broadcastOnlineCount();
+    } else if (data) {
+      if (data.gender) user.gender = data.gender;
+      if (data.myCountry) user.myCountry = data.myCountry;
+      if (data.targetCountry) user.targetCountry = data.targetCountry;
+      if (data.genderFilter) user.genderFilter = data.genderFilter;
+      if (data.username) user.username = data.username;
+    }
 
     // Disconnect from current partner if any
     if (user.partnerId) {
@@ -728,20 +753,33 @@ io.on('connection', (socket) => {
       user.partnerId = matchId;
       matchUser.partnerId = socket.id;
 
+      // Record recent partners
+      if (!user.recentPartners) user.recentPartners = [];
+      user.recentPartners.push(matchId);
+      if (user.recentPartners.length > 3) user.recentPartners.shift();
+
+      if (!matchUser.recentPartners) matchUser.recentPartners = [];
+      matchUser.recentPartners.push(socket.id);
+      if (matchUser.recentPartners.length > 3) matchUser.recentPartners.shift();
+
       // Notify both users - initiator creates the offer
       socket.emit('matched', {
         partnerId: matchId,
+        partnerUsername: matchUser.username || 'مستخدم',
         partnerGender: matchUser.gender,
-        partnerCountry: matchUser.country,
+        partnerCountry: matchUser.myCountry || matchUser.country,
         partnerCountryName: matchUser.countryName,
+        partnerBadges: matchUser.badges || { awesome: 0, handsome: 0, elegant: 0 },
         isInitiator: true
       });
 
       io.to(matchId).emit('matched', {
         partnerId: socket.id,
+        partnerUsername: user.username || 'مستخدم',
         partnerGender: user.gender,
-        partnerCountry: user.country,
+        partnerCountry: user.myCountry || user.country,
         partnerCountryName: user.countryName,
+        partnerBadges: user.badges || { awesome: 0, handsome: 0, elegant: 0 },
         isInitiator: false
       });
 
