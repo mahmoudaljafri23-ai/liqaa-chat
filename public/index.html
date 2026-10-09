@@ -96,7 +96,7 @@
       <!-- Main Live Camera Card (Full visual center - Clean, Ultra HD, Unified Interface) -->
       <div class="welcome-camera-card" id="welcome-camera-card">
         <!-- 1. Full-screen Local Camera Video (Idle / Search) -->
-        <video id="welcome-camera-preview" autoplay playsinline muted poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>"></video>
+        
 
         <!-- 2. Full-screen Partner Remote Video (Active Call) -->
         <video id="remote-video" autoplay playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" class="call-remote-video hidden"></video>
@@ -156,10 +156,7 @@
             <span id="partner-flag" class="hud-flag">🌍</span>
             <div class="hud-user-details">
               <span id="partner-username" class="hud-username">مستخدم</span>
-              <div id="partner-gender-badge" class="partner-gender-tag gender-male">
-                <span id="partner-gender-icon">👨</span>
-                <span id="partner-gender-text">ذكر</span>
-              </div>
+              <div id="partner-gender-badge" class="partner-gender-tag gender-male" style="display:none;"><span id="partner-gender-icon">👨</span><span id="partner-gender-text">ذكر</span></div>
             </div>
           </div>
           <div class="hud-actions-box">
@@ -703,7 +700,7 @@
 
       <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 15px; border-radius: 12px; margin: 15px 0;">
         <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">الوقت المتبقي لفك الحظر تلقائياً:</div>
-        <div id="ban-countdown-timer" style="font-size: 26px; font-weight: 800; color: #ffd700; letter-spacing: 2px;">23:59:59</div>
+        <div id="ban-countdown-timer" style="display:none;"></div>
       </div>
 
       <p style="font-size: 11px; color: #888; margin-top: 15px;">

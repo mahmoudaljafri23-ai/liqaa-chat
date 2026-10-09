@@ -201,40 +201,8 @@ function showGemToast(message) {
 
 // In-Call Alert Notification (Visible during live video call)
 function showInCallAlert(message) {
-  const existing = document.getElementById('in-call-alert-banner');
-  if (existing) existing.remove();
-
-  const banner = document.createElement('div');
-  banner.id = 'in-call-alert-banner';
-  banner.style.cssText = `
-    position: fixed;
-    top: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, rgba(30, 20, 50, 0.95), rgba(15, 10, 30, 0.98));
-    border: 1.5px solid #ffd700;
-    color: #ffffff;
-    padding: 10px 18px;
-    border-radius: 30px;
-    font-size: 13.5px;
-    font-weight: 800;
-    z-index: 2000;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 15px rgba(255,215,0,0.4);
-    animation: slideDownInCall 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    pointer-events: auto;
-    text-align: center;
-    max-width: 90vw;
-  `;
-  banner.textContent = message;
-  document.body.appendChild(banner);
-
-  setTimeout(() => {
-    if (banner && banner.parentNode) {
-      banner.style.opacity = '0';
-      banner.style.transition = 'opacity 0.4s ease';
-      setTimeout(() => banner.remove(), 400);
-    }
-  }, 4000);
+  // Disabled per user request
+  return;
 }
 
 // =============================================
@@ -2236,7 +2204,7 @@ function setupSwipeGestures() {
 
 function setupWelcomeUI() {
   // Start camera preview immediately
-  initWelcomeCamera();
+  // initWelcomeCamera();
   setupSwipeGestures();
 
   // Camera floating toolbar buttons
@@ -2442,6 +2410,7 @@ function setupWelcomeUI() {
     });
   }
 
+  /*
   $$('.give-badge-btn').forEach(btn => {
     btn.onclick = () => {
       const badgeType = btn.dataset.badge;
@@ -2452,6 +2421,7 @@ function setupWelcomeUI() {
       }
     };
   });
+  */
 }
 
 function validateForm() {
@@ -2798,6 +2768,7 @@ async function requestMediaPermission() {
       localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
       await localVideo.play().catch(() => {});
     }
+    /*
     const welcomePreview = $('#welcome-camera-preview');
     if (welcomePreview) {
       welcomePreview.srcObject = localStream;
@@ -2805,6 +2776,7 @@ async function requestMediaPermission() {
       welcomePreview.classList.add('video-ready');
       welcomePreview.play().catch(() => {});
     }
+    */
     welcomeCamStream = localStream;
     return true;
 
@@ -2820,6 +2792,7 @@ async function requestMediaPermission() {
         localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
         await localVideo.play().catch(() => {});
       }
+      /*
       const welcomePreview = $('#welcome-camera-preview');
       if (welcomePreview) {
         welcomePreview.srcObject = localStream;
@@ -2827,6 +2800,7 @@ async function requestMediaPermission() {
         welcomePreview.classList.add('video-ready');
         welcomePreview.play().catch(() => {});
       }
+      */
       welcomeCamStream = localStream;
       return true;
     } catch (err2) {
@@ -3067,11 +3041,13 @@ async function switchCamera() {
         localVideo.srcObject = localStream;
         localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
       }
+      /*
       const welcomePreview = $('#welcome-camera-preview');
       if (welcomePreview) {
         welcomePreview.srcObject = localStream;
         welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
       }
+      */
       showGemToast(isBack ? '📷 تم التبديل للكاميرا الخلفية' : '🤳 تم التبديل للكاميرا الأمامية');
     }
   } catch (err) {
@@ -3379,9 +3355,11 @@ function showPartnerInfo(data) {
   if (badgesEl && data.partnerBadges) {
     const b = data.partnerBadges;
     let text = '';
+    /*
     if (b.awesome > 0) text += `⭐${b.awesome} `;
     if (b.handsome > 0) text += `✨${b.handsome} `;
     if (b.elegant > 0) text += `🎩${b.elegant}`;
+    */
     badgesEl.textContent = text;
   }
 
