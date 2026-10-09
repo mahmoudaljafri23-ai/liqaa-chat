@@ -2567,6 +2567,7 @@ function connectSocket() {
     if (peerConnection) {
       try {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+        await flushIceCandidateQueue();
       } catch (err) {
         console.error('[WebRTC] Error setting remote description:', err);
       }
@@ -2574,11 +2575,16 @@ function connectSocket() {
   });
 
   socket.on('ice_candidate', async (data) => {
-    if (peerConnection && data.candidate) {
-      try {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } catch (err) {
-        console.error('[ICE] Error adding candidate:', err);
+    if (data && data.candidate) {
+      if (peerConnection && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+          console.warn('[ICE] Error adding candidate, queuing:', err);
+          iceCandidateQueue.push(data.candidate);
+        }
+      } else {
+        iceCandidateQueue.push(data.candidate);
       }
     }
   });
@@ -2979,8 +2985,24 @@ function endCall() {
 window.endCall = endCall;
 
 // =============================================
-// WebRTC Peer Connection (Ultra HD Optimization)
+// WebRTC Peer Connection (HD & Buffered Signaling)
 // =============================================
+let iceCandidateQueue = [];
+
+async function flushIceCandidateQueue() {
+  if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) {
+    return;
+  }
+  while (iceCandidateQueue.length > 0) {
+    const cand = iceCandidateQueue.shift();
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+    } catch (e) {
+      console.warn('[ICE] Flush candidate warn:', e);
+    }
+  }
+}
+
 function setVideoBitrate(sdp, bitrateKbps = 2500) {
   if (!sdp) return sdp;
   return sdp.replace(/a=mid:video\r\n/g, `a=mid:video\r\nb=AS:${bitrateKbps}\r\n`);
@@ -2999,10 +3021,12 @@ async function createPeerConnection() {
     }
 
     peerConnection.ontrack = (event) => {
+      console.log('[WebRTC] ontrack received partner stream!');
       if (event.streams && event.streams[0]) {
         const remoteVid = $('#remote-video');
         if (remoteVid) {
           remoteVid.srcObject = event.streams[0];
+          remoteVid.classList.remove('hidden');
           remoteVid.play().catch(e => console.warn('Remote video play catch:', e));
         }
       }
@@ -3016,10 +3040,8 @@ async function createPeerConnection() {
 
     peerConnection.onconnectionstatechange = () => {
       console.log('[WebRTC] Connection state:', peerConnection.connectionState);
-      if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
-        cleanupPeerConnection();
-        socket.emit('find_partner');
-        setState('searching');
+      if (peerConnection.connectionState === 'connected') {
+        console.log('[WebRTC] P2P Video Call Connected Successfully!');
       }
     };
 
@@ -3034,7 +3056,7 @@ async function createAndSendOffer() {
     offer.sdp = setVideoBitrate(offer.sdp, 2500);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
-    console.log('[WebRTC] Ultra HD Offer sent');
+    console.log('[WebRTC] Offer sent');
   } catch (err) {
     console.error('[WebRTC] Error creating offer:', err);
   }
@@ -3043,17 +3065,19 @@ async function createAndSendOffer() {
 async function handleOffer(offer) {
   try {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    await flushIceCandidateQueue();
     const answer = await peerConnection.createAnswer();
     answer.sdp = setVideoBitrate(answer.sdp, 2500);
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', { answer: answer });
-    console.log('[WebRTC] Ultra HD Answer sent');
+    console.log('[WebRTC] Answer sent');
   } catch (err) {
     console.error('[WebRTC] Error handling offer:', err);
   }
 }
 
 function cleanupPeerConnection() {
+  iceCandidateQueue = [];
   if (peerConnection) {
     peerConnection.ontrack = null;
     peerConnection.onicecandidate = null;
@@ -3063,7 +3087,10 @@ function cleanupPeerConnection() {
     peerConnection = null;
   }
   const remoteVid = $('#remote-video');
-  if (remoteVid) remoteVid.srcObject = null;
+  if (remoteVid) {
+    remoteVid.srcObject = null;
+    remoteVid.classList.add('hidden');
+  }
   stopCallTimer();
 }
 
