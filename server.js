@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -622,6 +622,7 @@ setInterval(() => {
         io.to(socketId).emit('matched', {
           partnerId: matchId,
           partnerUsername: matchUser.username || 'مستخدم',
+          partnerSerialNumber: matchUser.serialNumber || '',
           partnerGender: matchUser.gender,
           partnerCountry: matchUser.myCountry || matchUser.country,
           partnerCountryName: matchUser.countryName,
@@ -632,6 +633,7 @@ setInterval(() => {
         io.to(matchId).emit('matched', {
           partnerId: socketId,
           partnerUsername: user.username || 'مستخدم',
+          partnerSerialNumber: user.serialNumber || '',
           partnerGender: user.gender,
           partnerCountry: user.myCountry || user.country,
           partnerCountryName: user.countryName,
@@ -665,6 +667,7 @@ io.on('connection', (socket) => {
       countryName: (data && data.countryName) || existing.countryName || 'الأردن',
       genderFilter: (data && data.genderFilter) || existing.genderFilter || 'any',
       username: (data && data.username && data.username.trim()) ? data.username.trim() : (existing.username || 'مستخدم'),
+      serialNumber: (data && data.serialNumber) || existing.serialNumber || '',
       phone: (data && data.phone) || existing.phone || '',
       age: (data && data.age) || existing.age || 22,
       badges: (data && data.badges) || existing.badges || { awesome: 0, handsome: 0, elegant: 0 },
@@ -700,6 +703,7 @@ io.on('connection', (socket) => {
       io.to(targetId).emit('receive_friend_request', {
         senderId: socket.id,
         senderUsername: senderName,
+        senderSerialNumber: (data && data.senderSerialNumber) || (user && user.serialNumber) || '',
         senderGender: (data && data.senderGender) || (user && user.gender) || 'male',
         senderAge: (data && data.senderAge) || (user && user.age) || 22,
         senderCountry: (user && user.country) || 'JO',
@@ -717,6 +721,7 @@ io.on('connection', (socket) => {
       io.to(targetId).emit('friend_request_accepted', {
         partnerId: socket.id,
         partnerUsername: partnerName,
+        partnerSerialNumber: (data && data.partnerSerialNumber) || (user && user.serialNumber) || '',
         partnerGender: (user && user.gender) || 'male',
         partnerAge: (user && user.age) || 22,
         partnerCountry: (user && user.country) || 'JO',
@@ -730,6 +735,7 @@ io.on('connection', (socket) => {
     let user = users.get(socket.id);
     if (user && data) {
       if (data.username && data.username.trim()) user.username = data.username.trim();
+      if (data.serialNumber) user.serialNumber = data.serialNumber;
       if (data.phone) user.phone = data.phone;
       if (data.gender) user.gender = data.gender;
       if (data.age) user.age = data.age;
@@ -797,6 +803,7 @@ io.on('connection', (socket) => {
         countryName: (data && data.countryName) || 'كل العالم',
         genderFilter: (data && data.genderFilter) || 'any',
         username: (data && data.username && data.username.trim()) ? data.username.trim() : 'مستخدم',
+        serialNumber: (data && data.serialNumber) || '',
         phone: (data && data.phone) || '',
         badges: { awesome: 0, handsome: 0, elegant: 0 },
         partnerId: null
@@ -809,6 +816,7 @@ io.on('connection', (socket) => {
       if (data.targetCountry) user.targetCountry = data.targetCountry;
       if (data.genderFilter) user.genderFilter = data.genderFilter;
       if (data.username && data.username.trim()) user.username = data.username.trim();
+      if (data.serialNumber) user.serialNumber = data.serialNumber;
       if (data.phone) user.phone = data.phone;
     }
 
@@ -849,6 +857,7 @@ io.on('connection', (socket) => {
       socket.emit('matched', {
         partnerId: matchId,
         partnerUsername: matchUser.username || 'مستخدم',
+          partnerSerialNumber: matchUser.serialNumber || '',
         partnerGender: matchUser.gender,
         partnerCountry: matchUser.myCountry || matchUser.country,
         partnerCountryName: matchUser.countryName,
@@ -859,6 +868,7 @@ io.on('connection', (socket) => {
       io.to(matchId).emit('matched', {
         partnerId: socket.id,
         partnerUsername: user.username || 'مستخدم',
+          partnerSerialNumber: user.serialNumber || '',
         partnerGender: user.gender,
         partnerCountry: user.myCountry || user.country,
         partnerCountryName: user.countryName,
@@ -936,6 +946,7 @@ io.on('connection', (socket) => {
       socket.emit('matched', {
         partnerId: matchId,
         partnerUsername: matchUser.username || 'مستخدم',
+          partnerSerialNumber: matchUser.serialNumber || '',
         partnerGender: matchUser.gender,
         partnerCountry: matchUser.myCountry || matchUser.country,
         partnerCountryName: matchUser.countryName,
@@ -946,6 +957,7 @@ io.on('connection', (socket) => {
       io.to(matchId).emit('matched', {
         partnerId: socket.id,
         partnerUsername: user.username || 'مستخدم',
+          partnerSerialNumber: user.serialNumber || '',
         partnerGender: user.gender,
         partnerCountry: user.myCountry || user.country,
         partnerCountryName: user.countryName,

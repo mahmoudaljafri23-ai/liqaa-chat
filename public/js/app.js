@@ -1,4 +1,4 @@
-/* =============================================
+﻿/* =============================================
    LiQaa - Video Chat Application
    Main Client-Side JavaScript
    ============================================= */
@@ -518,6 +518,9 @@ function loadUserProfile() {
   if (!userProfile.username) {
     userProfile.username = 'مستخدم ' + Math.floor(100 + Math.random() * 900);
   }
+  if (!userProfile.serialNumber) {
+    userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
+  }
   if (!userProfile.gender) {
     userProfile.gender = 'male';
   }
@@ -543,11 +546,13 @@ function saveUserProfile() {
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+      serialNumber: userProfile.serialNumber || '',
       phone: userProfile.phone || '',
       age: userProfile.age || 22
     });
     socket.emit('update_profile', {
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+      serialNumber: userProfile.serialNumber || '',
       phone: userProfile.phone || '',
       gender: userProfile.gender || 'male',
       age: userProfile.age || 22
@@ -569,6 +574,11 @@ function updateProfileUI() {
 
   if (usernameInput) usernameInput.value = userProfile.username;
   if (phoneInput) phoneInput.value = userProfile.phone || '';
+  
+  const serialNumEl = $('#settings-serial-number');
+  if (serialNumEl && userProfile.serialNumber) {
+    serialNumEl.textContent = userProfile.serialNumber;
+  }
   
   if (userDisplayName) {
     if (userProfile.isAdmin) {
@@ -1447,6 +1457,7 @@ function setupFriendsSystem() {
           socket.emit('accept_friend_request', {
             targetPartnerId: currentPartner.id,
             partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+            partnerSerialNumber: userProfile.serialNumber || '',
             partnerGender: userProfile.gender || 'male',
             partnerAge: userProfile.age || 22
           });
@@ -1468,6 +1479,7 @@ function setupFriendsSystem() {
         socket.emit('send_friend_request', {
           targetPartnerId: currentPartner.id,
           senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+          senderSerialNumber: userProfile.serialNumber || '',
           senderGender: userProfile.gender || 'male',
           senderAge: userProfile.age || 22
         });
@@ -2006,6 +2018,7 @@ function setupSettingsUI() {
       if (socket && socket.connected) {
         socket.emit('update_profile', {
           username: userProfile.username,
+          serialNumber: userProfile.serialNumber,
           phone: userProfile.phone,
           gender: userProfile.gender,
           age: userProfile.age,
@@ -2457,6 +2470,7 @@ function connectSocket() {
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
       username: userProfile.username || 'مستخدم',
+      serialNumber: userProfile.serialNumber || '',
       phone: userProfile.phone || ''
     });
     
@@ -2601,6 +2615,7 @@ function sendLocalPushNotification(title, body) {
         id: data.partnerId,
         socketId: data.partnerId,
         username: data.partnerUsername || 'مستخدم',
+        serialNumber: data.partnerSerialNumber || '',
         gender: data.partnerGender,
         country: data.partnerCountry,
         countryName: data.partnerCountryName,
@@ -2870,6 +2885,7 @@ async function startChat() {
     countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter || 'any',
     username: userProfile.username || 'مستخدم',
+    serialNumber: userProfile.serialNumber || '',
     phone: userProfile.phone || ''
   };
 
@@ -3339,7 +3355,9 @@ function setState(state) {
 function showPartnerInfo(data) {
   if (partnerFlag) partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
   const nameEl = $('#partner-username');
-  if (nameEl) nameEl.textContent = data.partnerUsername || 'مستخدم';
+  if (nameEl) {
+    nameEl.textContent = (data.partnerUsername || 'مستخدم') + (data.partnerSerialNumber ? ` ${data.partnerSerialNumber}` : '');
+  }
 
   const isMale = data.partnerGender === 'male';
   const badgeEl = $('#partner-gender-badge');
