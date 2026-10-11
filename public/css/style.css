@@ -3190,13 +3190,15 @@ video::-webkit-media-controls-volume-slider {
    Royal VIP Messenger Modal Styling
    ============================================= */
 .royal-messenger-content {
-  max-width: 580px !important;
+  max-width: 540px !important;
   width: 95% !important;
-  height: 84vh !important;
-  background: linear-gradient(170deg, #180b26 0%, #110d20 50%, #080711 100%) !important;
-  border: 1.5px solid rgba(255, 215, 0, 0.35) !important;
+  max-height: 86vh !important;
+  height: auto !important;
+  min-height: 480px !important;
+  background: linear-gradient(165deg, #260a16 0%, #15091a 45%, #0c0813 100%) !important;
+  border: 1.8px solid #ffd700 !important;
   border-radius: 26px !important;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(168, 85, 247, 0.2) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 215, 0, 0.22) !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -3219,31 +3221,47 @@ video::-webkit-media-controls-volume-slider {
   text-align: right;
 }
 
-.messenger-header-icon-wrap {
-  width: 44px;
-  height: 44px;
+.royal-header-glow-orb {
+  position: relative;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #a855f7, #6366f1);
+  background: linear-gradient(135deg, #ffd700, #ff8800) !important;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5) !important;
+  border: 2px solid #fff;
+  flex-shrink: 0;
+}
+
+.messenger-header-crown {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 15px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
 .messenger-title {
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 900;
   color: #fff;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
   margin: 0;
 }
 
 .messenger-subtitle {
   font-size: 12px;
-  color: #ffd700;
+  color: #4ade80;
   font-weight: 700;
-  display: block;
-  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
 }
 
 .royal-close-round-btn {
@@ -3278,6 +3296,164 @@ video::-webkit-media-controls-volume-slider {
   display: flex;
   flex-direction: column;
   background: transparent;
+}
+
+/* Royal Tabs Bar */
+.royal-messenger-tabs-bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 4px 16px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.royal-msg-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.2px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.royal-msg-tab-btn.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 153, 0, 0.28));
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 0 4px 14px rgba(255, 215, 0, 0.2);
+}
+
+.tab-count-badge {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+.royal-msg-tab-btn.active .tab-count-badge {
+  background: #ffd700;
+  color: #1a0800;
+  font-weight: 900;
+}
+
+/* Royal User Cards */
+.royal-user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(46, 14, 25, 0.92) 0%, rgba(20, 12, 28, 0.96) 100%);
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 215, 0, 0.32);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.royal-user-card:active {
+  transform: scale(0.97);
+  border-color: #ffd700;
+}
+
+.royal-card-avatar-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.royal-card-avatar-wrap .card-crown {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+}
+
+.royal-card-avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700, #ff8800);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.35);
+}
+
+.royal-card-online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border: 2px solid #1a0b1c;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.card-status-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.card-status-badge.is-online {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.card-status-badge.is-offline {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.royal-card-chat-btn {
+  background: linear-gradient(135deg, #ffe57f 0%, #ffd700 25%, #ff9900 70%, #e65100 100%);
+  color: #1a0800;
+  border: 1.5px solid #fff59d;
+  padding: 7px 16px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(255, 153, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  font-family: 'Tajawal', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.royal-card-chat-btn:active {
+  transform: scale(0.93);
+}
+
+.card-serial-badge {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #4ade80;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  font-family: monospace, sans-serif;
 }
 
 .royal-messenger-search-bar {

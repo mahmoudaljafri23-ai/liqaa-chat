@@ -658,6 +658,8 @@ function updateOnlineDisplay(payload) {
   renderFriendsAndOnlineUsers();
 }
 
+let currentMessengerTab = 'all'; // 'all' or 'friends'
+
 function renderFriendsAndOnlineUsers() {
   const container = $('#friends-container');
   if (!container) return;
@@ -665,95 +667,175 @@ function renderFriendsAndOnlineUsers() {
   const searchInput = $('#messenger-search-input');
   const filterText = (searchInput ? searchInput.value.trim().toLowerCase() : '');
 
-  const activeSockets = new Set();
-  const allUsersToRender = [];
+  // 1. Update counter badges
+  const onlineCount = (lastOnlineUsersList && lastOnlineUsersList.length > 0)
+    ? lastOnlineUsersList.filter(u => !socket || u.socketId !== socket.id).length
+    : 0;
+  const friendsCount = (friendsList && friendsList.length > 0) ? friendsList.length : 0;
 
-  if (lastOnlineUsersList && lastOnlineUsersList.length > 0) {
-    lastOnlineUsersList.forEach(u => {
-      if (socket && u.socketId === socket.id) return;
-      activeSockets.add(u.socketId);
-      allUsersToRender.push({
-        id: u.socketId,
-        username: u.username || 'مستخدم',
-        gender: u.gender || 'male',
-        country: u.country || 'JO',
-        countryName: u.countryName || 'الأردن',
-        isAdmin: u.isAdmin || false,
-        isOnline: true
-      });
-    });
+  const tabCountAll = $('#tab-count-all');
+  if (tabCountAll) tabCountAll.textContent = onlineCount;
+
+  const tabCountFriends = $('#tab-count-friends');
+  if (tabCountFriends) tabCountFriends.textContent = friendsCount;
+
+  const onlineStatusHeader = $('#messenger-online-status');
+  if (onlineStatusHeader) {
+    onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${lastOnlineUsersList ? lastOnlineUsersList.length : 1} مستخدم)`;
   }
 
-  if (friendsList && friendsList.length > 0) {
-    friendsList.forEach(f => {
-      if (!activeSockets.has(f.id)) {
-        allUsersToRender.push({
+  // 2. Build list based on active tab
+  const usersToRender = [];
+
+  if (currentMessengerTab === 'all') {
+    if (lastOnlineUsersList && lastOnlineUsersList.length > 0) {
+      lastOnlineUsersList.forEach(u => {
+        if (socket && u.socketId === socket.id) return;
+        const isSaved = friendsList && friendsList.some(f => f.id === u.socketId || (u.serialNumber && f.serialNumber === u.serialNumber));
+        usersToRender.push({
+          id: u.socketId,
+          socketId: u.socketId,
+          username: u.username || 'مستخدم بالديوان',
+          serialNumber: u.serialNumber || '',
+          gender: u.gender || 'male',
+          age: u.age || 22,
+          country: u.country || 'JO',
+          countryName: u.countryName || 'الأردن',
+          isAdmin: u.isAdmin || false,
+          isOnline: true,
+          isFriend: isSaved
+        });
+      });
+    }
+  } else {
+    // 'friends' tab
+    if (friendsList && friendsList.length > 0) {
+      friendsList.forEach(f => {
+        const isOnline = lastOnlineUsersList && lastOnlineUsersList.some(u => u.socketId === f.id || (f.serialNumber && u.serialNumber === f.serialNumber));
+        usersToRender.push({
           id: f.id,
+          socketId: f.socketId || f.id,
           username: f.name || f.username || 'صديق',
+          serialNumber: f.serialNumber || '',
           gender: f.gender || 'male',
+          age: f.age || 22,
           country: f.country || 'JO',
           countryName: f.countryName || 'الأردن',
           isAdmin: false,
-          isOnline: false
+          isOnline: !!isOnline,
+          isFriend: true
         });
-      }
-    });
+      });
+    }
   }
 
-  const filteredUsers = allUsersToRender.filter(u => {
+  // 3. Search filter
+  const filteredUsers = usersToRender.filter(u => {
     if (!filterText) return true;
-    return u.username.toLowerCase().includes(filterText) || (u.countryName && u.countryName.toLowerCase().includes(filterText));
+    return (u.username && u.username.toLowerCase().includes(filterText)) ||
+           (u.countryName && u.countryName.toLowerCase().includes(filterText)) ||
+           (u.serialNumber && u.serialNumber.toLowerCase().includes(filterText));
   });
 
-  const countBadge = $('#messenger-online-status');
-  if (countBadge) {
-    countBadge.textContent = `🌐 جميع المتصلين بالدردشة الآن (${lastOnlineUsersList.length} مستخدم)`;
-  }
-
+  // 4. Empty State
   if (filteredUsers.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; color: #888; padding: 40px 10px; font-size: 14px;">
-        لا يوجد مستخدمون متصلون حالياً يطابقون البحث.<br>
-        <span style="font-size: 12px; color: #666; margin-top: 5px; display: inline-block;">شارك رابط التطبيق ليدخل أصدقاؤك للدردشة المباشرة!</span>
-      </div>`;
+    if (currentMessengerTab === 'all') {
+      container.innerHTML = `
+        <div class="royal-friends-empty-card">
+          <div class="empty-crown-wrap"><span class="empty-crown-icon">👑</span></div>
+          <h4 class="empty-title">لا يوجد متصلون آخرون حالياً</h4>
+          <p class="empty-desc">أنت أول المتصلين بالديوان الملكي الآن! شارك التطبيق لدعوة أصدقائك للدردشة والمكالمات الفورية.</p>
+          <button class="royal-invite-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
+            <span>🎁</span> دعوة أصدقاء وكسب 50 💎
+          </button>
+        </div>`;
+    } else {
+      container.innerHTML = `
+        <div class="royal-friends-empty-card">
+          <div class="empty-crown-wrap"><span class="empty-crown-icon">👑</span></div>
+          <h4 class="empty-title">لا يوجد أصدقاء محفوظون بعد</h4>
+          <p class="empty-desc">أضف أصدقاءك أثناء مكالمات الفيديو عبر زر ✨ إضافة صديق ليظهروا هنا دائماً وتستطيع مراسلتهم!</p>
+          <button class="royal-invite-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
+            <span>🎁</span> دعوة أصدقاء وكسب 50 💎
+          </button>
+        </div>`;
+    }
     return;
   }
 
+  // 5. Render Royal User Cards
   container.innerHTML = '';
   filteredUsers.forEach(user => {
     const card = document.createElement('div');
-    card.style.cssText = `
-      display: flex; justify-content: space-between; align-items: center;
-      background: rgba(255, 255, 255, 0.05); padding: 12px 16px; border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.2s ease; cursor: pointer;
-    `;
-
-    card.onmouseover = () => card.style.background = 'rgba(59, 130, 246, 0.15)';
-    card.onmouseout = () => card.style.background = 'rgba(255, 255, 255, 0.05)';
+    card.className = 'royal-user-card';
 
     const flag = countryCodeToFlag(user.country || 'JO');
-    const avatar = user.isAdmin ? '👑' : (user.gender === 'female' ? '👩' : '👨');
+    const isMale = user.gender !== 'female';
+    const genderIcon = isMale ? '👨' : '👩';
+    const genderLabel = isMale ? 'ذكر' : 'أنثى';
+    const avatar = user.isAdmin ? '👑' : genderIcon;
+    const serialBadge = user.serialNumber ? `<span class="card-serial-badge">ID: ${user.serialNumber}</span>` : '';
+    const creatorBadge = user.isAdmin ? '<span style="font-size: 10px; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; padding: 2px 7px; border-radius: 8px; font-weight: 900; box-shadow: 0 2px 6px rgba(255,215,0,0.4);">👑 منشئ</span>' : '';
+    const friendBadge = user.isFriend ? '<span style="font-size: 10px; background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); padding: 1px 7px; border-radius: 8px; font-weight: 800;">⭐ صديق</span>' : '';
     const onlineBadge = user.isOnline 
-      ? '<span style="font-size:11px; color:#22c55e; background:rgba(34,197,94,0.15); padding:2px 8px; border-radius:10px; border:1px solid rgba(34,197,94,0.3);">🟢 متصل الآن</span>' 
-      : '<span style="font-size:11px; color:#888;">غير متصل</span>';
+      ? '<span class="card-status-badge is-online">🟢 متصل بالديوان</span>' 
+      : '<span class="card-status-badge is-offline">⚪ غير متصل</span>';
 
     card.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 24px; background: rgba(0,0,0,0.3); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">
-          ${avatar}
+      <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+        <div class="royal-card-avatar-wrap">
+          <span class="card-crown">👑</span>
+          <div class="royal-card-avatar-circle">
+            ${avatar}
+          </div>
+          ${user.isOnline ? '<span class="royal-card-online-dot"></span>' : ''}
         </div>
-        <div>
-          <div style="color: #fff; font-weight: 800; font-size: 15px;">${flag} ${user.username}</div>
-          <div style="font-size: 11px; color: #aaa;">${user.countryName || 'الأردن'}</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; text-align: right; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="color: #fff; font-weight: 800; font-size: 14.5px;">${user.username}</span>
+            <span style="font-size: 14px;">${flag}</span>
+            ${creatorBadge}
+            ${friendBadge}
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #cbd5e1; flex-wrap: wrap;">
+            <span>${genderIcon} ${genderLabel}</span>
+            <span style="color: rgba(255,255,255,0.3);">•</span>
+            <span>${user.countryName || 'الأردن'}</span>
+            ${serialBadge}
+          </div>
+          <div>
+            ${onlineBadge}
+          </div>
         </div>
       </div>
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-        ${onlineBadge}
-        <button style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer;">
-          💬 دردشة خاصة
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0;">
+        <button class="royal-card-chat-btn" type="button">
+          <span>💬</span>
+          <span>دردشة</span>
         </button>
+        ${user.isFriend ? `
+          <button class="btn-remove-friend-mini" type="button" title="إزالة الصديق" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; font-size: 10.5px; padding: 2px 7px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+            🗑️ إزالة
+          </button>
+        ` : ''}
       </div>
     `;
+
+    const chatBtn = card.querySelector('.royal-card-chat-btn');
+    if (chatBtn) {
+      chatBtn.onclick = (e) => {
+        e.stopPropagation();
+        openPrivateChatWindow(user);
+      };
+    }
+
+    const removeBtn = card.querySelector('.btn-remove-friend-mini');
+    if (removeBtn) {
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeFriend(user.id);
+      };
+    }
 
     card.onclick = () => {
       openPrivateChatWindow(user);
@@ -766,10 +848,12 @@ function renderFriendsAndOnlineUsers() {
 function openPrivateChatWindow(user) {
   activeFriendChat = {
     id: user.id,
-    socketId: user.id,
+    socketId: user.socketId || user.id,
     name: user.username,
     gender: user.gender,
-    country: user.country
+    country: user.country,
+    countryName: user.countryName,
+    age: user.age || 22
   };
 
   const listView = $('#friends-list-view');
@@ -779,6 +863,28 @@ function openPrivateChatWindow(user) {
 
   const titleSpan = $('#private-chat-friend-name');
   if (titleSpan) titleSpan.textContent = `${user.username} ${countryCodeToFlag(user.country)}`;
+
+  const tagSpan = $('#private-chat-friend-tag');
+  if (tagSpan) {
+    const isMale = user.gender !== 'female';
+    tagSpan.textContent = `${isMale ? '👨 ذكر' : '👩 أنثى'} • ${user.age || 22} سنة`;
+  }
+
+  const btnClear = $('#btn-clear-chat');
+  if (btnClear) {
+    btnClear.onclick = () => clearPrivateChat(user.id);
+  }
+
+  const btnRemove = $('#btn-remove-friend');
+  if (btnRemove) {
+    const isSavedFriend = friendsList && friendsList.some(f => f.id === user.id);
+    if (isSavedFriend) {
+      btnRemove.style.display = 'inline-block';
+      btnRemove.onclick = () => removeFriend(user.id);
+    } else {
+      btnRemove.style.display = 'none';
+    }
+  }
 
   renderPrivateMessages(user.id);
 }
@@ -1024,13 +1130,30 @@ function setupAuthSystem() {
   const openAuthModalBtn = $('#open-auth-modal-btn');
   const googleLoginBtn = $('#google-login-btn');
   const closeAuthModalBtn = $('#close-auth-modal-btn');
-  const emailAuthForm = $('#email-auth-form');
+  const googleLinkedBox = $('#google-linked-info-box');
+  const googleLinkedEmail = $('#google-linked-email-display');
+  const googleLinkedGems = $('#google-linked-gems-display');
+  const googleBtnText = $('#google-login-btn-text');
+
+  const updateAuthModalView = () => {
+    if (userProfile && userProfile.accountEmail) {
+      if (googleLinkedBox) googleLinkedBox.classList.remove('hidden');
+      if (googleLinkedEmail) googleLinkedEmail.textContent = userProfile.accountEmail;
+      if (googleLinkedGems) googleLinkedGems.textContent = userProfile.gems || 0;
+      if (googleBtnText) googleBtnText.textContent = 'تبديل أو إعادة ربط حساب Google';
+    } else {
+      if (googleLinkedBox) googleLinkedBox.classList.add('hidden');
+      if (googleBtnText) googleBtnText.textContent = 'متابعة وتسجيل الدخول بـ Google';
+    }
+  };
 
   if (openAuthModalBtn) {
     openAuthModalBtn.onclick = () => {
       const settingsModal = $('#settings-modal');
       if (settingsModal) settingsModal.classList.add('hidden');
+      updateAuthModalView();
       if (authModal) authModal.classList.remove('hidden');
+      initGoogleIdentityServices();
     };
   }
 
@@ -1040,90 +1163,116 @@ function setupAuthSystem() {
     };
   }
 
-  const googleInlineForm = $('#google-inline-form');
-  const googleEmailInput = $('#google-email-input');
-  const googleConfirmBtn = $('#google-confirm-btn');
+  const applyGoogleAccount = (email, name, picture) => {
+    if (!email || !email.includes('@')) return;
+    const cleanUsername = name || email.split('@')[0];
+    userProfile.accountEmail = email;
+    if (!userProfile.username || userProfile.username === 'مستخدم' || userProfile.username === 'أنا') {
+      userProfile.username = cleanUsername;
+    }
+    userProfile.hasAccount = true;
+    if (picture) userProfile.photoUrl = picture;
 
-  const processGoogleLink = (userGoogleEmail) => {
-    if (userGoogleEmail && userGoogleEmail.includes('@')) {
-      const usernameFromEmail = userGoogleEmail.split('@')[0];
-      userProfile.accountEmail = userGoogleEmail;
-      userProfile.username = usernameFromEmail;
-      userProfile.hasAccount = true;
-
-      const savedGems = localStorage.getItem(`liqaa_gems_${userGoogleEmail}`);
-      if (savedGems !== null) {
-        userProfile.gems = parseInt(savedGems, 10);
-      } else {
-        localStorage.setItem(`liqaa_gems_${userGoogleEmail}`, userProfile.gems);
-      }
-
-      saveUserProfile();
-      updateProfileUI();
-      if (authModal) authModal.classList.add('hidden');
-      showGemToast(`🎉 تم ربط الحساب والجواهر ببريد Google (${userGoogleEmail}) بنجاح!`);
+    // Restore or sync gems for this Google account
+    const savedGems = localStorage.getItem(`liqaa_gems_${email}`);
+    if (savedGems !== null) {
+      userProfile.gems = parseInt(savedGems, 10);
     } else {
-      showGemToast('❌ يرجى إدخال عنوان بريد Google صحيح');
+      localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
+    }
+
+    saveUserProfile();
+    updateProfileUI();
+    updateAuthModalView();
+
+    if (socket && socket.connected) {
+      socket.emit('update_profile', {
+        username: userProfile.username,
+        serialNumber: userProfile.serialNumber,
+        gender: userProfile.gender,
+        age: userProfile.age,
+        country: userProfile.country,
+        countryName: userProfile.countryName,
+        isAdmin: userProfile.isAdmin
+      });
+    }
+
+    showGemToast(`🎉 تم تسجيل الدخول بحساب Google (${email}) وحفظ رصيدك (${userProfile.gems} 💎)!`);
+    setTimeout(() => {
+      if (authModal) authModal.classList.add('hidden');
+    }, 1400);
+  };
+
+  const decodeJwtResponse = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.warn('JWT Decode failed:', e);
+      return null;
+    }
+  };
+
+  const initGoogleIdentityServices = () => {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+      try {
+        google.accounts.id.initialize({
+          client_id: window.GOOGLE_CLIENT_ID || '1043964722881-q3p5o1j8r5k8m8t8o3m5v9g6p0l3j4d1.apps.googleusercontent.com',
+          callback: (res) => {
+            if (res && res.credential) {
+              const payload = decodeJwtResponse(res.credential);
+              if (payload && payload.email) {
+                applyGoogleAccount(payload.email, payload.name, payload.picture);
+              }
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+
+        const slot = $('#google-gis-slot');
+        if (slot && slot.children.length === 0) {
+          google.accounts.id.renderButton(slot, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 280,
+            locale: 'ar'
+          });
+        }
+      } catch (err) {
+        console.warn('Google Identity error:', err);
+      }
     }
   };
 
   if (googleLoginBtn) {
     googleLoginBtn.onclick = () => {
-      if (googleInlineForm) {
-        googleInlineForm.classList.toggle('hidden');
-        if (!googleInlineForm.classList.contains('hidden') && googleEmailInput) {
-          googleEmailInput.value = userProfile.accountEmail || '';
-          googleEmailInput.focus();
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        try {
+          google.accounts.id.prompt((notification) => {
+            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+              console.log('Google prompt not displayed, checking GIS button slot');
+            }
+          });
+          return;
+        } catch (e) {
+          console.warn('One-tap prompt error:', e);
         }
       }
+      showGemToast('🔍 جاري تهيئة وتسجيل الدخول بـ Google...');
     };
   }
 
-  if (googleConfirmBtn) {
-    googleConfirmBtn.onclick = () => {
-      const email = googleEmailInput ? googleEmailInput.value.trim() : '';
-      processGoogleLink(email);
-    };
-  }
-
-  if (googleEmailInput) {
-    googleEmailInput.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        processGoogleLink(googleEmailInput.value.trim());
-      }
-    };
-  }
-
-  if (emailAuthForm) {
-    emailAuthForm.onsubmit = (e) => {
-      e.preventDefault();
-      const emailInput = $('#auth-email-input');
-      const email = emailInput ? emailInput.value.trim() : '';
-
-      if (!email || !email.includes('@')) {
-        showGemToast('❌ يرجى إدخال عنوان بريد إلكتروني صحيح');
-        return;
-      }
-
-      const usernameFromEmail = email.split('@')[0];
-      userProfile.accountEmail = email;
-      userProfile.username = usernameFromEmail;
-      userProfile.hasAccount = true;
-
-      const savedGems = localStorage.getItem(`liqaa_gems_${email}`);
-      if (savedGems !== null) {
-        userProfile.gems = parseInt(savedGems, 10);
-      } else {
-        localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
-      }
-
-      saveUserProfile();
-      updateProfileUI();
-      if (authModal) authModal.classList.add('hidden');
-      showGemToast(`🎉 تم ربط الحساب والجواهر ببريدك الإلكتروني بنجاح!`);
-    };
-  }
+  // Pre-initialize on window load
+  window.addEventListener('load', () => {
+    setTimeout(initGoogleIdentityServices, 1000);
+  });
 }
 
 // =============================================
@@ -1437,6 +1586,26 @@ function setupFriendsSystem() {
   const closeFriendsBtn = $('#close-friends-btn');
   const addFriendBtn = $('#add-friend-btn');
   const backToFriendsListBtn = $('#back-to-friends-list-btn');
+  const tabAllUsers = $('#tab-filter-all-users');
+  const tabSavedFriends = $('#tab-filter-saved-friends');
+
+  if (tabAllUsers) {
+    tabAllUsers.onclick = () => {
+      currentMessengerTab = 'all';
+      tabAllUsers.classList.add('active');
+      if (tabSavedFriends) tabSavedFriends.classList.remove('active');
+      renderFriendsAndOnlineUsers();
+    };
+  }
+
+  if (tabSavedFriends) {
+    tabSavedFriends.onclick = () => {
+      currentMessengerTab = 'friends';
+      tabSavedFriends.classList.add('active');
+      if (tabAllUsers) tabAllUsers.classList.remove('active');
+      renderFriendsAndOnlineUsers();
+    };
+  }
 
   if (openFriendsBtn) {
     openFriendsBtn.onclick = () => {
@@ -1463,6 +1632,7 @@ function setupFriendsSystem() {
           socketId: currentPartner.socketId || currentPartner.id,
           name: friendName,
           username: friendName,
+          serialNumber: currentPartner.serialNumber || '',
           gender: currentPartner.gender || 'male',
           age: currentPartner.age || 22,
           country: currentPartner.country || 'JO',
@@ -1516,7 +1686,7 @@ function setupFriendsSystem() {
     backToFriendsListBtn.onclick = () => {
       $('#private-chat-view').classList.add('hidden');
       $('#friends-list-view').classList.remove('hidden');
-      renderFriendsList();
+      renderFriendsAndOnlineUsers();
     };
   }
 
@@ -1555,14 +1725,14 @@ function setupFriendsSystem() {
 
 function removeFriend(friendId) {
   const friend = friendsList.find(f => f.id === friendId);
-  const name = friend ? friend.name : 'الصديق';
+  const name = friend ? (friend.name || friend.username) : 'الصديق';
   if (!confirm(`هل أنت متأكد من رغبتك في إزالة ${name} من قائمة الأصدقاء؟`)) return;
 
   friendsList = friendsList.filter(f => f.id !== friendId);
   saveFriendsList();
   $('#private-chat-view').classList.add('hidden');
   $('#friends-list-view').classList.remove('hidden');
-  renderFriendsList();
+  renderFriendsAndOnlineUsers();
   showGemToast(`🗑️ تم إزالة ${name} من قائمة الأصدقاء`);
 }
 window.removeFriend = removeFriend;
@@ -1576,85 +1746,27 @@ function clearPrivateChat(friendId) {
 window.clearPrivateChat = clearPrivateChat;
 
 function renderFriendsList() {
-  const container = $('#friends-container');
-  const emptyMsg = $('#friends-empty-msg');
-  if (!container) return;
-
-  container.innerHTML = '';
-  if (friendsList.length === 0) {
-    if (emptyMsg) emptyMsg.classList.remove('hidden');
-    return;
-  }
-  if (emptyMsg) emptyMsg.classList.add('hidden');
-
-  friendsList.forEach(friend => {
-    const item = document.createElement('div');
-    const isMale = friend.gender !== 'female';
-    const genderIcon = isMale ? '👨' : '👩';
-    const genderLabel = isMale ? 'ذكر' : 'أنثى';
-    const age = friend.age || 22;
-    const flag = countryCodeToFlag(friend.country || 'JO');
-
-    item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(20,10,30,0.6) 100%); padding:12px 14px; border-radius:18px; border:1.5px solid rgba(255,215,0,0.25); box-shadow: 0 4px 15px rgba(0,0,0,0.4);';
-    item.innerHTML = `
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #a855f7, #ec4899); display:flex; align-items:center; justify-content:center; font-size:22px; border:1.5px solid #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.35); flex-shrink:0;">
-          ${genderIcon}
-        </div>
-        <div style="text-align:right;">
-          <div style="font-weight:800; color:#fff; font-size:14.5px;">${friend.name} ${flag}</div>
-          <div style="font-size:11.5px; color:#fef08a; font-weight:700; display:flex; align-items:center; gap:6px; margin-top:2px;">
-            <span>${genderIcon} ${genderLabel}</span>
-            <span>•</span>
-            <span>🎂 ${age} سنة</span>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <button class="royal-invite-btn" style="padding:8px 14px; font-size:12px; margin:0;" onclick="openPrivateChat('${friend.id}')">
-          💬 دردشة
-        </button>
-        <button onclick="window.removeFriend('${friend.id}')" title="إزالة الصديق" style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; width:34px; height:34px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.2s ease;">
-          🗑️
-        </button>
-      </div>
-    `;
-    container.appendChild(item);
-  });
+  currentMessengerTab = 'friends';
+  const tabSavedFriends = $('#tab-filter-saved-friends');
+  const tabAllUsers = $('#tab-filter-all-users');
+  if (tabSavedFriends) tabSavedFriends.classList.add('active');
+  if (tabAllUsers) tabAllUsers.classList.remove('active');
+  renderFriendsAndOnlineUsers();
 }
 
 function openPrivateChat(friendId) {
   const friend = friendsList.find(f => f.id === friendId);
   if (!friend) return;
-
-  activeFriendChat = friend;
-  $('#friends-list-view').classList.add('hidden');
-  $('#private-chat-view').classList.remove('hidden');
-
-  const isMale = friend.gender !== 'female';
-  const genderIcon = isMale ? '👨' : '👩';
-  const genderLabel = isMale ? 'ذكر' : 'أنثى';
-  const age = friend.age || 22;
-  const flag = countryCodeToFlag(friend.country || 'JO');
-
-  const nameEl = $('#private-chat-friend-name');
-  if (nameEl) nameEl.textContent = `${friend.name} ${flag}`;
-  
-  const tagEl = $('#private-chat-friend-tag');
-  if (tagEl) {
-    tagEl.textContent = `${genderIcon} ${genderLabel} • ${age} سنة`;
-  }
-
-  const btnClear = $('#btn-clear-chat');
-  if (btnClear) {
-    btnClear.onclick = () => clearPrivateChat(friendId);
-  }
-  const btnRemove = $('#btn-remove-friend');
-  if (btnRemove) {
-    btnRemove.onclick = () => removeFriend(friendId);
-  }
-
-  renderPrivateMessages(friendId);
+  openPrivateChatWindow({
+    id: friend.id,
+    socketId: friend.socketId || friend.id,
+    username: friend.name || friend.username || 'صديق',
+    gender: friend.gender || 'male',
+    country: friend.country || 'JO',
+    countryName: friend.countryName || 'الأردن',
+    age: friend.age || 22,
+    serialNumber: friend.serialNumber || ''
+  });
 }
 
 function getPrivateMessages(friendId) {

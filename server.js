@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -577,6 +577,7 @@ function broadcastOnlineCount() {
     usersList.push({
       socketId: socketId,
       username: u.username || 'مستخدم',
+      serialNumber: u.serialNumber || '',
       gender: u.gender || 'male',
       country: u.myCountry || u.country || 'JO',
       countryName: u.countryName || 'الأردن',

@@ -545,34 +545,45 @@
     </div>
   </div>
 
-  <!-- Google Sign In & Account Login Modal -->
-  <div id="auth-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(14px);">
-    <div class="modal-content" style="max-width: 400px; width: 92%; padding: 24px 20px; text-align: center; border: 1px solid rgba(255,255,255,0.15); background: #121324; border-radius: 20px; position: relative;">
-      <button id="close-auth-modal-btn" style="position: absolute; left: 16px; top: 16px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">✕</button>
+  <!-- Google Sign In & Account Login Modal (Royal Edition) -->
+  <div id="auth-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+    <div class="modal-content royal-auth-content" style="max-width: 420px; width: 92%; padding: 26px 22px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
+      <button id="close-auth-modal-btn" class="royal-close-round-btn" style="position: absolute; left: 16px; top: 16px;" title="إغلاق">✕</button>
       
-      <h2 style="font-size: 22px; color: #fff; margin-bottom: 5px; font-weight: 800;"><span style="color:#FF6B6B;">Loky Chat</span> تسجيل الدخول</h2>
-      <p style="font-size: 12px; color: #aaa; margin-bottom: 18px;">سجل دخولك ليتم ربط رصيدك وجواهرك باسمك وحسابك دائماً 💎</p>
+      <!-- Royal Crown Orb -->
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #fff;">
+        👑
+      </div>
 
-      <!-- Google Sign In Card / Inline Section -->
-      <div id="google-auth-box" style="width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
-        <button id="google-login-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #ffffff; color: #333333; border: 1px solid #ddd; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin:0;">
-          <svg width="20" height="20" viewBox="0 0 48 48">
+      <h2 style="font-size: 22px; color: #fff; margin-bottom: 5px; font-weight: 900;"><span style="color:#ffd700;">ديوان Loky Chat</span> الملكي</h2>
+      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 18px;">تسجيل الدخول السريع بـ Google لحفظ حسابك ورصيدك الملكي 💎</p>
+
+      <!-- Current Connected Account Status Box (shown when linked) -->
+      <div id="google-linked-info-box" class="hidden" style="width: 100%; margin-bottom: 16px; background: rgba(16, 185, 129, 0.12); padding: 14px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;">
+        <div style="font-size: 12px; color: #34d399; font-weight: bold;">✅ حسابك الملكي موثق ومتصل بـ Google:</div>
+        <div id="google-linked-email-display" style="font-size: 15px; color: #fff; font-weight: 800; margin: 4px 0;" dir="ltr">user@gmail.com</div>
+        <div style="font-size: 11px; color: #ffd700;">💎 رصيد الجواهر المحفوظ: <span id="google-linked-gems-display" style="font-weight:bold;">50</span></div>
+      </div>
+
+      <!-- Google Sign In Card -->
+      <div id="google-auth-box" style="width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.04); padding: 16px; border-radius: 18px; border: 1px solid rgba(255,215,0,0.25);">
+        <!-- Direct 1-Tap Google Button -->
+        <button id="google-login-btn" class="action-button" style="width: 100%; padding: 13px; font-size: 15px; font-weight: 800; background: #ffffff; color: #202124; border: 1.5px solid #dadce0; border-radius: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); margin:0; transition: all 0.2s ease;">
+          <svg width="22" height="22" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
             <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
             <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
             <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
           </svg>
-          <span>تسجيل الدخول السريع بـ Google</span>
+          <span id="google-login-btn-text">متابعة وتسجيل الدخول بـ Google</span>
         </button>
 
-        <!-- Inline Google Form hidden by default, toggled on click or direct submit -->
-        <div id="google-inline-form" class="hidden" style="margin-top: 12px; text-align: right;">
-          <label style="font-size: 11px; color: #4ade80; display: block; margin-bottom: 5px; font-weight: bold;">أدخل حساب Google الخاص بك للتأكيد والربط:</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="email" id="google-email-input" placeholder="example@gmail.com" style="flex: 1; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,0.5); border: 1px solid #3b82f6; color: #fff; font-size: 13px;" dir="ltr">
-            <button id="google-confirm-btn" style="padding: 10px 16px; background: #3b82f6; color: #fff; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap;">تأكيد الربط</button>
-          </div>
-        </div>
+        <!-- Slot for Official Google GIS Button Render -->
+        <div id="google-gis-slot" style="margin-top: 10px; display: flex; justify-content: center;"></div>
+        
+        <p id="google-auth-status-hint" style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; line-height: 1.5;">
+          بنقرة واحدة يتم اختيار حساب Google الخاص بك وحفظ رصيدك وهويتك الملكية فوراً دون كتابة.
+        </p>
       </div>
 
       <div style="margin-top: 15px; font-size: 11px; color: #888;">
@@ -810,12 +821,13 @@
       <!-- Messenger Royal Header Bar -->
       <div class="royal-messenger-header">
         <div class="messenger-header-title-box">
-          <div class="messenger-header-icon-wrap">
-            <span>💬</span>
+          <div class="messenger-header-icon-wrap royal-header-glow-orb">
+            <span class="messenger-header-crown">👑</span>
+            <span class="messenger-header-chat">💬</span>
           </div>
           <div>
-            <h2 class="messenger-title">محادثات المتصلين والأصدقاء</h2>
-            <span class="messenger-subtitle" id="messenger-online-status">✨ قائمة الأصدقاء والمحادثات المباشرة</span>
+            <h2 class="messenger-title">ديوان المتصلين والأصدقاء الملكي</h2>
+            <span class="messenger-subtitle" id="messenger-online-status">🟢 متصلون الآن بالديوان الملكي</span>
           </div>
         </div>
         <button id="close-friends-btn" class="royal-close-round-btn" title="إغلاق">✕</button>
@@ -827,10 +839,24 @@
         <!-- Users & Friends Sidebar List View -->
         <div id="friends-list-view" class="royal-friends-list-pane">
           
+          <!-- Royal Tabs Filter Bar -->
+          <div class="royal-messenger-tabs-bar">
+            <button type="button" class="royal-msg-tab-btn active" id="tab-filter-all-users">
+              <span class="tab-icon">🌐</span>
+              <span>جميع المتصلين</span>
+              <span class="tab-count-badge" id="tab-count-all">1</span>
+            </button>
+            <button type="button" class="royal-msg-tab-btn" id="tab-filter-saved-friends">
+              <span class="tab-icon">⭐</span>
+              <span>أصدقائي المحفوظون</span>
+              <span class="tab-count-badge" id="tab-count-friends">0</span>
+            </button>
+          </div>
+
           <!-- Search & Filter Bar -->
           <div class="royal-messenger-search-bar">
             <span class="messenger-search-icon">🔍</span>
-            <input type="text" id="messenger-search-input" placeholder="ابحث عن اسم أي صديق..." autocomplete="off">
+            <input type="text" id="messenger-search-input" placeholder="ابحث بالاسم أو الدولة أو المعرّف..." autocomplete="off">
           </div>
 
           <!-- Active Users / Friends Cards Scroll Area -->
