@@ -264,6 +264,10 @@ body {
   user-select: none;
 }
 
+.welcome-camera-card.hidden {
+  display: none !important;
+}
+
 .camera-match-trigger {
   position: absolute;
   bottom: 18px;
@@ -320,7 +324,7 @@ body {
   font-size: 14px;
 }
 
-#welcome-camera-preview, #remote-video {
+#welcome-camera-preview, #remote-video, #local-video {
   position: absolute;
   top: 0;
   left: 0;
@@ -328,10 +332,13 @@ body {
   height: 100%;
   object-fit: cover;
   border-radius: 28px;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transition: opacity 0.35s ease;
-  background: transparent !important;
+  background: #000 !important;
 }
 
 #welcome-camera-preview {
@@ -945,28 +952,28 @@ video::-webkit-media-controls-volume-slider {
   z-index: 2;
 }
 
-/* 1. Gold Orb (Filters ✨) */
+/* 1. Gold Orb (Filters âœ¨) */
 .bubble-gold .royal-bubble-orb {
   background: radial-gradient(circle at 35% 30%, rgba(255, 245, 180, 0.6) 0%, rgba(255, 215, 0, 0.25) 35%, rgba(60, 45, 10, 0.88) 80%, rgba(18, 12, 4, 0.98) 100%);
   border: 1.8px solid rgba(255, 215, 0, 0.7);
   box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.8), 0 8px 20px rgba(0, 0, 0, 0.65), 0 0 16px rgba(255, 215, 0, 0.4);
 }
 
-/* 2. Emerald Orb (Camera Toggle 📹) */
+/* 2. Emerald Orb (Camera Toggle ðŸ“¹) */
 .bubble-emerald .royal-bubble-orb {
   background: radial-gradient(circle at 35% 30%, rgba(180, 255, 220, 0.6) 0%, rgba(16, 185, 129, 0.25) 35%, rgba(6, 60, 40, 0.88) 80%, rgba(3, 20, 14, 0.98) 100%);
   border: 1.8px solid rgba(52, 211, 153, 0.7);
   box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.8), 0 8px 20px rgba(0, 0, 0, 0.65), 0 0 16px rgba(16, 185, 129, 0.4);
 }
 
-/* 3. Sapphire Orb (Flip 🔄) */
+/* 3. Sapphire Orb (Flip ðŸ”„) */
 .bubble-sapphire .royal-bubble-orb {
   background: radial-gradient(circle at 35% 30%, rgba(190, 230, 255, 0.6) 0%, rgba(59, 130, 246, 0.25) 35%, rgba(15, 45, 90, 0.88) 80%, rgba(5, 15, 35, 0.98) 100%);
   border: 1.8px solid rgba(96, 165, 250, 0.7);
   box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.8), 0 8px 20px rgba(0, 0, 0, 0.65), 0 0 16px rgba(59, 130, 246, 0.4);
 }
 
-/* 4. Ruby Orb (Gifts 🎁) */
+/* 4. Ruby Orb (Gifts ðŸŽ) */
 .bubble-ruby .royal-bubble-orb {
   background: radial-gradient(circle at 35% 30%, rgba(255, 190, 210, 0.6) 0%, rgba(244, 63, 94, 0.25) 35%, rgba(90, 15, 35, 0.88) 80%, rgba(30, 4, 12, 0.98) 100%);
   border: 1.8px solid rgba(251, 113, 133, 0.7);
@@ -1784,7 +1791,7 @@ video::-webkit-media-controls-volume-slider {
 }
 
 .select-wrapper::after {
-  content: '▼';
+  content: 'â–¼';
   position: absolute;
   left: 16px;
   top: 50%;
@@ -1854,7 +1861,7 @@ video::-webkit-media-controls-volume-slider {
 }
 
 .select-wrapper::after {
-  content: '▼';
+  content: 'â–¼';
   position: absolute;
   left: 16px;
   top: 50%;
@@ -3588,5 +3595,435 @@ video::-webkit-media-controls-volume-slider {
   align-items: center;
   gap: 6px;
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
+}
+
+/* =============================================
+   Royal Palace Home Dashboard (Ultra-Luxury Idle Experience)
+   ============================================= */
+.royal-home-dashboard {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+  padding: 6px 2px 14px 2px;
+  box-sizing: border-box;
+  animation: royalFadeIn 0.35s ease-out;
+  z-index: 10;
+}
+
+.royal-home-dashboard.hidden {
+  display: none !important;
+}
+
+@keyframes royalFadeIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 1. Royal Profile Hero Card */
+.royal-profile-hero-card {
+  background: linear-gradient(135deg, rgba(46, 12, 22, 0.94) 0%, rgba(20, 10, 30, 0.96) 100%);
+  border: 1.5px solid rgba(255, 215, 0, 0.45);
+  border-radius: 22px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.royal-profile-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.85), transparent);
+}
+
+.royal-profile-hero-card:active {
+  transform: scale(0.98);
+}
+
+.royal-profile-avatar-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.royal-avatar-crown {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+  z-index: 2;
+  animation: crownBounce 2.5s infinite ease-in-out;
+}
+
+@keyframes crownBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+.royal-avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700, #ff8800);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 4px 14px rgba(255, 215, 0, 0.4);
+  overflow: hidden;
+}
+
+.royal-online-glow-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  background: #10b981;
+  border: 2px solid #1a0b1c;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.royal-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: right;
+}
+
+.royal-profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.royal-dash-username {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.royal-vip-badge {
+  background: linear-gradient(135deg, #ffd700, #ff8e53);
+  color: #1a0800;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 1px 7px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.4);
+}
+
+.royal-serial-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  padding: 3px 8px;
+  width: fit-content;
+  font-size: 11.5px;
+}
+
+.serial-tag {
+  color: #ffd700;
+  font-weight: 800;
+}
+
+.serial-number {
+  color: #4ade80;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-family: monospace, sans-serif;
+}
+
+.serial-verified-icon {
+  font-size: 11px;
+}
+
+.royal-profile-edit-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffd700;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.royal-profile-edit-btn:active {
+  transform: scale(0.9);
+}
+
+/* 2. Live Activity Bar */
+.royal-live-activity-bar {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(6, 78, 59, 0.28), rgba(16, 185, 129, 0.12));
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 30px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #a7f3d0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.live-activity-pulse {
+  width: 9px;
+  height: 9px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulseLiveDot 1.5s infinite;
+}
+
+@keyframes pulseLiveDot {
+  0% { transform: scale(0.9); box-shadow: 0 0 4px #10b981; }
+  50% { transform: scale(1.3); box-shadow: 0 0 14px #34d399; }
+  100% { transform: scale(0.9); box-shadow: 0 0 4px #10b981; }
+}
+
+.live-activity-label strong {
+  color: #fff;
+  font-weight: 800;
+}
+
+/* 3. The Grand 3D Royal Match Launch Card (Masterpiece Button) */
+.royal-match-launch-card {
+  background: linear-gradient(135deg, #ffe57f 0%, #ffd700 25%, #ff9900 65%, #e65100 100%);
+  border: 2px solid #fff59d;
+  border-radius: 26px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(255, 153, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -3px 8px rgba(180, 70, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.royal-match-launch-card:active {
+  transform: scale(0.96) translateY(2px);
+  box-shadow: 0 6px 20px rgba(255, 153, 0, 0.35);
+}
+
+.royal-launch-halo {
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.royal-launch-crown-orb {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, #fff3e0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  position: relative;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.crown-sparkles {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 13px;
+  animation: sparkleTwinkle 2s infinite ease-in-out;
+}
+
+@keyframes sparkleTwinkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.royal-launch-texts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: right;
+}
+
+.royal-launch-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #1a0800;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.royal-launch-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(26, 8, 0, 0.82);
+}
+
+.royal-launch-arrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(26, 8, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  animation: pulseArrow 1.5s infinite;
+}
+
+@keyframes pulseArrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+/* 4. Royal Preferences Grid (Country & Gender) */
+.royal-preferences-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.royal-pref-card {
+  background: linear-gradient(145deg, rgba(34, 14, 26, 0.9), rgba(16, 11, 24, 0.94));
+  border: 1.5px solid rgba(255, 215, 0, 0.3);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: right;
+}
+
+.royal-pref-card:active {
+  transform: scale(0.97);
+  border-color: #ffd700;
+}
+
+.royal-pref-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.royal-pref-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.royal-pref-chevron {
+  font-size: 13px;
+  color: #ffd700;
+}
+
+.royal-pref-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.royal-pref-icon {
+  font-size: 22px;
+}
+
+.royal-pref-name {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 5. Royal Shortcuts Row */
+.royal-shortcuts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.royal-shortcut-btn {
+  background: linear-gradient(145deg, rgba(28, 12, 22, 0.85), rgba(14, 10, 20, 0.9));
+  border: 1.2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+}
+
+.royal-shortcut-btn:active {
+  transform: scale(0.94);
+}
+
+.royal-shortcut-btn.highlight-gold {
+  border-color: rgba(255, 215, 0, 0.45);
+  background: linear-gradient(145deg, rgba(60, 25, 20, 0.88), rgba(25, 15, 25, 0.92));
+}
+
+.royal-shortcut-btn.highlight-gold .shortcut-icon {
+  filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.5));
+}
+
+.shortcut-icon {
+  font-size: 22px;
+}
+
+.shortcut-text {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #e5e7eb;
+  white-space: nowrap;
 }
 

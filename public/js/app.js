@@ -1,4 +1,4 @@
-﻿/* =============================================
+/* =============================================
    LiQaa - Video Chat Application
    Main Client-Side JavaScript
    ============================================= */
@@ -588,6 +588,20 @@ function updateProfileUI() {
     }
   }
 
+  const dashUser = $('#royal-dash-username');
+  if (dashUser) {
+    if (userProfile.isAdmin) {
+      dashUser.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-right: 2px;">👑 منشئ</span>`;
+    } else {
+      dashUser.textContent = userProfile.username || 'مستخدم';
+    }
+  }
+
+  const dashSerial = $('#royal-dash-serial');
+  if (dashSerial && userProfile.serialNumber) {
+    dashSerial.textContent = userProfile.serialNumber;
+  }
+
   if (gemsBalanceCount) {
     if (userProfile.isAdmin) {
       gemsBalanceCount.textContent = '999k+';
@@ -621,6 +635,12 @@ function updateOnlineDisplay(payload) {
   }
 
   lastOnlineCount = count;
+
+  const royalLiveCount = $('#royal-live-count');
+  if (royalLiveCount) {
+    const displayCount = (lastOnlineCount > 0 ? (lastOnlineCount + 1420) : '2,850+');
+    royalLiveCount.textContent = `${displayCount}`;
+  }
 
   const searchOnlineWrapper = $('.searching-online');
   const welcomeOnlineWrapper = $('.online-indicator') || $('.welcome-online');
@@ -912,6 +932,9 @@ function init() {
   setupControls();
   connectSocket();
   autoDetectCountry();
+  updateRoyalPreferencesDisplay();
+  updateProfileUI();
+  setState('idle');
   if (IS_NATIVE_APP) {
     initPlayBilling();
   }
@@ -2128,8 +2151,7 @@ function renderRoyalCountryGrid(searchFilter = '') {
       selectedTargetCountryCode = c.code;
       selectedTargetCountryName = c.name;
 
-      const pillText = $('#pill-selected-country-text');
-      if (pillText) pillText.textContent = `${c.flag} ${c.name} (10💎)`;
+      updateRoyalPreferencesDisplay();
 
       $('#royal-opt-all')?.classList.remove('active');
       $('#royal-opt-home')?.classList.remove('active');
@@ -2162,7 +2184,77 @@ function openRoyalGenderModal() {
 }
 window.openRoyalGenderModal = openRoyalGenderModal;
 
+function updateRoyalPreferencesDisplay() {
+  const prefCountryFlag = $('#royal-pref-country-flag');
+  const prefCountryText = $('#royal-pref-country-text');
+  const pillCountry = $('#pill-selected-country-text');
+
+  if (selectedTargetCountryMode === 'ALL') {
+    if (prefCountryFlag) prefCountryFlag.textContent = '🌍';
+    if (prefCountryText) prefCountryText.textContent = 'كل العالم';
+    if (pillCountry) pillCountry.textContent = '🌍 كل العالم';
+  } else if (selectedTargetCountryMode === 'HOME') {
+    const homeName = selectedTargetCountryName || selectedCountryName || 'الأردن';
+    if (prefCountryFlag) prefCountryFlag.textContent = '🏠';
+    if (prefCountryText) prefCountryText.textContent = homeName;
+    if (pillCountry) pillCountry.textContent = `🏠 ${homeName}`;
+  } else {
+    const flag = (typeof countryCodeToFlag === 'function') ? countryCodeToFlag(selectedTargetCountryCode) : '🌍';
+    const cName = selectedTargetCountryName || selectedTargetCountryCode;
+    if (prefCountryFlag) prefCountryFlag.textContent = flag;
+    if (prefCountryText) prefCountryText.textContent = cName;
+    if (pillCountry) pillCountry.textContent = `${flag} ${cName} (10💎)`;
+  }
+
+  const prefGenderIcon = $('#royal-pref-gender-icon');
+  const prefGenderText = $('#royal-pref-gender-text');
+  const pillGender = $('#pill-selected-gender-text');
+
+  if (selectedGenderFilter === 'female') {
+    if (prefGenderIcon) prefGenderIcon.textContent = '👩';
+    if (prefGenderText) prefGenderText.textContent = 'إناث فقط';
+    if (pillGender) pillGender.textContent = '👩 إناث (10💎)';
+  } else if (selectedGenderFilter === 'male') {
+    if (prefGenderIcon) prefGenderIcon.textContent = '👨';
+    if (prefGenderText) prefGenderText.textContent = 'ذكور فقط';
+    if (pillGender) pillGender.textContent = '👨 ذكور (10💎)';
+  } else {
+    if (prefGenderIcon) prefGenderIcon.textContent = '⚧';
+    if (prefGenderText) prefGenderText.textContent = 'الكل ⚧';
+    if (pillGender) pillGender.textContent = 'الكل ⚧ (مجاني)';
+  }
+}
+window.updateRoyalPreferencesDisplay = updateRoyalPreferencesDisplay;
+
 function setupSwipeGestures() {
+  // Swipe on Royal Dashboard to Start Video Chat (ONLY when idle)
+  const royalDash = $('#royal-home-dashboard');
+  if (royalDash) {
+    let startX = 0, startY = 0;
+    royalDash.addEventListener('touchstart', (e) => {
+      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('.royal-profile-hero-card') || e.target.closest('.royal-pref-card') || e.target.closest('.royal-shortcut-btn') || e.target.closest('#btn-royal-start-match')) {
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    royalDash.addEventListener('touchend', (e) => {
+      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('.royal-profile-hero-card') || e.target.closest('.royal-pref-card') || e.target.closest('.royal-shortcut-btn') || e.target.closest('#btn-royal-start-match')) {
+        return;
+      }
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 40) {
+        console.log('[Swipe] Swipe detected on royal dashboard -> starting chat!');
+        startChat();
+      }
+    }, { passive: true });
+  }
+
   // Swipe on Welcome Screen Camera Card to Start Video Chat (ONLY when idle)
   const welcomeCard = $('#welcome-camera-card');
   if (welcomeCard) {
@@ -2280,6 +2372,31 @@ function setupWelcomeUI() {
     cancelSearchBtn.addEventListener('touchend', handleCancel);
   }
 
+  // Royal Palace Dashboard Actions
+  const btnRoyalStart = $('#btn-royal-start-match');
+  if (btnRoyalStart) {
+    btnRoyalStart.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startChat();
+    });
+  }
+
+  const btnRoyalCountry = $('#btn-royal-open-country');
+  if (btnRoyalCountry) {
+    btnRoyalCountry.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRoyalCountryModal();
+    });
+  }
+
+  const btnRoyalGender = $('#btn-royal-open-gender');
+  if (btnRoyalGender) {
+    btnRoyalGender.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRoyalGenderModal();
+    });
+  }
+
   // Royal Country Selector Modal Logic
   const openCountryBtn = $('#btn-open-country-modal');
   const royalCountryModal = $('#royal-country-modal');
@@ -2311,8 +2428,7 @@ function setupWelcomeUI() {
       selectedTargetCountryMode = 'ALL';
       selectedTargetCountryCode = 'ALL';
       selectedTargetCountryName = 'كل العالم';
-      const pillText = $('#pill-selected-country-text');
-      if (pillText) pillText.textContent = '🌍 كل العالم';
+      updateRoyalPreferencesDisplay();
 
       optAll.classList.add('active');
       optHome?.classList.remove('active');
@@ -2326,8 +2442,7 @@ function setupWelcomeUI() {
       selectedTargetCountryMode = 'HOME';
       selectedTargetCountryCode = selectedCountry || 'JO';
       selectedTargetCountryName = selectedCountryName || 'الأردن';
-      const pillText = $('#pill-selected-country-text');
-      if (pillText) pillText.textContent = `🏠 ${selectedTargetCountryName}`;
+      updateRoyalPreferencesDisplay();
 
       optHome.classList.add('active');
       optAll?.classList.remove('active');
@@ -2360,13 +2475,7 @@ function setupWelcomeUI() {
       genderCards.forEach(c => c.classList.remove('active'));
       card.classList.add('active');
       selectedGenderFilter = card.dataset.genderChoice || 'any';
-
-      const pillGenderText = $('#pill-selected-gender-text');
-      if (pillGenderText) {
-        if (selectedGenderFilter === 'female') pillGenderText.textContent = '👩 إناث (10💎)';
-        else if (selectedGenderFilter === 'male') pillGenderText.textContent = '👨 ذكور (10💎)';
-        else pillGenderText.textContent = 'الكل ⚧ (مجاني)';
-      }
+      updateRoyalPreferencesDisplay();
       royalGenderModal?.classList.add('hidden');
       validateForm();
     };
@@ -3253,6 +3362,7 @@ function cleanupPeerConnection() {
 // =============================================
 function setState(state) {
   currentState = state;
+  const royalDash = $('#royal-home-dashboard');
   const welcomeCamCard = $('#welcome-camera-card');
   const searchingOverlay = $('#searching-overlay');
   const partnerLeftOverlay = $('#partner-left-overlay');
@@ -3268,7 +3378,9 @@ function setState(state) {
 
   switch (state) {
     case 'idle':
+      if (royalDash) royalDash.classList.remove('hidden');
       if (welcomeCamCard) {
+        welcomeCamCard.classList.add('hidden');
         welcomeCamCard.classList.remove('in-call', 'is-searching');
       }
       if (searchingOverlay) searchingOverlay.classList.add('hidden');
@@ -3280,15 +3392,27 @@ function setState(state) {
         remoteVid.classList.add('hidden');
         remoteVid.srcObject = null;
       }
-      if (welcomePreview) welcomePreview.style.display = 'block';
-      if (idleTrigger) idleTrigger.classList.remove('hidden');
-      if (floatingToolbar) floatingToolbar.classList.remove('hidden');
-      if (filterRow) filterRow.classList.remove('hidden');
+      if (welcomePreview) welcomePreview.style.display = 'none';
+      if (idleTrigger) idleTrigger.classList.add('hidden');
+      if (floatingToolbar) floatingToolbar.classList.add('hidden');
+      if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.remove('hidden');
+
+      // Free camera tracks on idle to completely cool phone and prevent lag
+      if (localStream) {
+        try { localStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+        localStream = null;
+      }
+      if (welcomeCamStream) {
+        try { welcomeCamStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+        welcomeCamStream = null;
+      }
       break;
 
     case 'searching':
+      if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
+        welcomeCamCard.classList.remove('hidden');
         welcomeCamCard.classList.add('is-searching');
         welcomeCamCard.classList.remove('in-call');
       }
@@ -3309,7 +3433,9 @@ function setState(state) {
       break;
 
     case 'connected':
+      if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
+        welcomeCamCard.classList.remove('hidden');
         welcomeCamCard.classList.add('in-call');
         welcomeCamCard.classList.remove('is-searching');
       }
@@ -3327,7 +3453,9 @@ function setState(state) {
       break;
 
     case 'partner_left':
+      if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
+        welcomeCamCard.classList.remove('hidden');
         welcomeCamCard.classList.add('is-searching');
         welcomeCamCard.classList.remove('in-call');
       }

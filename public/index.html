@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -93,8 +93,99 @@
         </div>
       </div>
 
-      <!-- Main Live Camera Card (Full visual center - Clean, Ultra HD, Unified Interface) -->
-      <div class="welcome-camera-card" id="welcome-camera-card">
+      <!-- ============ Royal Palace Home Dashboard (Ultra-Luxury Idle Experience) ============ -->
+      <div id="royal-home-dashboard" class="royal-home-dashboard">
+        
+        <!-- Royal Profile & Serial Badge Card -->
+        <div class="royal-profile-hero-card" onclick="window.openSettingsModal && window.openSettingsModal()" title="إعدادات الحساب الملكي">
+          <div class="royal-profile-avatar-wrap">
+            <span class="royal-avatar-crown">👑</span>
+            <div class="royal-avatar-circle" id="royal-dash-avatar">👤</div>
+            <span class="royal-online-glow-dot"></span>
+          </div>
+          <div class="royal-profile-info">
+            <div class="royal-profile-name-row">
+              <span id="royal-dash-username" class="royal-dash-username">مستخدم</span>
+              <span class="royal-vip-badge">VIP</span>
+            </div>
+            <div class="royal-serial-pill" title="الرقم التسلسلي لحسابك الملكي">
+              <span class="serial-tag">ID:</span>
+              <span id="royal-dash-serial" class="serial-number">LQ-000000</span>
+              <span class="serial-verified-icon">🛡️</span>
+            </div>
+          </div>
+          <button type="button" class="royal-profile-edit-btn" aria-label="الإعدادات">⚙️</button>
+        </div>
+
+        <!-- Live Palace Activity Bar -->
+        <div class="royal-live-activity-bar">
+          <span class="live-activity-pulse"></span>
+          <span class="live-activity-label"><strong id="royal-live-count">2,850+</strong> عضو ملكي متصل الآن في الغرف 🌍</span>
+        </div>
+
+        <!-- The Grand Royal 3D Match Launch Button -->
+        <div class="royal-match-launch-card" id="btn-royal-start-match" onclick="window.startChat && window.startChat()">
+          <div class="royal-launch-halo"></div>
+          <div class="royal-launch-crown-orb">
+            <span class="crown-icon-main">👑</span>
+            <span class="crown-sparkles">✨</span>
+          </div>
+          <div class="royal-launch-texts">
+            <span class="royal-launch-title">بدء المطابقة الملكية</span>
+            <span class="royal-launch-sub">محادثة فيديو فورية فائقة السرعة ⚡</span>
+          </div>
+          <div class="royal-launch-arrow">
+            <span>👈</span>
+          </div>
+        </div>
+
+        <!-- Royal Match Preferences (Country & Gender Quick Selectors) -->
+        <div class="royal-preferences-grid">
+          <!-- Country Preference Card -->
+          <div class="royal-pref-card" id="btn-royal-open-country" onclick="window.openRoyalCountryModal && window.openRoyalCountryModal()">
+            <div class="royal-pref-header">
+              <span class="royal-pref-tag">البلد المستهدف</span>
+              <span class="royal-pref-chevron">⌵</span>
+            </div>
+            <div class="royal-pref-content">
+              <span class="royal-pref-icon" id="royal-pref-country-flag">🌍</span>
+              <span class="royal-pref-name" id="royal-pref-country-text">كل العالم</span>
+            </div>
+          </div>
+
+          <!-- Gender Preference Card -->
+          <div class="royal-pref-card" id="btn-royal-open-gender" onclick="window.openRoyalGenderModal && window.openRoyalGenderModal()">
+            <div class="royal-pref-header">
+              <span class="royal-pref-tag">نوع الشريك</span>
+              <span class="royal-pref-chevron">⌵</span>
+            </div>
+            <div class="royal-pref-content">
+              <span class="royal-pref-icon" id="royal-pref-gender-icon">⚧</span>
+              <span class="royal-pref-name" id="royal-pref-gender-text">الكل ⚧</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Royal Quick Actions Row -->
+        <div class="royal-shortcuts-row">
+          <div class="royal-shortcut-btn" onclick="document.getElementById('friends-modal').classList.remove('hidden')">
+            <span class="shortcut-icon">👥</span>
+            <span class="shortcut-text">الأصدقاء</span>
+          </div>
+          <div class="royal-shortcut-btn highlight-gold" onclick="document.getElementById('recharge-modal').classList.remove('hidden')">
+            <span class="shortcut-icon">💎</span>
+            <span class="shortcut-text">متجر Max</span>
+          </div>
+          <div class="royal-shortcut-btn" onclick="window.openInviteModal && window.openInviteModal()">
+            <span class="shortcut-icon">🎁</span>
+            <span class="shortcut-text">+50 💎 مكافأة</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Live Camera Card (Active Only During Search / Video Call) -->
+      <div class="welcome-camera-card hidden" id="welcome-camera-card">
         <!-- 1. Full-screen Local Camera Video (Idle / Search) -->
         
 
@@ -205,8 +296,8 @@
         <button id="start-btn" class="hidden"></button>
       </div>
 
-      <!-- Floating Filter Buttons Row -->
-      <div class="modern-filter-row">
+      <!-- Floating Filter Buttons Row (Replaced by Royal Preferences Grid in Home Dashboard) -->
+      <div class="modern-filter-row" style="display: none !important;">
         <!-- Country Selector Pill -->
         <div class="modern-filter-pill" id="btn-open-country-modal" onclick="window.openRoyalCountryModal && window.openRoyalCountryModal()">
           <span class="filter-chevron">⌃</span>
