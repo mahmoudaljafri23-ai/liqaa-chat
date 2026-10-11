@@ -199,19 +199,23 @@
           <div class="camera-status-hint">الكاميرا جاهزة للبث ✨</div>
         </div>
 
-        <!-- 5. Floating Left Toolbar (Idle State) -->
+        <!-- 5. Floating Side Toolbar (In-Call & Live Camera: Royal 3D Crystal Gem Orbs) -->
         <div class="camera-floating-toolbar" id="camera-floating-toolbar">
           <button type="button" class="royal-bubble-item bubble-gold" id="btn-cam-filters" title="فلاتر وتجميل">
             <span class="royal-bubble-orb">✨</span>
-          </button>
-          <button type="button" class="royal-bubble-item bubble-emerald" id="btn-cam-toggle" title="تشغيل/إيقاف الكاميرا">
-            <span class="royal-bubble-orb" id="cam-toggle-icon">📹</span>
-          </button>
-          <button type="button" class="royal-bubble-item bubble-sapphire" id="btn-cam-flip" title="تبديل الكاميرا الأمامية/الخلفية">
-            <span class="royal-bubble-orb">🔄</span>
+            <span class="bubble-tag">فلاتر</span>
           </button>
           <button type="button" class="royal-bubble-item bubble-ruby" id="btn-cam-gifts" onclick="document.getElementById('recharge-modal').classList.remove('hidden')" title="متجر الهدايا والجواهر">
             <span class="royal-bubble-orb">🎁</span>
+            <span class="bubble-tag">هدايا</span>
+          </button>
+          <button type="button" class="royal-bubble-item bubble-sapphire" id="btn-cam-flip" title="تبديل الكاميرا الأمامية/الخلفية">
+            <span class="royal-bubble-orb">🔄</span>
+            <span class="bubble-tag">قلب</span>
+          </button>
+          <button type="button" class="royal-bubble-item bubble-emerald" id="btn-cam-friends" onclick="document.getElementById('friends-modal').classList.remove('hidden')" title="الديوان الملكي والأصدقاء">
+            <span class="royal-bubble-orb">💬</span>
+            <span class="bubble-tag">دردشة</span>
           </button>
         </div>
 
@@ -260,22 +264,22 @@
         <!-- 10. In-Call 3D Royal Control Bar (Bottom of Camera when Connected) -->
         <div id="controls-bar" class="royal-call-controls hidden">
           <button id="end-btn" class="control-btn end-btn" title="إنهاء المكالمة">
-            <span>✕</span>
+            <span class="btn-ctrl-symbol">✕</span>
           </button>
-          <button id="mic-btn" class="control-btn" title="كتم/تشغيل الميكروفون">
+          <button id="mic-btn" class="control-btn mic-btn" title="كتم/تشغيل الميكروفون">
             <span class="mic-on">🎙️</span>
             <span class="mic-off hidden">🔇</span>
           </button>
-          <button id="camera-btn" class="control-btn" title="إيقاف/تشغيل الكاميرا">
+          <button id="camera-btn" class="control-btn camera-btn" title="إيقاف/تشغيل الكاميرا">
             <span class="cam-on">📹</span>
             <span class="cam-off hidden">🚫</span>
           </button>
-          <button id="flip-cam-btn" class="control-btn" title="تبديل الكاميرا">
+          <button id="flip-cam-btn" class="control-btn flip-btn" title="تبديل الكاميرا">
             <span>🔄</span>
           </button>
           <button id="next-btn" class="control-btn next-btn" title="التالي / Next">
-            <span>⏭️</span>
-            <span class="next-label">التالي</span>
+            <span class="next-crown-icon">👑</span>
+            <span class="next-label">التالي ⏭️</span>
           </button>
         </div>
 

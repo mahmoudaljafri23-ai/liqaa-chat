@@ -2380,8 +2380,13 @@ function setupWelcomeUI() {
     btnFilters.addEventListener('click', (e) => {
       e.stopPropagation();
       currentFilterIndex = (currentFilterIndex + 1) % VIDEO_FILTERS.length;
+      const filterVal = VIDEO_FILTERS[currentFilterIndex];
       const preview = $('#welcome-camera-preview');
-      if (preview) preview.style.filter = VIDEO_FILTERS[currentFilterIndex];
+      if (preview) preview.style.filter = filterVal;
+      const localVid = $('#local-video');
+      if (localVid) localVid.style.filter = filterVal;
+      const remoteVid = $('#remote-video');
+      if (remoteVid) remoteVid.style.filter = filterVal;
       showGemToast(`✨ تم تفعيل الفلتر ${currentFilterIndex + 1}`);
     });
   }
@@ -2403,8 +2408,12 @@ function setupWelcomeUI() {
   if (btnCamFlip) {
     btnCamFlip.addEventListener('click', (e) => {
       e.stopPropagation();
-      currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
-      initWelcomeCamera();
+      if (currentState === 'connected' || currentState === 'searching') {
+        switchCamera();
+      } else {
+        currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
+        initWelcomeCamera();
+      }
     });
   }
 
