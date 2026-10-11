@@ -2341,61 +2341,8 @@ function updateRoyalPreferencesDisplay() {
 window.updateRoyalPreferencesDisplay = updateRoyalPreferencesDisplay;
 
 function setupSwipeGestures() {
-  // Swipe on Royal Dashboard to Start Video Chat (ONLY when idle)
-  const royalDash = $('#royal-home-dashboard');
-  if (royalDash) {
-    let startX = 0, startY = 0;
-    royalDash.addEventListener('touchstart', (e) => {
-      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('.royal-profile-hero-card') || e.target.closest('.royal-pref-card') || e.target.closest('.royal-shortcut-btn') || e.target.closest('#btn-royal-start-match')) {
-        return;
-      }
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-
-    royalDash.addEventListener('touchend', (e) => {
-      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('.royal-profile-hero-card') || e.target.closest('.royal-pref-card') || e.target.closest('.royal-shortcut-btn') || e.target.closest('#btn-royal-start-match')) {
-        return;
-      }
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - startX;
-      const deltaY = endY - startY;
-
-      if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 40) {
-        console.log('[Swipe] Swipe detected on royal dashboard -> starting chat!');
-        startChat();
-      }
-    }, { passive: true });
-  }
-
-  // Swipe on Welcome Screen Camera Card to Start Video Chat (ONLY when idle)
-  const welcomeCard = $('#welcome-camera-card');
-  if (welcomeCard) {
-    let startX = 0, startY = 0;
-    welcomeCard.addEventListener('touchstart', (e) => {
-      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar')) {
-        return;
-      }
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-
-    welcomeCard.addEventListener('touchend', (e) => {
-      if (currentState !== 'idle' || e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar')) {
-        return;
-      }
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const deltaX = endX - startX;
-      const deltaY = endY - startY;
-
-      if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        console.log('[Swipe] Swipe detected on home camera -> starting chat!');
-        startChat();
-      }
-    }, { passive: true });
-  }
+  // Matching is ONLY triggered via the Grand 3D Launch Button (#btn-royal-start-match) per user request.
+  // Swipe to start on background/dashboard disabled.
 
   // Swipe on Live Video Call Screen to Match Next Partner
   const chatVideosContainer = $('#videos-container');
@@ -2461,17 +2408,7 @@ function setupWelcomeUI() {
     });
   }
 
-  // Start chat on Camera Card Tap (ONLY when idle)
-  const welcomeCamCard = $('#welcome-camera-card');
-  if (welcomeCamCard) {
-    welcomeCamCard.addEventListener('click', (e) => {
-      if (currentState !== 'idle') return;
-      if (e.target.closest('button') || e.target.closest('#searching-overlay') || e.target.closest('#controls-bar') || e.target.closest('#welcome-floating-toolbar') || e.target.closest('#camera-match-trigger')) {
-        return;
-      }
-      startChat();
-    });
-  }
+  // Matching is ONLY started via #btn-royal-start-match button per user request.
 
   // Cancel Search Button (Direct binding on startup with stopPropagation)
   const cancelSearchBtn = $('#cancel-search-btn');

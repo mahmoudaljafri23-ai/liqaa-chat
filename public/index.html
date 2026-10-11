@@ -280,9 +280,9 @@
         </div>
 
         <!-- 11. Floating Matching Action Trigger Button (Idle State) -->
-        <div class="camera-match-trigger" id="camera-match-trigger" onclick="window.startChat && window.startChat()">
+        <div class="camera-match-trigger hidden" id="camera-match-trigger">
           <span class="match-pulse-dot"></span>
-          <span>🎥 انقر أو اسحب للبحث عن شريك</span>
+          <span>🎥 انقر لبدء المطابقة</span>
           <span class="match-arrow">👈</span>
         </div>
 
@@ -310,26 +310,6 @@
             <span class="filter-pill-value" id="pill-selected-gender-text">الكل ⚧</span>
           </div>
           <span class="filter-pill-icon">⚧</span>
-        </div>
-      </div>
-
-      <!-- Fixed Bottom Navigation Bar -->
-      <div class="modern-bottom-nav">
-        <div class="bottom-nav-tab active" id="tab-video-chat">
-          <div class="nav-tab-icon">👑</div>
-          <span class="nav-tab-text">مطابقة</span>
-        </div>
-        <div class="bottom-nav-tab" id="open-friends-modal-btn" onclick="document.getElementById('friends-modal').classList.remove('hidden')">
-          <div class="nav-tab-icon">👥</div>
-          <span class="nav-tab-text">الأصدقاء</span>
-        </div>
-        <div class="bottom-nav-tab" id="open-invite-modal-btn" onclick="window.openInviteModal && window.openInviteModal()">
-          <div class="nav-tab-icon">🎁</div>
-          <span class="nav-tab-text">دعوة (+50💎)</span>
-        </div>
-        <div class="bottom-nav-tab" id="tab-open-settings" onclick="window.openSettingsModal && window.openSettingsModal()">
-          <div class="nav-tab-icon">⚙️</div>
-          <span class="nav-tab-text">الإعدادات</span>
         </div>
       </div>
 
