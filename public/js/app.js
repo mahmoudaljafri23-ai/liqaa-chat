@@ -186,7 +186,9 @@ function countryCodeToFlag(code) {
 
 // Toast notification helper
 function showGemToast(message) {
-  if (currentState === 'connected') return; // Suppress popup toasts during live video call
+  if (currentState === 'connected' || currentState === 'searching') return; // Suppress popup toasts during search and live video call
+  const camCard = $('#welcome-camera-card');
+  if (camCard && !camCard.classList.contains('hidden')) return; // Suppress popup toasts over camera/radar/filter card
   const container = $('#toast-container');
   if (!container) return;
 
@@ -3068,7 +3070,6 @@ async function startChat() {
   if (currentState === 'searching' || currentState === 'connected') return;
 
   console.log('[App] startChat() triggered on royal single-screen interface!');
-  showGemToast('🔍 جاري تشغيل الرادار والبحث عن شريك...');
 
   userProfile.hasCompletedSetup = true;
   saveUserProfile();
