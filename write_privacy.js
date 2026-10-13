@@ -73,7 +73,7 @@ const content = `<!DOCTYPE html>
       <div class="contact-box">
         <h3>مسؤول الخصوصية وسلامة الأطفال: Mahmoud Aljafri</h3>
         <p>لأي استفسار أو بلاغ عاجل حول الخصوصية أو سلامة الأطفال:</p>
-        <p>البريد المباشر: <a href="mailto:mahmoud.aljafri23@gmail.com">mahmoud.aljafri23@gmail.com</a></p>
+        <p>البريد المباشر: <a href="mailto:mr.world2213@gmail.com">mr.world2213@gmail.com</a></p>
         <p>الهاتف: +962790181802</p>
       </div>
     </div>
@@ -120,7 +120,7 @@ const content = `<!DOCTYPE html>
       <div class="contact-box">
         <h3>Designated Child Safety & Privacy Officer: Mahmoud Aljafri</h3>
         <p>For inquiries, urgent child safety escalations, or data deletion requests:</p>
-        <p>Email: <a href="mailto:mahmoud.aljafri23@gmail.com">mahmoud.aljafri23@gmail.com</a></p>
+        <p>Email: <a href="mailto:mr.world2213@gmail.com">mr.world2213@gmail.com</a></p>
         <p>Phone: +962790181802</p>
       </div>
     </div>

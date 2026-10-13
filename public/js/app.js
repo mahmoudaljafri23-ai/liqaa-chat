@@ -25,17 +25,14 @@ const ICE_SERVERS = {
     { urls: 'stun:stun.services.mozilla.com' },
     { urls: 'stun:global.stun.twilio.com:3478' },
     {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelay',
-      credential: 'openrelay'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelay',
-      credential: 'openrelay'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:80?transport=tcp',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+        'turns:openrelay.metered.ca:443?transport=tcp',
+        'turns:openrelay.metered.ca:5349?transport=tcp'
+      ],
       username: 'openrelay',
       credential: 'openrelay'
     }
@@ -1499,7 +1496,7 @@ function setupGemsStore() {
       const gems = currentSelectedPackage.gems || '3000';
       
       const targetUrl = currentSelectedPackage.paypalUrl || 
-        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&solution_type=sole&landing_page=billing&no_shipping=1&no_note=1`;
+        `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mr.world2213@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&solution_type=sole&landing_page=billing&no_shipping=1&no_note=1`;
 
       showGemToast('💳 جاري التوجيه لصفحة الدفع ببطاقة الفيزا والماستركارد...');
       window.location.href = targetUrl;
@@ -1511,7 +1508,7 @@ function setupGemsStore() {
       const price = currentSelectedPackage.price || '4.99';
       const gems = currentSelectedPackage.gems || '3000';
       
-      const targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mahmoud.aljafri23@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&landing_page=login&no_shipping=1&no_note=1`;
+      const targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent('mr.world2213@gmail.com')}&item_name=${encodeURIComponent(`Loky Chat - ${gems} Gems`)}&amount=${encodeURIComponent(price)}&currency_code=USD&landing_page=login&no_shipping=1&no_note=1`;
 
       showGemToast('🅿️ جاري التوجيه لصفحة الدفع عبر حساب PayPal...');
       window.location.href = targetUrl;
@@ -3293,15 +3290,30 @@ async function flushIceCandidateQueue() {
 function optimizeSdp(sdp) {
   if (!sdp) return sdp;
   let newSdp = sdp;
-  // Limit video bandwidth to 550kbps to eliminate packet drops, buffer bloat and audio latency on mobile networks
-  newSdp = newSdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:550\r\n');
-  // Enable Opus in-band FEC and low packet time for crystal clear zero-delay voice
-  newSdp = newSdp.replace(/a=fmtp:(\d+)(.*)/g, (match, pt, rest) => {
-    if (!rest.includes('useinbandfec=1')) {
-      return `a=fmtp:${pt} minptime=10;useinbandfec=1;maxaveragebitrate=32000${rest ? ';' + rest.replace(/^;/, '') : ''}`;
+  try {
+    // Enable Opus in-band FEC and low packet time for crystal clear zero-delay voice
+    // Safely target ONLY the Opus audio codec payload - NEVER corrupt video codecs
+    const opusMatch = newSdp.match(/a=rtpmap:(\d+)\s+opus\/48000/i);
+    if (opusMatch && opusMatch[1]) {
+      const pt = opusMatch[1];
+      const fmtpRegex = new RegExp(`a=fmtp:${pt}\\s+(.*)`);
+      if (fmtpRegex.test(newSdp)) {
+        newSdp = newSdp.replace(fmtpRegex, (match, params) => {
+          let updated = params;
+          if (!updated.includes('useinbandfec=1')) updated += ';useinbandfec=1';
+          if (!updated.includes('minptime=')) updated += ';minptime=10';
+          return `a=fmtp:${pt} ${updated}`;
+        });
+      } else {
+        newSdp = newSdp.replace(
+          new RegExp(`(a=rtpmap:${pt}\\s+opus\\/48000[^\r\n]*)(\r?\n)`),
+          `$1$2a=fmtp:${pt} useinbandfec=1;minptime=10$2`
+        );
+      }
     }
-    return match;
-  });
+  } catch (err) {
+    console.warn('[WebRTC] optimizeSdp warn:', err);
+  }
   return newSdp;
 }
 
@@ -3337,19 +3349,81 @@ async function createPeerConnection() {
 
     if (localStream) {
       localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
+        try {
+          peerConnection.addTrack(track, localStream);
+        } catch (e) {
+          console.warn('[WebRTC] addTrack warning:', e);
+        }
       });
     }
 
     peerConnection.ontrack = (event) => {
-      console.log('[WebRTC] ontrack received partner stream!');
+      console.log('[WebRTC] ontrack received partner track / stream:', event.track ? event.track.kind : 'unknown');
+
+      let stream = null;
       if (event.streams && event.streams[0]) {
-        const remoteVid = $('#remote-video');
-        if (remoteVid) {
-          remoteVid.srcObject = event.streams[0];
-          remoteVid.muted = false;
-          remoteVid.classList.remove('hidden');
-          remoteVid.play().catch(e => console.warn('Remote video play catch:', e));
+        stream = event.streams[0];
+      } else {
+        if (!peerConnection._remoteStream) {
+          peerConnection._remoteStream = new MediaStream();
+        }
+        if (event.track) {
+          peerConnection._remoteStream.addTrack(event.track);
+        }
+        stream = peerConnection._remoteStream;
+      }
+
+      // 1. Remote Video Element
+      const remoteVid = $('#remote-video');
+      if (remoteVid) {
+        if (remoteVid.srcObject !== stream) {
+          remoteVid.srcObject = stream;
+        }
+        remoteVid.playsInline = true;
+        remoteVid.autoplay = true;
+        remoteVid.classList.remove('hidden');
+
+        // Play video immediately, with muted fallback if browser autoplay policy blocks unmuted video
+        const playPromise = remoteVid.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('[WebRTC] Remote video playback started successfully');
+          }).catch(err => {
+            console.warn('[WebRTC] Remote video unmuted play blocked, switching to muted video:', err);
+            remoteVid.muted = true;
+            remoteVid.play().catch(e => console.error('[WebRTC] Muted play error:', e));
+          });
+        }
+
+        remoteVid.onloadedmetadata = () => {
+          console.log('[WebRTC] Remote video metadata loaded:', remoteVid.videoWidth, 'x', remoteVid.videoHeight);
+          remoteVid.play().catch(() => {});
+          const fallbackBg = $('#camera-fallback-bg');
+          if (fallbackBg) fallbackBg.style.display = 'none';
+        };
+      }
+
+      // 2. Dedicated Remote Audio Element (prevents video pause/mute from silencing voice)
+      const remoteAud = $('#remote-audio');
+      if (remoteAud) {
+        if (remoteAud.srcObject !== stream) {
+          remoteAud.srcObject = stream;
+        }
+        remoteAud.autoplay = true;
+        const audPromise = remoteAud.play();
+        if (audPromise !== undefined) {
+          audPromise.then(() => {
+            console.log('[WebRTC] Remote audio playback active');
+          }).catch(e => {
+            console.warn('[WebRTC] Remote audio autoplay blocked by browser policy:', e);
+            const unlockAudio = () => {
+              remoteAud.play().catch(() => {});
+              document.removeEventListener('click', unlockAudio);
+              document.removeEventListener('touchstart', unlockAudio);
+            };
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+          });
         }
       }
     };
@@ -3365,6 +3439,21 @@ async function createPeerConnection() {
       if (peerConnection.connectionState === 'connected') {
         console.log('[WebRTC] P2P Video Call Connected Successfully!');
         applySenderParameters();
+        const fallbackBg = $('#camera-fallback-bg');
+        if (fallbackBg) fallbackBg.style.display = 'none';
+      } else if (peerConnection.connectionState === 'failed') {
+        console.warn('[WebRTC] Connection failed, attempting ICE restart...');
+        if (peerConnection.restartIce) {
+          peerConnection.restartIce();
+        }
+      }
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log('[WebRTC] ICE connection state:', peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        const fallbackBg = $('#camera-fallback-bg');
+        if (fallbackBg) fallbackBg.style.display = 'none';
       }
     };
 
@@ -3406,13 +3495,23 @@ function cleanupPeerConnection() {
     peerConnection.onicecandidate = null;
     peerConnection.onconnectionstatechange = null;
     peerConnection.oniceconnectionstatechange = null;
-    peerConnection.close();
+    try {
+      peerConnection.close();
+    } catch (e) {}
     peerConnection = null;
   }
   const remoteVid = $('#remote-video');
   if (remoteVid) {
     remoteVid.srcObject = null;
     remoteVid.classList.add('hidden');
+  }
+  const remoteAud = $('#remote-audio');
+  if (remoteAud) {
+    remoteAud.srcObject = null;
+  }
+  const fallbackBg = $('#camera-fallback-bg');
+  if (fallbackBg) {
+    fallbackBg.style.display = '';
   }
 }
 
@@ -3451,6 +3550,10 @@ function setState(state) {
         remoteVid.classList.add('hidden');
         remoteVid.srcObject = null;
       }
+      const remoteAudIdle = $('#remote-audio');
+      if (remoteAudIdle) {
+        remoteAudIdle.srcObject = null;
+      }
       if (welcomePreview) welcomePreview.style.display = 'none';
       if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
@@ -3484,6 +3587,10 @@ function setState(state) {
         remoteVid.classList.add('hidden');
         remoteVid.srcObject = null;
       }
+      const remoteAudSearch = $('#remote-audio');
+      if (remoteAudSearch) {
+        remoteAudSearch.srcObject = null;
+      }
       if (welcomePreview) welcomePreview.style.display = 'block';
       if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
@@ -3503,6 +3610,10 @@ function setState(state) {
       if (partnerInfo) partnerInfo.classList.remove('hidden');
       if (controlsBar) controlsBar.classList.remove('hidden');
       if (localVideoWrapper) localVideoWrapper.classList.remove('hidden');
+      if (localStream && localVideo) {
+        if (localVideo.srcObject !== localStream) localVideo.srcObject = localStream;
+        localVideo.play().catch(() => {});
+      }
       if (remoteVid) remoteVid.classList.remove('hidden');
       if (welcomePreview) welcomePreview.style.display = 'none';
       if (idleTrigger) idleTrigger.classList.add('hidden');
@@ -3529,6 +3640,10 @@ function setState(state) {
       if (remoteVid) {
         remoteVid.classList.add('hidden');
         remoteVid.srcObject = null;
+      }
+      const remoteAudLeft = $('#remote-audio');
+      if (remoteAudLeft) {
+        remoteAudLeft.srcObject = null;
       }
       if (welcomePreview) welcomePreview.style.display = 'block';
       if (idleTrigger) idleTrigger.classList.add('hidden');

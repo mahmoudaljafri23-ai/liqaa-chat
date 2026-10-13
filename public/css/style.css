@@ -601,6 +601,7 @@ body {
   border-radius: 0 !important;
   object-fit: cover !important;
   z-index: 1 !important;
+  background: transparent !important;
 }
 
 .welcome-camera-card.in-call .camera-floating-toolbar {
@@ -612,7 +613,16 @@ body {
 }
 
 .welcome-camera-card.in-call .camera-fallback-bg {
-  display: none !important;
+  display: flex !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 0 !important;
+  background: radial-gradient(circle at center, #2a0b1b 0%, #150818 55%, #08040f 100%) !important;
+  pointer-events: none !important;
+  transition: opacity 0.4s ease !important;
 }
 
 .royal-partner-hud {
@@ -620,54 +630,59 @@ body {
   top: max(14px, env(safe-area-inset-top, 14px));
   left: 12px;
   right: auto;
-  max-width: calc(100vw - 125px);
+  max-width: calc(100vw - 120px);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   z-index: 40;
   pointer-events: auto;
   direction: rtl;
+  background: rgba(14, 8, 24, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 5px 12px 5px 8px;
+  border-radius: 50px;
+  border: 1.2px solid rgba(255, 215, 0, 0.38);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 215, 0, 0.18);
 }
 
 .partner-meta-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(14, 10, 22, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  padding: 5px 12px;
-  border-radius: 50px;
-  border: 1.5px solid rgba(255, 215, 0, 0.45);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  gap: 7px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
 }
 
 .hud-flag {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .hud-user-details {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .hud-username {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #fff;
-  max-width: 160px;
+  max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .hud-actions-box {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-right: 4px;
 }
 
 .hud-call-timer {
@@ -676,14 +691,14 @@ body {
 
 .hud-btn-friend {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: #fff;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 50px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.5);
   transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
 }
@@ -737,15 +752,43 @@ body {
   top: max(14px, env(safe-area-inset-top, 14px));
   right: 12px;
   left: auto;
-  width: 95px;
-  height: 140px;
-  border-radius: 16px;
+  width: 96px;
+  height: 142px;
+  border-radius: 20px;
   overflow: hidden;
-  border: 2px solid #ffd700;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 0 14px rgba(255, 215, 0, 0.35);
+  border: 2px solid rgba(255, 215, 0, 0.85);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 18px rgba(255, 215, 0, 0.35);
   z-index: 45;
   background: #000;
   pointer-events: auto;
+}
+
+.pip-live-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffd700;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 10px;
+  border: 0.8px solid rgba(255, 215, 0, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.pip-live-badge .pip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
 }
 
 .call-local-pip video {
@@ -762,7 +805,7 @@ body {
 /* In-Call Bottom Control Bar - Imperial 3D Royal Control Dock */
 .royal-call-controls {
   position: absolute;
-  bottom: max(24px, calc(env(safe-area-inset-bottom, 16px) + 16px));
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 14px) + 14px));
   left: 0;
   right: 0;
   margin-left: auto;
@@ -775,13 +818,13 @@ body {
   justify-content: center;
   gap: 10px;
   z-index: 60;
-  background: linear-gradient(135deg, rgba(22, 12, 34, 0.94) 0%, rgba(10, 6, 18, 0.98) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(14, 8, 24, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   padding: 8px 14px;
   border-radius: 60px;
-  border: 1.8px solid rgba(255, 215, 0, 0.55);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.92), 0 0 35px rgba(255, 215, 0, 0.28), inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  border: 1.2px solid rgba(255, 215, 0, 0.32);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.94), 0 0 28px rgba(255, 215, 0, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.25);
   direction: ltr;
   animation: slideUpControls 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1003,16 +1046,16 @@ video::-webkit-media-controls-volume-slider {
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
   z-index: 60;
   pointer-events: auto;
-  background: linear-gradient(180deg, rgba(24, 14, 38, 0.86) 0%, rgba(12, 8, 20, 0.94) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 10px 7px;
+  background: rgba(14, 8, 24, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 12px 7px;
   border-radius: 40px;
-  border: 1.6px solid rgba(255, 215, 0, 0.48);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 22px rgba(255, 215, 0, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.28);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 215, 0, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.25);
 }
 
 .royal-bubble-item {
@@ -1102,17 +1145,14 @@ video::-webkit-media-controls-volume-slider {
 /* Luxury 3D Gem Tag */
 .bubble-tag,
 .bubble-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #fef08a;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  letter-spacing: 0.2px;
-  padding: 1.5px 7px;
-  border-radius: 12px;
-  background: rgba(10, 6, 16, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 215, 0, 0.45);
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(10, 6, 16, 0.9);
+  border: 0.8px solid rgba(255, 215, 0, 0.35);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
   pointer-events: none;
   white-space: nowrap;

@@ -184,19 +184,22 @@
         
 
         <!-- 2. Full-screen Partner Remote Video (Active Call) -->
-        <video id="remote-video" autoplay playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>" class="call-remote-video hidden"></video>
+        <video id="remote-video" autoplay playsinline class="call-remote-video hidden"></video>
+        <!-- Dedicated Audio Stream Player for 100% Guaranteed WebRTC Voice -->
+        <audio id="remote-audio" autoplay playsinline></audio>
 
         <!-- 3. Local Camera Floating Picture-in-Picture (PiP) Window (Active Call) -->
         <div id="local-video-wrapper" class="call-local-pip hidden">
-          <video id="local-video" autoplay playsinline muted poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'/>"></video>
+          <div class="pip-live-badge"><span class="pip-dot"></span>أنت 👑</div>
+          <video id="local-video" autoplay playsinline muted></video>
           <div class="pip-gold-glow"></div>
         </div>
 
-        <!-- 4. Camera Fallback Background (when starting / switching) -->
+        <!-- 4. Royal In-Call Fallback Background (when starting / connecting) -->
         <div id="camera-fallback-bg" class="camera-fallback-bg">
           <div class="camera-fallback-glow"></div>
           <div class="camera-fallback-avatar">👑</div>
-          <div class="camera-status-hint">الكاميرا جاهزة للبث ✨</div>
+          <div class="camera-status-hint">جاري الاتصال المباشر بالشريك... ⚡</div>
         </div>
 
         <!-- 5. Floating Side Toolbar (In-Call & Live Camera: Royal 3D Crystal Gem Orbs) -->

@@ -59,7 +59,7 @@ const childSafetyContent = `<!DOCTYPE html>
       <div class="contact-box">
         <h3>مسؤول سلامة الأطفال والامتثال: Mahmoud Aljafri</h3>
         <p>للإبلاغ العاجل عن أي انتهاك يخص سلامة الأطفال أو الاستفسار عن السياسة، يرجى التواصل مباشرة مع الفريق المسؤول:</p>
-        <p>البريد الإلكتروني المخصص: <a href="mailto:mahmoud.aljafri23@gmail.com?subject=Child%20Safety%20Report%20-%20Loky%20Chat">mahmoud.aljafri23@gmail.com</a></p>
+        <p>البريد الإلكتروني المخصص: <a href="mailto:mr.world2213@gmail.com?subject=Child%20Safety%20Report%20-%20Loky%20Chat">mr.world2213@gmail.com</a></p>
         <p>الهاتف / الدعم: +962790181802</p>
       </div>
     </div>
@@ -96,7 +96,7 @@ const childSafetyContent = `<!DOCTYPE html>
       <div class="contact-box">
         <h3>Child Safety & Compliance Officer: Mahmoud Aljafri</h3>
         <p>For urgent child safety concerns, violations, or legal inquiries, contact our designated safety officer:</p>
-        <p>Dedicated Email: <a href="mailto:mahmoud.aljafri23@gmail.com?subject=Child%20Safety%20Report%20-%20Loky%20Chat">mahmoud.aljafri23@gmail.com</a></p>
+        <p>Dedicated Email: <a href="mailto:mr.world2213@gmail.com?subject=Child%20Safety%20Report%20-%20Loky%20Chat">mr.world2213@gmail.com</a></p>
         <p>Phone / Direct Support: +962790181802</p>
       </div>
     </div>
