@@ -184,14 +184,14 @@
         
 
         <!-- 2. Full-screen Partner Remote Video (Active Call) -->
-        <video id="remote-video" autoplay playsinline webkit-playsinline x5-playsinline disablePictureInPicture muted class="call-remote-video hidden"></video>
+        <video id="remote-video" autoplay playsinline webkit-playsinline x5-playsinline disablePictureInPicture muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="call-remote-video hidden"></video>
         <!-- Dedicated Audio Stream Player for 100% Guaranteed WebRTC Voice -->
         <audio id="remote-audio" autoplay playsinline></audio>
 
         <!-- 3. Local Camera Floating Picture-in-Picture (PiP) Window (Active Call) -->
         <div id="local-video-wrapper" class="call-local-pip hidden">
           <div class="pip-live-badge"><span class="pip-dot"></span>أنت 👑</div>
-          <video id="local-video" autoplay playsinline muted></video>
+          <video id="local-video" autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
           <button type="button" class="pip-quick-flip-btn" id="pip-quick-flip-btn" onclick="window.switchCamera && window.switchCamera(event)" title="تبديل الكاميرا">🔄</button>
           <div class="pip-gold-glow"></div>
         </div>

@@ -944,6 +944,15 @@ io.on('connection', (socket) => {
       user.partnerId = matchId;
       matchUser.partnerId = socket.id;
 
+      // Record recent partners
+      if (!user.recentPartners) user.recentPartners = [];
+      user.recentPartners.push(matchId);
+      if (user.recentPartners.length > 3) user.recentPartners.shift();
+
+      if (!matchUser.recentPartners) matchUser.recentPartners = [];
+      matchUser.recentPartners.push(socket.id);
+      if (matchUser.recentPartners.length > 3) matchUser.recentPartners.shift();
+
       socket.emit('matched', {
         partnerId: matchId,
         partnerUsername: matchUser.username || 'مستخدم',

@@ -1577,6 +1577,41 @@ function saveFriendsList() {
   localStorage.setItem('liqaa_friends_list', JSON.stringify(friendsList));
 }
 
+function findFriendInList(target) {
+  if (!friendsList || friendsList.length === 0) {
+    loadFriendsList();
+  }
+  if (!target || !friendsList || friendsList.length === 0) return null;
+
+  const targetId = target.id || target.partnerId || target.socketId || target.senderId;
+  const targetSerial = (target.serialNumber || target.partnerSerialNumber || target.senderSerialNumber || '').trim();
+  const rawTargetUser = (target.username || target.name || target.partnerUsername || target.senderUsername || '').trim();
+  const targetUser = rawTargetUser.toLowerCase();
+
+  return friendsList.find(f => {
+    // 1. Match by permanent serial number
+    if (targetSerial && f.serialNumber && f.serialNumber.trim() === targetSerial) {
+      return true;
+    }
+    // 2. Match by unique username (skip generic 'مستخدم' / 'user' / 'guest')
+    if (targetUser && targetUser !== 'مستخدم' && targetUser !== 'user' && targetUser !== 'guest') {
+      const fUser = (f.username || f.name || '').trim().toLowerCase();
+      if (fUser && (fUser === targetUser || fUser.includes(targetUser) || targetUser.includes(fUser))) {
+        return true;
+      }
+    }
+    // 3. Fallback match by ID
+    if (targetId && (f.id === targetId || f.socketId === targetId)) {
+      return true;
+    }
+    return false;
+  }) || null;
+}
+
+function isFriend(target) {
+  return !!findFriendInList(target);
+}
+
 function setupFriendsSystem() {
   loadFriendsList();
 
@@ -1639,11 +1674,14 @@ function setupFriendsSystem() {
           addedAt: Date.now()
         };
 
-        if (!friendsList.some(f => f.id === newFriend.id)) {
+        const existingFriend = findFriendInList(newFriend);
+        if (existingFriend) {
+          Object.assign(existingFriend, newFriend);
+        } else {
           friendsList.unshift(newFriend);
-          saveFriendsList();
-          renderFriendsAndOnlineUsers();
         }
+        saveFriendsList();
+        renderFriendsAndOnlineUsers();
 
         if (socket) {
           socket.emit('accept_friend_request', {
@@ -1659,8 +1697,11 @@ function setupFriendsSystem() {
         return;
       }
 
-      const exists = friendsList.some(f => f.id === currentPartner.id);
-      if (exists) {
+      const existing = findFriendInList(currentPartner);
+      if (existing) {
+        existing.id = currentPartner.id;
+        existing.socketId = currentPartner.id;
+        saveFriendsList();
         addFriendBtn.textContent = '✨ أصدقاء';
         addFriendBtn.className = 'hud-btn-friend btn-friends-active';
         return;
@@ -2704,6 +2745,23 @@ function connectSocket() {
 
   socket.on('receive_friend_request', (data) => {
     console.log('[Socket] Friend request received:', data);
+    const existingFriend = findFriendInList(data) || findFriendInList(currentPartner);
+    if (existingFriend) {
+      if (data && data.senderId) {
+        existingFriend.id = data.senderId;
+        existingFriend.socketId = data.senderId;
+      }
+      if (data && data.senderSerialNumber) existingFriend.serialNumber = data.senderSerialNumber;
+      saveFriendsList();
+
+      const addBtn = $('#add-friend-btn');
+      if (addBtn) {
+        addBtn.textContent = '✨ أصدقاء';
+        addBtn.className = 'hud-btn-friend btn-friends-active';
+      }
+      return;
+    }
+
     const addBtn = $('#add-friend-btn');
     if (addBtn) {
       addBtn.textContent = '✅ وافق على طلب الصداقة';
@@ -2725,10 +2783,11 @@ function connectSocket() {
     const friendName = (data && data.partnerUsername && data.partnerUsername !== 'مستخدم') ? data.partnerUsername : ((currentPartner && currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner && currentPartner.name ? currentPartner.name : 'صديق جديد'));
     if (currentPartner && currentPartner.id) {
       const newFriend = {
-        id: currentPartner.id,
-        socketId: currentPartner.socketId || currentPartner.id,
+        id: data.partnerId || currentPartner.id,
+        socketId: data.partnerId || currentPartner.socketId || currentPartner.id,
         name: friendName,
         username: friendName,
+        serialNumber: (data && data.partnerSerialNumber) || currentPartner.serialNumber || '',
         gender: (data && data.partnerGender) || currentPartner.gender || 'male',
         age: (data && data.partnerAge) || currentPartner.age || 22,
         country: currentPartner.country || 'JO',
@@ -2736,11 +2795,15 @@ function connectSocket() {
         addedAt: Date.now()
       };
 
-      if (!friendsList.some(f => f.id === newFriend.id)) {
+      const existingFriend = findFriendInList(newFriend);
+      if (existingFriend) {
+        Object.assign(existingFriend, newFriend);
+      } else {
         friendsList.unshift(newFriend);
-        saveFriendsList();
-        renderFriendsAndOnlineUsers();
       }
+      saveFriendsList();
+      renderFriendsAndOnlineUsers();
+
       currentPartner.username = friendName;
       const nameEl = $('#partner-username');
       if (nameEl) nameEl.textContent = friendName;
@@ -2816,6 +2879,9 @@ function sendLocalPushNotification(title, body) {
       setState('connected');
       showPartnerInfo(data);
       startNextButtonCooldown();
+
+      // Micro-pause to allow any previous socket/media teardown to settle cleanly
+      await new Promise(r => setTimeout(r, 120));
 
       // 2. Establish WebRTC Peer Connection
       await createPeerConnection();
@@ -3069,9 +3135,12 @@ function setupControls() {
 
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
+      startNextButtonCooldown();
       cleanupPeerConnection();
-      if (socket) socket.emit('next');
       setState('searching');
+      if (socket && socket.connected) {
+        socket.emit('next');
+      }
     });
   }
 
@@ -3081,12 +3150,28 @@ function setupControls() {
 
   const flipCamBtn = $('#flip-cam-btn');
   if (flipCamBtn) {
-    flipCamBtn.addEventListener('click', switchCamera);
+    const handleFlip = (e) => {
+      if (e) {
+        try { e.preventDefault(); } catch(err) {}
+        try { e.stopPropagation(); } catch(err) {}
+      }
+      switchCamera(e);
+    };
+    flipCamBtn.addEventListener('click', handleFlip);
+    flipCamBtn.addEventListener('touchend', handleFlip);
   }
 
   const pipQuickFlipBtn = $('#pip-quick-flip-btn');
   if (pipQuickFlipBtn) {
-    pipQuickFlipBtn.addEventListener('click', switchCamera);
+    const handlePipFlip = (e) => {
+      if (e) {
+        try { e.preventDefault(); } catch(err) {}
+        try { e.stopPropagation(); } catch(err) {}
+      }
+      switchCamera(e);
+    };
+    pipQuickFlipBtn.addEventListener('click', handlePipFlip);
+    pipQuickFlipBtn.addEventListener('touchend', handlePipFlip);
   }
 
   if (findNewBtn) {
@@ -3164,9 +3249,13 @@ function toggleCamera() {
 }
 
 let isSwitchingCamera = false;
+let currentVideoDeviceId = null;
 
 async function switchCamera(e) {
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e) {
+    try { e.preventDefault(); } catch(err) {}
+    try { e.stopPropagation(); } catch(err) {}
+  }
   if (isSwitchingCamera) return;
   if (!localStream) return;
 
@@ -3177,32 +3266,82 @@ async function switchCamera(e) {
   if (pipFlipBtn) pipFlipBtn.style.opacity = '0.5';
 
   try {
-    const nextFacing = (currentCameraFacing === 'user') ? 'environment' : 'user';
-    const isBack = (nextFacing === 'environment');
+    const isCurrentlyBack = (currentCameraFacing === 'environment');
+    const nextFacing = isCurrentlyBack ? 'user' : 'environment';
+    const isNextBack = (nextFacing === 'environment');
 
-    // 1. Lightweight mobile resolution for ultra-fast instant camera sensor switch
+    // 1. Enumerate available camera sensors on mobile
+    const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+    // 2. Identify the target camera sensor (rear vs front)
+    let targetDeviceId = null;
+    if (videoDevices.length >= 2) {
+      if (currentVideoDeviceId) {
+        const otherDev = videoDevices.find(d => d.deviceId && d.deviceId !== currentVideoDeviceId);
+        if (otherDev) targetDeviceId = otherDev.deviceId;
+      }
+      if (!targetDeviceId) {
+        const targetDev = isNextBack
+          ? (videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || videoDevices[1] || videoDevices[videoDevices.length - 1])
+          : (videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0]);
+        if (targetDev && targetDev.deviceId) targetDeviceId = targetDev.deviceId;
+      }
+    }
+
+    // 3. Stop the active video track to release the Android Camera2 HAL sensor lock
+    const oldVideoTrack = localStream.getVideoTracks()[0];
+    if (oldVideoTrack) {
+      localStream.removeTrack(oldVideoTrack);
+      try { oldVideoTrack.stop(); } catch(err) {}
+    }
+
+    // 4. Request the other camera sensor
     let newVideoStream = null;
-    try {
-      newVideoStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: nextFacing },
-          width: { ideal: 640, max: 854 },
-          height: { ideal: 480, max: 480 }
-        },
-        audio: false
-      });
-    } catch (eIdeal) {
-      newVideoStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: nextFacing },
-        audio: false
-      });
+    if (targetDeviceId) {
+      try {
+        newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: targetDeviceId },
+            width: { ideal: 640, max: 854 },
+            height: { ideal: 480, max: 480 }
+          },
+          audio: false
+        });
+      } catch (errDev) {
+        console.warn('[Camera] deviceId exact failed, falling back:', errDev);
+      }
+    }
+
+    if (!newVideoStream) {
+      try {
+        newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { exact: nextFacing },
+            width: { ideal: 640, max: 854 },
+            height: { ideal: 480, max: 480 }
+          },
+          audio: false
+        });
+      } catch (errExact) {
+        newVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: nextFacing,
+            width: { ideal: 640, max: 854 },
+            height: { ideal: 480, max: 480 }
+          },
+          audio: false
+        });
+      }
     }
 
     const newVideoTrack = newVideoStream.getVideoTracks()[0];
     if (newVideoTrack) {
       currentCameraFacing = nextFacing;
+      const trackSettings = newVideoTrack.getSettings ? newVideoTrack.getSettings() : {};
+      currentVideoDeviceId = trackSettings.deviceId || targetDeviceId || null;
 
-      // 2. Seamlessly replace track on WebRTC PeerConnection sender without renegotiating
+      // 5. Seamlessly replace track on WebRTC PeerConnection sender without renegotiating
       if (peerConnection) {
         const senders = peerConnection.getSenders();
         const videoSender = senders.find(s => s.track && s.track.kind === 'video');
@@ -3213,25 +3352,36 @@ async function switchCamera(e) {
         }
       }
 
-      // 3. Swap track in localStream and stop old track ONLY AFTER new track is running
-      const oldVideoTrack = localStream.getVideoTracks()[0];
-      if (oldVideoTrack) {
-        localStream.removeTrack(oldVideoTrack);
-        try { oldVideoTrack.stop(); } catch(e) {}
-      }
+      // 6. Attach new track to localStream
       localStream.addTrack(newVideoTrack);
 
-      // 4. Update local PiP video preview
+      // 7. Update local PiP video preview
       if (localVideo) {
         localVideo.srcObject = localStream;
-        localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+        localVideo.style.transform = isNextBack ? 'none' : 'scaleX(-1)';
         localVideo.play().catch(() => {});
       }
 
-      showGemToast(isBack ? '📷 تم التبديل للكاميرا الخلفية' : '🤳 تم التبديل للكاميرا الأمامية');
+      showGemToast(isNextBack ? '📷 تم التبديل للكاميرا الخلفية' : '🤳 تم التبديل للكاميرا الأمامية');
     }
   } catch (err) {
     console.error('[App] Failed to switch camera:', err);
+    // Auto-recover video if switch failed
+    try {
+      const recStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const recTrack = recStream.getVideoTracks()[0];
+      if (recTrack) {
+        localStream.addTrack(recTrack);
+        if (localVideo) {
+          localVideo.srcObject = localStream;
+          localVideo.play().catch(() => {});
+        }
+        if (peerConnection) {
+          const videoSender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (videoSender) videoSender.replaceTrack(recTrack).catch(() => {});
+        }
+      }
+    } catch(e) {}
     showGemToast('❌ تعذر تبديل الكاميرا');
   } finally {
     if (flipCamBtn) flipCamBtn.style.opacity = '1';
@@ -3347,6 +3497,12 @@ async function createPeerConnection() {
   cleanupPeerConnection();
 
   try {
+    // Ensure active local stream before negotiating tracks
+    if (!localStream || !localStream.active || localStream.getVideoTracks().length === 0 || localStream.getAudioTracks().length === 0) {
+      console.log('[WebRTC] localStream inactive, acquiring fresh stream...');
+      await requestMediaPermission();
+    }
+
     peerConnection = new RTCPeerConnection(ICE_SERVERS);
 
     if (localStream) {
@@ -3357,6 +3513,18 @@ async function createPeerConnection() {
           console.warn('[WebRTC] addTrack warning:', e);
         }
       });
+    }
+
+    // Ensure bidirectional transceivers exist for both audio and video
+    try {
+      if (!peerConnection.getTransceivers().some(t => t.receiver.track && t.receiver.track.kind === 'audio')) {
+        peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
+      }
+      if (!peerConnection.getTransceivers().some(t => t.receiver.track && t.receiver.track.kind === 'video')) {
+        peerConnection.addTransceiver('video', { direction: 'sendrecv' });
+      }
+    } catch (eTrans) {
+      console.warn('[WebRTC] Transceiver setup fallback:', eTrans);
     }
 
     peerConnection.ontrack = (event) => {
@@ -3375,30 +3543,39 @@ async function createPeerConnection() {
         stream = peerConnection._remoteStream;
       }
 
-      // 1. Remote Video Element
+      // 1. Remote Video Element (Stay hidden until frames decode!)
       const remoteVid = $('#remote-video');
+      const fallbackBg = $('#camera-fallback-bg');
       if (remoteVid) {
         if (remoteVid.srcObject !== stream) {
           remoteVid.srcObject = stream;
         }
-        remoteVid.muted = true; // Video track is always muted on video tag to guarantee zero autoplay blocks and zero native play overlays
+        remoteVid.muted = true; // Video track is always muted on video tag to guarantee zero autoplay blocks
         remoteVid.playsInline = true;
         remoteVid.autoplay = true;
-        remoteVid.classList.remove('hidden');
 
-        // Play video immediately
-        remoteVid.play().then(() => {
-          console.log('[WebRTC] Remote video playback started successfully');
-        }).catch(err => {
-          console.warn('[WebRTC] Remote video play error:', err);
-        });
+        const revealVideo = () => {
+          remoteVid.classList.remove('hidden');
+          if (fallbackBg) fallbackBg.style.display = 'none';
+        };
 
         remoteVid.onloadedmetadata = () => {
           console.log('[WebRTC] Remote video metadata loaded:', remoteVid.videoWidth, 'x', remoteVid.videoHeight);
+          revealVideo();
           remoteVid.play().catch(() => {});
-          const fallbackBg = $('#camera-fallback-bg');
-          if (fallbackBg) fallbackBg.style.display = 'none';
         };
+
+        remoteVid.onloadeddata = () => {
+          revealVideo();
+        };
+
+        remoteVid.onplaying = () => {
+          revealVideo();
+        };
+
+        remoteVid.play().then(revealVideo).catch(err => {
+          console.warn('[WebRTC] Remote video play error:', err);
+        });
       }
 
       // 2. Dedicated Remote Audio Element (prevents video pause/mute from silencing voice)
@@ -3452,6 +3629,11 @@ async function createPeerConnection() {
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
         const fallbackBg = $('#camera-fallback-bg');
         if (fallbackBg) fallbackBg.style.display = 'none';
+      } else if (peerConnection.iceConnectionState === 'failed') {
+        console.warn('[WebRTC] ICE state failed, restarting ICE...');
+        if (peerConnection.restartIce) {
+          peerConnection.restartIce();
+        }
       }
     };
 
@@ -3462,7 +3644,10 @@ async function createPeerConnection() {
 
 async function createAndSendOffer() {
   try {
-    const offer = await peerConnection.createOffer();
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    });
     offer.sdp = optimizeSdp(offer.sdp);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { offer: offer });
@@ -3476,7 +3661,10 @@ async function handleOffer(offer) {
   try {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     await flushIceCandidateQueue();
-    const answer = await peerConnection.createAnswer();
+    const answer = await peerConnection.createAnswer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    });
     answer.sdp = optimizeSdp(answer.sdp);
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', { answer: answer });
@@ -3500,16 +3688,22 @@ function cleanupPeerConnection() {
   }
   const remoteVid = $('#remote-video');
   if (remoteVid) {
+    try { remoteVid.pause(); } catch(e) {}
     remoteVid.srcObject = null;
+    remoteVid.removeAttribute('src');
+    try { remoteVid.load(); } catch(e) {}
     remoteVid.classList.add('hidden');
   }
   const remoteAud = $('#remote-audio');
   if (remoteAud) {
+    try { remoteAud.pause(); } catch(e) {}
     remoteAud.srcObject = null;
+    remoteAud.removeAttribute('src');
+    try { remoteAud.load(); } catch(e) {}
   }
   const fallbackBg = $('#camera-fallback-bg');
   if (fallbackBg) {
-    fallbackBg.style.display = '';
+    fallbackBg.style.display = 'flex';
   }
 }
 
@@ -3618,7 +3812,11 @@ function setState(state) {
         if (localVideo.srcObject !== localStream) localVideo.srcObject = localStream;
         localVideo.play().catch(() => {});
       }
-      if (remoteVid) remoteVid.classList.remove('hidden');
+      // Keep remoteVid hidden until incoming stream frames decode to completely prevent the native Android play button
+      const fallbackBgConnected = $('#camera-fallback-bg');
+      if (fallbackBgConnected && (!remoteVid || remoteVid.classList.contains('hidden') || !remoteVid.srcObject)) {
+        fallbackBgConnected.style.display = 'flex';
+      }
       if (welcomePreview) welcomePreview.style.display = 'none';
       if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
@@ -3690,8 +3888,13 @@ function showPartnerInfo(data) {
 
   const addBtn = $('#add-friend-btn');
   if (addBtn) {
-    const isAlreadyFriend = friendsList.some(f => f.id === data.partnerId);
-    if (isAlreadyFriend) {
+    const existingFriend = findFriendInList(data) || findFriendInList(currentPartner);
+    if (existingFriend) {
+      existingFriend.id = data.partnerId;
+      existingFriend.socketId = data.partnerId;
+      if (data.partnerSerialNumber) existingFriend.serialNumber = data.partnerSerialNumber;
+      saveFriendsList();
+
       addBtn.textContent = '✨ أصدقاء';
       addBtn.className = 'hud-btn-friend btn-friends-active';
     } else {
