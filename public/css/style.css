@@ -604,12 +604,11 @@ body {
   background: transparent !important;
 }
 
-.welcome-camera-card.in-call .camera-floating-toolbar {
-  display: flex !important;
-  z-index: 60 !important;
-  left: 12px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
+.welcome-camera-card.in-call .camera-floating-toolbar,
+.camera-floating-toolbar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .welcome-camera-card.in-call .camera-fallback-bg {
@@ -746,36 +745,54 @@ body {
   transform: scale(0.9);
 }
 
-/* Floating Picture-in-Picture Window in Fullscreen Call - Top Right Clean, No Overlap! */
+/* Suppress all native Android / Chromium media controls and play icon overlays */
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-overlay-play-button,
+*::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Floating Picture-in-Picture Window in Fullscreen Call - Strictly Top Right */
+#local-video-wrapper,
 .call-local-pip {
-  position: absolute;
-  top: max(14px, env(safe-area-inset-top, 14px));
-  right: 12px;
-  left: auto;
-  width: 96px;
-  height: 142px;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 2px solid rgba(255, 215, 0, 0.85);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85), 0 0 18px rgba(255, 215, 0, 0.35);
-  z-index: 45;
-  background: #000;
-  pointer-events: auto;
+  position: absolute !important;
+  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 98px !important;
+  height: 144px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  border: 2px solid rgba(255, 215, 0, 0.9) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
+  z-index: 55 !important;
+  background: #000 !important;
+  pointer-events: auto !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .pip-live-badge {
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: #ffd700;
   font-size: 9.5px;
   font-weight: 800;
-  padding: 1.5px 6px;
+  padding: 2px 6.5px;
   border-radius: 10px;
-  border: 0.8px solid rgba(255, 215, 0, 0.45);
+  border: 0.8px solid rgba(255, 215, 0, 0.5);
   display: flex;
   align-items: center;
   gap: 3.5px;
@@ -789,6 +806,34 @@ body {
   border-radius: 50%;
   background: #22c55e;
   box-shadow: 0 0 6px #22c55e;
+}
+
+.pip-quick-flip-btn {
+  position: absolute !important;
+  bottom: 8px !important;
+  right: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(18, 10, 30, 0.88) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1.5px solid rgba(255, 215, 0, 0.9) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(255, 215, 0, 0.5) !important;
+  color: #ffd700 !important;
+  font-size: 15px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  padding: 0 !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease !important;
+}
+
+.pip-quick-flip-btn:active {
+  transform: scale(0.85) rotate(180deg) !important;
+  background: rgba(255, 215, 0, 0.35) !important;
 }
 
 .call-local-pip video {
@@ -816,24 +861,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   z-index: 60;
-  background: rgba(14, 8, 24, 0.88);
+  background: rgba(10, 6, 18, 0.92);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
-  padding: 8px 14px;
+  padding: 9px 16px;
   border-radius: 60px;
-  border: 1.2px solid rgba(255, 215, 0, 0.32);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.94), 0 0 28px rgba(255, 215, 0, 0.14), inset 0 1px 2px rgba(255, 255, 255, 0.25);
+  border: 1.8px solid rgba(255, 215, 0, 0.65);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.96), 0 0 30px rgba(255, 215, 0, 0.28), inset 0 1px 2px rgba(255, 255, 255, 0.35);
   direction: ltr;
   animation: slideUpControls 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .royal-call-controls .control-btn {
-  width: 50px;
-  height: 50px;
-  min-width: 50px;
-  font-size: 21px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  font-size: 22px;
   border-radius: 50%;
   flex-shrink: 0;
   padding: 0;
@@ -850,15 +895,15 @@ body {
 }
 
 .royal-call-controls .control-btn:active {
-  transform: scale(0.90) translateY(2px);
+  transform: scale(0.91) translateY(2px);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.2);
 }
 
 /* 1. End Call Button (✕ Imperial Crimson Ruby Gem) */
 .royal-call-controls .control-btn.end-btn {
-  background: radial-gradient(circle at 35% 30%, #ff5252 0%, #dc2626 55%, #7f1d1d 100%);
-  border: 2px solid rgba(254, 202, 202, 0.85);
-  box-shadow: 0 0 22px rgba(239, 68, 68, 0.8), 0 8px 22px rgba(0, 0, 0, 0.75), inset 0 2px 5px rgba(255, 255, 255, 0.7), inset 0 -3px 6px rgba(100, 0, 0, 0.8);
+  background: radial-gradient(circle at 35% 30%, #ef4444 0%, #dc2626 50%, #7f1d1d 100%);
+  border: 2px solid rgba(254, 202, 202, 0.9);
+  box-shadow: 0 0 22px rgba(239, 68, 68, 0.85), 0 8px 22px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.75), inset 0 -3px 6px rgba(100, 0, 0, 0.9);
 }
 
 .royal-call-controls .control-btn.end-btn .btn-ctrl-symbol {
@@ -868,11 +913,11 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-/* 2. Microphone Button (Onyx Crystal & Gold Orbit) */
+/* 2. Microphone Button (Royal Sapphire & Gold Orbit) */
 .royal-call-controls .control-btn.mic-btn {
-  background: radial-gradient(circle at 35% 30%, #475569 0%, #1e293b 60%, #0f172a 100%);
-  border: 2px solid rgba(255, 215, 0, 0.55);
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0, 0, 0, 0.7);
+  background: radial-gradient(circle at 35% 30%, #3b82f6 0%, #1d4ed8 55%, #172554 100%);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(10, 25, 70, 0.9);
   color: #fff;
 }
 
@@ -882,11 +927,11 @@ body {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.75), inset 0 2px 4px rgba(255, 255, 255, 0.6);
 }
 
-/* 3. Camera Button (Onyx Crystal & Gold Orbit) */
+/* 3. Camera Button (Royal Amethyst & Gold Orbit) */
 .royal-call-controls .control-btn.camera-btn {
-  background: radial-gradient(circle at 35% 30%, #475569 0%, #1e293b 60%, #0f172a 100%);
-  border: 2px solid rgba(255, 215, 0, 0.55);
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -3px 6px rgba(0, 0, 0, 0.7);
+  background: radial-gradient(circle at 35% 30%, #8b5cf6 0%, #6d28d9 55%, #3b0764 100%);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(35, 10, 60, 0.9);
   color: #fff;
 }
 
@@ -896,33 +941,33 @@ body {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.75), inset 0 2px 4px rgba(255, 255, 255, 0.6);
 }
 
-/* 4. Flip Camera Button (Royal Sapphire Star) */
+/* 4. Flip Camera Button (Royal Emerald / Cyan Gem) */
 .royal-call-controls .control-btn.flip-btn {
-  background: radial-gradient(circle at 35% 30%, #38bdf8 0%, #2563eb 60%, #1e3a8a 100%);
-  border: 2px solid rgba(191, 219, 254, 0.8);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), 0 8px 20px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(15, 23, 42, 0.8);
+  background: radial-gradient(circle at 35% 30%, #06b6d4 0%, #0284c7 55%, #082f49 100%);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(5, 30, 60, 0.9);
   color: #fff;
 }
 
 /* 5. The Grand Emperor Next Button (👑 التالي ⏭️ - 24k Solar Blaze Capsule) */
 .royal-call-controls .control-btn.next-btn {
   width: auto;
-  min-width: 105px;
-  height: 50px;
-  padding: 0 18px;
+  min-width: 112px;
+  height: 52px;
+  padding: 0 20px;
   border-radius: 50px;
-  background: linear-gradient(135deg, #ffe066 0%, #ff922b 45%, #ff4b2b 100%);
-  border: 2px solid #fff3bf;
-  box-shadow: 0 0 28px rgba(255, 215, 0, 0.8), 0 10px 28px rgba(255, 75, 43, 0.65), inset 0 2px 5px rgba(255, 255, 255, 0.85), inset 0 -3px 6px rgba(154, 52, 18, 0.7);
-  font-size: 14.5px;
+  background: linear-gradient(135deg, #fff3a8 0%, #fbbf24 35%, #d97706 70%, #92400e 100%);
+  border: 2px solid #fffbeb;
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.9), 0 10px 26px rgba(217, 119, 6, 0.7), inset 0 2px 5px rgba(255, 255, 255, 0.9), inset 0 -3px 6px rgba(120, 53, 15, 0.85);
+  font-size: 15.5px;
   font-weight: 900;
   color: #2b0b00;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
   animation: royalNextPulse 2s infinite ease-in-out;
 }
 
@@ -2132,23 +2177,25 @@ video::-webkit-media-controls-volume-slider {
 
 /* Local Video PiP */
 #local-video-wrapper {
-  position: absolute;
-  top: 80px;
-  right: 20px;
-  width: 140px;
-  height: 190px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  box-shadow: var(--shadow-lg);
-  z-index: 10;
+  position: absolute !important;
+  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 98px !important;
+  height: 144px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  border: 2px solid rgba(255, 215, 0, 0.9) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
+  z-index: 55 !important;
+  background: #000 !important;
   cursor: grab;
   transition: transform 0.2s;
 }
 
 #local-video-wrapper:hover {
-  transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.03);
 }
 
 #local-video {
@@ -2798,10 +2845,12 @@ video::-webkit-media-controls-volume-slider {
   }
 
   #local-video-wrapper {
-    width: 110px;
-    height: 150px;
-    top: 80px;
-    right: 12px;
+    width: 98px !important;
+    height: 144px !important;
+    top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    right: 12px !important;
+    left: auto !important;
+    bottom: auto !important;
   }
 
   .controls-group {

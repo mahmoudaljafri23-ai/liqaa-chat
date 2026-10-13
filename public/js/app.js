@@ -3084,6 +3084,11 @@ function setupControls() {
     flipCamBtn.addEventListener('click', switchCamera);
   }
 
+  const pipQuickFlipBtn = $('#pip-quick-flip-btn');
+  if (pipQuickFlipBtn) {
+    pipQuickFlipBtn.addEventListener('click', switchCamera);
+  }
+
   if (findNewBtn) {
     findNewBtn.addEventListener('click', () => {
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
@@ -3158,83 +3163,80 @@ function toggleCamera() {
   }
 }
 
-async function switchCamera() {
-  if (!localStream) return;
-  currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
-  const isBack = (currentCameraFacing === 'environment');
-  
-  try {
-    localStream.getVideoTracks().forEach(t => {
-      try { t.stop(); } catch(e) {}
-    });
+let isSwitchingCamera = false;
 
+async function switchCamera(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (isSwitchingCamera) return;
+  if (!localStream) return;
+
+  isSwitchingCamera = true;
+  const flipCamBtn = $('#flip-cam-btn');
+  const pipFlipBtn = $('#pip-quick-flip-btn');
+  if (flipCamBtn) flipCamBtn.style.opacity = '0.5';
+  if (pipFlipBtn) pipFlipBtn.style.opacity = '0.5';
+
+  try {
+    const nextFacing = (currentCameraFacing === 'user') ? 'environment' : 'user';
+    const isBack = (nextFacing === 'environment');
+
+    // 1. Lightweight mobile resolution for ultra-fast instant camera sensor switch
     let newVideoStream = null;
     try {
       newVideoStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: isBack ? { ideal: 'environment' } : 'user',
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 60, min: 30 }
+          facingMode: { ideal: nextFacing },
+          width: { ideal: 640, max: 854 },
+          height: { ideal: 480, max: 480 }
         },
         audio: false
       });
-    } catch(e1) {
-      try {
-        newVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: isBack ? 'environment' : 'user' },
-          audio: false
-        });
-      } catch (e2) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
-        const targetDev = isBack 
-          ? (videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || (videoDevices.length > 1 ? videoDevices[videoDevices.length - 1] : videoDevices[0]))
-          : (videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0]);
-        
-        if (targetDev && targetDev.deviceId) {
-          newVideoStream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: targetDev.deviceId } },
-            audio: false
-          });
-        } else {
-          newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        }
-      }
+    } catch (eIdeal) {
+      newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: nextFacing },
+        audio: false
+      });
     }
 
     const newVideoTrack = newVideoStream.getVideoTracks()[0];
     if (newVideoTrack) {
-      const oldVideoTrack = localStream.getVideoTracks()[0];
-      if (oldVideoTrack) {
-        localStream.removeTrack(oldVideoTrack);
-      }
-      localStream.addTrack(newVideoTrack);
+      currentCameraFacing = nextFacing;
 
+      // 2. Seamlessly replace track on WebRTC PeerConnection sender without renegotiating
       if (peerConnection) {
         const senders = peerConnection.getSenders();
         const videoSender = senders.find(s => s.track && s.track.kind === 'video');
         if (videoSender) {
-          videoSender.replaceTrack(newVideoTrack);
+          await videoSender.replaceTrack(newVideoTrack).catch(err => {
+            console.warn('[WebRTC] replaceTrack warn:', err);
+          });
         }
       }
 
+      // 3. Swap track in localStream and stop old track ONLY AFTER new track is running
+      const oldVideoTrack = localStream.getVideoTracks()[0];
+      if (oldVideoTrack) {
+        localStream.removeTrack(oldVideoTrack);
+        try { oldVideoTrack.stop(); } catch(e) {}
+      }
+      localStream.addTrack(newVideoTrack);
+
+      // 4. Update local PiP video preview
       if (localVideo) {
         localVideo.srcObject = localStream;
         localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
+        localVideo.play().catch(() => {});
       }
-      /*
-      const welcomePreview = $('#welcome-camera-preview');
-      if (welcomePreview) {
-        welcomePreview.srcObject = localStream;
-        welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
-      }
-      */
+
       showGemToast(isBack ? '📷 تم التبديل للكاميرا الخلفية' : '🤳 تم التبديل للكاميرا الأمامية');
     }
   } catch (err) {
     console.error('[App] Failed to switch camera:', err);
     showGemToast('❌ تعذر تبديل الكاميرا');
+  } finally {
+    if (flipCamBtn) flipCamBtn.style.opacity = '1';
+    if (pipFlipBtn) pipFlipBtn.style.opacity = '1';
+    isSwitchingCamera = false;
   }
 }
 window.switchCamera = switchCamera;
@@ -3379,21 +3381,17 @@ async function createPeerConnection() {
         if (remoteVid.srcObject !== stream) {
           remoteVid.srcObject = stream;
         }
+        remoteVid.muted = true; // Video track is always muted on video tag to guarantee zero autoplay blocks and zero native play overlays
         remoteVid.playsInline = true;
         remoteVid.autoplay = true;
         remoteVid.classList.remove('hidden');
 
-        // Play video immediately, with muted fallback if browser autoplay policy blocks unmuted video
-        const playPromise = remoteVid.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            console.log('[WebRTC] Remote video playback started successfully');
-          }).catch(err => {
-            console.warn('[WebRTC] Remote video unmuted play blocked, switching to muted video:', err);
-            remoteVid.muted = true;
-            remoteVid.play().catch(e => console.error('[WebRTC] Muted play error:', e));
-          });
-        }
+        // Play video immediately
+        remoteVid.play().then(() => {
+          console.log('[WebRTC] Remote video playback started successfully');
+        }).catch(err => {
+          console.warn('[WebRTC] Remote video play error:', err);
+        });
 
         remoteVid.onloadedmetadata = () => {
           console.log('[WebRTC] Remote video metadata loaded:', remoteVid.videoWidth, 'x', remoteVid.videoHeight);
@@ -3608,8 +3606,14 @@ function setState(state) {
       if (searchingOverlay) searchingOverlay.classList.add('hidden');
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       if (partnerInfo) partnerInfo.classList.remove('hidden');
-      if (controlsBar) controlsBar.classList.remove('hidden');
-      if (localVideoWrapper) localVideoWrapper.classList.remove('hidden');
+      if (localVideoWrapper) {
+        localVideoWrapper.classList.remove('hidden');
+        localVideoWrapper.style.top = '';
+        localVideoWrapper.style.left = '';
+        localVideoWrapper.style.right = '';
+        localVideoWrapper.style.bottom = '';
+        localVideoWrapper.style.transform = '';
+      }
       if (localStream && localVideo) {
         if (localVideo.srcObject !== localStream) localVideo.srcObject = localStream;
         localVideo.play().catch(() => {});
@@ -3737,6 +3741,9 @@ function setupDraggableLocalVideo() {
   wrapper.addEventListener('touchstart', startDrag, { passive: false });
 
   function startDrag(e) {
+    if (e.target && (e.target.id === 'pip-quick-flip-btn' || e.target.closest('#pip-quick-flip-btn'))) {
+      return;
+    }
     isDragging = true;
     wrapper.style.cursor = 'grabbing';
     wrapper.style.transition = 'none';
