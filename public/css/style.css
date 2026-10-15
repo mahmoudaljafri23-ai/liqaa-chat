@@ -626,9 +626,9 @@ body {
 
 .royal-partner-hud {
   position: absolute;
-  top: max(14px, env(safe-area-inset-top, 14px));
-  left: 12px;
-  right: auto;
+  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  right: 12px !important;
+  left: auto !important;
   max-width: calc(100vw - 120px);
   display: flex;
   flex-direction: row;
@@ -760,19 +760,19 @@ video::-webkit-media-controls-overlay-play-button,
   pointer-events: none !important;
 }
 
-/* Floating Picture-in-Picture Window in Fullscreen Call - Strictly Top Right */
+/* Floating Picture-in-Picture Window in Fullscreen Call - Strictly Top Left Without Corners (Full View) */
 #local-video-wrapper,
 .call-local-pip {
   position: absolute !important;
   top: max(14px, env(safe-area-inset-top, 14px)) !important;
-  right: 12px !important;
-  left: auto !important;
+  left: 12px !important;
+  right: auto !important;
   bottom: auto !important;
   width: 98px !important;
   height: 144px !important;
-  border-radius: 20px !important;
+  border-radius: 0px !important;
   overflow: hidden !important;
-  border: 2px solid rgba(255, 215, 0, 0.9) !important;
+  border: 2px solid #ffd700 !important;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
   z-index: 55 !important;
   background: #000 !important;
@@ -809,39 +809,18 @@ video::-webkit-media-controls-overlay-play-button,
 }
 
 .pip-quick-flip-btn {
-  position: absolute !important;
-  bottom: 8px !important;
-  right: 8px !important;
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
-  outline: none !important;
-  border: 1.8px solid #ffd700 !important;
-  background: radial-gradient(circle at 35% 30%, #38bdf8 0%, #2563eb 55%, #1e3a8a 100%) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.9), 0 0 10px rgba(59, 130, 246, 0.6) !important;
-  color: #ffffff !important;
-  font-size: 16px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  z-index: 25 !important;
-  padding: 0 !important;
-  pointer-events: auto !important;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease !important;
-  -webkit-tap-highlight-color: transparent !important;
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
-.pip-quick-flip-btn:active {
-  transform: scale(0.85) rotate(180deg) !important;
-}
-
-.call-local-pip video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.call-local-pip video,
+#local-video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0px !important;
 }
 
 .welcome-camera-card.in-call ~ .toast-container,
@@ -849,7 +828,7 @@ video::-webkit-media-controls-overlay-play-button,
   display: none !important;
 }
 
-/* In-Call Bottom Control Bar - Grand Aero-Crystal Geometric Dock */
+/* In-Call Bottom Control Bar - Grand Royal Floating Island */
 .royal-call-controls {
   position: absolute;
   bottom: max(16px, calc(env(safe-area-inset-bottom, 12px) + 12px));
@@ -863,25 +842,25 @@ video::-webkit-media-controls-overlay-play-button,
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   z-index: 60;
-  background: rgba(12, 8, 22, 0.88);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
-  padding: 8px 12px;
-  border-radius: 22px;
-  border: 1.6px solid rgba(255, 215, 0, 0.45);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 215, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  background: rgba(14, 10, 24, 0.94);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  padding: 8px 14px;
+  border-radius: 60px;
+  border: 1.8px solid rgba(255, 215, 0, 0.55);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.95), 0 0 28px rgba(255, 215, 0, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35);
   direction: ltr;
   animation: slideUpControls 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .royal-call-controls .control-btn {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  font-size: 21px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  font-size: 22px;
+  border-radius: 50%;
   flex-shrink: 0;
   padding: 0;
   display: flex;
@@ -895,86 +874,87 @@ video::-webkit-media-controls-overlay-play-button,
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .royal-call-controls .control-btn:active {
   transform: scale(0.90) translateY(2px);
 }
 
-/* 1. End Call Button (✕ Imperial Carmine Ruby Gem) */
+/* 1. End Call Button (✕ Imperial Crimson Ruby Gem) */
 .royal-call-controls .control-btn.end-btn {
-  background: linear-gradient(145deg, #ff2a5f 0%, #e11d48 48%, #881337 100%);
-  border: 1.8px solid rgba(255, 175, 190, 0.85);
-  box-shadow: 0 8px 22px rgba(225, 29, 72, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.65), inset 0 -2px 4px rgba(76, 5, 25, 0.8);
+  background: radial-gradient(circle at 35% 30%, #ef4444 0%, #dc2626 50%, #7f1d1d 100%);
+  border: 2px solid rgba(254, 202, 202, 0.9);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.75), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(100, 0, 0, 0.8);
 }
 
 .royal-call-controls .control-btn.end-btn .btn-ctrl-symbol {
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 900;
   color: #ffffff;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
 }
 
-/* 2. Microphone Button (Aquamarine Teal Crystal) */
+/* 2. Microphone Button (Royal Ocean Sapphire Orb) */
 .royal-call-controls .control-btn.mic-btn {
-  background: linear-gradient(145deg, #00f2fe 0%, #0ea5e9 48%, #0369a1 100%);
-  border: 1.8px solid rgba(186, 230, 253, 0.85);
-  box-shadow: 0 8px 22px rgba(14, 165, 233, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.65), inset 0 -2px 4px rgba(3, 105, 161, 0.8);
+  background: radial-gradient(circle at 35% 30%, #38bdf8 0%, #0284c7 50%, #0c4a6e 100%);
+  border: 2px solid rgba(224, 242, 254, 0.9);
+  box-shadow: 0 0 18px rgba(2, 132, 199, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(3, 105, 161, 0.8);
   color: #fff;
 }
 
 .royal-call-controls .control-btn.mic-btn.muted {
-  background: linear-gradient(145deg, #f87171 0%, #dc2626 48%, #991b1b 100%);
-  border: 1.8px solid #fecaca;
-  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+  background: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
+  border: 2px solid #fecaca;
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.5);
 }
 
-/* 3. Camera Button (Violet Aurora Orchid Gem) */
+/* 3. Camera Button (Royal Amethyst Orchid Orb) */
 .royal-call-controls .control-btn.camera-btn {
-  background: linear-gradient(145deg, #d946ef 0%, #a855f7 48%, #6b21a8 100%);
-  border: 1.8px solid rgba(245, 208, 254, 0.85);
-  box-shadow: 0 8px 22px rgba(168, 85, 247, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.65), inset 0 -2px 4px rgba(107, 33, 168, 0.8);
+  background: radial-gradient(circle at 35% 30%, #c084fc 0%, #7c3aed 50%, #3b0764 100%);
+  border: 2px solid rgba(243, 232, 255, 0.9);
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(59, 7, 100, 0.8);
   color: #fff;
 }
 
 .royal-call-controls .control-btn.camera-btn.muted {
-  background: linear-gradient(145deg, #f87171 0%, #dc2626 48%, #991b1b 100%);
-  border: 1.8px solid #fecaca;
-  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+  background: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
+  border: 2px solid #fecaca;
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.5);
 }
 
-/* 4. Flip Camera Button (Royal Jade Emerald Gem) */
+/* 4. Flip Camera Button (Royal Jade Emerald Orb) */
 .royal-call-controls .control-btn.flip-btn {
-  background: linear-gradient(145deg, #10b981 0%, #059669 48%, #064e3b 100%);
-  border: 1.8px solid rgba(167, 243, 208, 0.85);
-  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.65), inset 0 -2px 4px rgba(6, 78, 59, 0.8);
+  background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 50%, #064e3b 100%);
+  border: 2px solid rgba(209, 250, 229, 0.9);
+  box-shadow: 0 0 18px rgba(5, 150, 105, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(6, 78, 59, 0.8);
   color: #fff;
 }
 
 /* 5. The Grand Emperor Next Button (👑 التالي ⏭️ - 24k Solar Blaze Capsule) */
 .royal-call-controls .control-btn.next-btn {
   width: auto;
-  min-width: 108px;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 16px;
+  min-width: 114px;
+  height: 50px;
+  padding: 0 18px;
+  border-radius: 50px;
   background: linear-gradient(135deg, #fffbeb 0%, #fde047 30%, #f59e0b 65%, #b45309 100%);
   border: 2px solid #ffffff;
-  box-shadow: 0 8px 26px rgba(245, 158, 11, 0.75), 0 0 22px rgba(255, 215, 0, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(120, 53, 15, 0.7);
-  font-size: 14.5px;
+  box-shadow: 0 8px 26px rgba(245, 158, 11, 0.75), 0 0 24px rgba(255, 215, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(120, 53, 15, 0.7);
+  font-size: 15px;
   font-weight: 900;
   color: #2b0b00;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
   animation: royalNextPulse 2s infinite ease-in-out;
 }
 
 .royal-call-controls .control-btn.next-btn .next-crown-icon {
-  font-size: 16px;
+  font-size: 16.5px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   animation: crownBob 1.6s infinite alternate ease-in-out;
 }
@@ -2212,14 +2192,14 @@ video::-webkit-media-controls-volume-slider {
 #local-video-wrapper {
   position: absolute !important;
   top: max(14px, env(safe-area-inset-top, 14px)) !important;
-  right: 12px !important;
-  left: auto !important;
+  left: 12px !important;
+  right: auto !important;
   bottom: auto !important;
   width: 98px !important;
   height: 144px !important;
-  border-radius: 20px !important;
+  border-radius: 0px !important;
   overflow: hidden !important;
-  border: 2px solid rgba(255, 215, 0, 0.9) !important;
+  border: 2px solid #ffd700 !important;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
   z-index: 55 !important;
   background: #000 !important;
@@ -2235,14 +2215,16 @@ video::-webkit-media-controls-volume-slider {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 0px !important;
   transform: scaleX(-1);
 }
 
 /* Partner Info */
 #partner-info {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  right: 12px !important;
+  left: auto !important;
   background: rgba(18, 18, 32, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -2881,9 +2863,10 @@ video::-webkit-media-controls-volume-slider {
     width: 98px !important;
     height: 144px !important;
     top: max(14px, env(safe-area-inset-top, 14px)) !important;
-    right: 12px !important;
-    left: auto !important;
+    left: 12px !important;
+    right: auto !important;
     bottom: auto !important;
+    border-radius: 0px !important;
   }
 
   .controls-group {
@@ -2905,7 +2888,8 @@ video::-webkit-media-controls-volume-slider {
 
   #partner-info {
     top: 12px;
-    left: 12px;
+    right: 12px !important;
+    left: auto !important;
     font-size: 13px;
     padding: 8px 14px;
   }

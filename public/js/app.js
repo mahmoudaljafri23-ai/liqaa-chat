@@ -348,14 +348,16 @@ async function autoDetectCountry() {
 function checkAdminPermissions() {
   const uname = (userProfile.username || '').toLowerCase();
   const phone = (userProfile.phone || '').trim();
+  const email = (userProfile.accountEmail || '').trim().toLowerCase();
 
   // Ensure default admin PIN exists
   if (!userProfile.adminPin) {
     userProfile.adminPin = '2026';
   }
 
-  // Check if username/phone matches Admin identity
-  const isAdminIdentity = phone === '0790181802' || phone === '07901818188' || uname === 'mahmoud' || uname === 'محمود' || uname === 'admin';
+  // Check if username/phone/email matches Admin identity
+  const isAdminIdentity = phone === '0790181802' || phone === '07901818188' || phone.includes('0790181802') ||
+    email === 'mr.world2213@gmail.com' || uname === 'mahmoud' || uname === 'محمود' || uname === 'admin';
 
   if (isAdminIdentity) {
     userProfile.isAdmin = true;
@@ -666,6 +668,25 @@ function renderFriendsAndOnlineUsers() {
   const searchInput = $('#messenger-search-input');
   const filterText = (searchInput ? searchInput.value.trim().toLowerCase() : '');
 
+  // Admin exclusivity check: Only Admin (Mahmoud) can view all online users ("الي بس انا الي اشاهدهم من كامل فقط")
+  const tabFilterAllUsers = $('#tab-filter-all-users');
+  const tabFilterSavedFriends = $('#tab-filter-saved-friends');
+  const isAdmin = !!(userProfile && (
+    userProfile.isAdmin || 
+    (userProfile.phone && userProfile.phone.includes('0790181802')) || 
+    (userProfile.accountEmail && userProfile.accountEmail.toLowerCase() === 'mr.world2213@gmail.com') || 
+    (userProfile.username && userProfile.username.toLowerCase() === 'mahmoud')
+  ));
+
+  if (!isAdmin) {
+    if (tabFilterAllUsers) tabFilterAllUsers.style.display = 'none';
+    currentMessengerTab = 'friends';
+    if (tabFilterSavedFriends) tabFilterSavedFriends.classList.add('active');
+    if (tabFilterAllUsers) tabFilterAllUsers.classList.remove('active');
+  } else {
+    if (tabFilterAllUsers) tabFilterAllUsers.style.display = '';
+  }
+
   // 1. Update counter badges
   const onlineCount = (lastOnlineUsersList && lastOnlineUsersList.length > 0)
     ? lastOnlineUsersList.filter(u => !socket || u.socketId !== socket.id).length
@@ -686,11 +707,11 @@ function renderFriendsAndOnlineUsers() {
   // 2. Build list based on active tab
   const usersToRender = [];
 
-  if (currentMessengerTab === 'all') {
+  if (currentMessengerTab === 'all' && isAdmin) {
     if (lastOnlineUsersList && lastOnlineUsersList.length > 0) {
       lastOnlineUsersList.forEach(u => {
         if (socket && u.socketId === socket.id) return;
-        const isSaved = friendsList && friendsList.some(f => f.id === u.socketId || (u.serialNumber && f.serialNumber === u.serialNumber));
+        const isSaved = isFriend(u);
         usersToRender.push({
           id: u.socketId,
           socketId: u.socketId,
@@ -700,17 +721,21 @@ function renderFriendsAndOnlineUsers() {
           age: u.age || 22,
           country: u.country || 'JO',
           countryName: u.countryName || 'الأردن',
-          isAdmin: u.isAdmin || false,
+          isAdmin: !!u.isAdmin,
           isOnline: true,
           isFriend: isSaved
         });
       });
     }
   } else {
-    // 'friends' tab
+    // 'friends' tab (Visible to all users, and default for non-admins)
     if (friendsList && friendsList.length > 0) {
       friendsList.forEach(f => {
-        const isOnline = lastOnlineUsersList && lastOnlineUsersList.some(u => u.socketId === f.id || (f.serialNumber && u.serialNumber === f.serialNumber));
+        const isOnline = lastOnlineUsersList && lastOnlineUsersList.some(u => 
+          u.socketId === f.id || 
+          (f.serialNumber && u.serialNumber === f.serialNumber) ||
+          (f.name && u.username && normalizeArabic(f.name) === normalizeArabic(u.username))
+        );
         usersToRender.push({
           id: f.id,
           socketId: f.socketId || f.id,
@@ -731,14 +756,17 @@ function renderFriendsAndOnlineUsers() {
   // 3. Search filter
   const filteredUsers = usersToRender.filter(u => {
     if (!filterText) return true;
-    return (u.username && u.username.toLowerCase().includes(filterText)) ||
-           (u.countryName && u.countryName.toLowerCase().includes(filterText)) ||
+    const normSearch = normalizeArabic(filterText);
+    const normUser = normalizeArabic(u.username);
+    const normCountry = normalizeArabic(u.countryName);
+    return normUser.includes(normSearch) ||
+           normCountry.includes(normSearch) ||
            (u.serialNumber && u.serialNumber.toLowerCase().includes(filterText));
   });
 
   // 4. Empty State
   if (filteredUsers.length === 0) {
-    if (currentMessengerTab === 'all') {
+    if (currentMessengerTab === 'all' && isAdmin) {
       container.innerHTML = `
         <div class="royal-friends-empty-card">
           <div class="empty-crown-wrap"><span class="empty-crown-icon">👑</span></div>
@@ -775,7 +803,7 @@ function renderFriendsAndOnlineUsers() {
     const avatar = user.isAdmin ? '👑' : genderIcon;
     const serialBadge = user.serialNumber ? `<span class="card-serial-badge">ID: ${user.serialNumber}</span>` : '';
     const creatorBadge = user.isAdmin ? '<span style="font-size: 10px; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; padding: 2px 7px; border-radius: 8px; font-weight: 900; box-shadow: 0 2px 6px rgba(255,215,0,0.4);">👑 منشئ</span>' : '';
-    const friendBadge = user.isFriend ? '<span style="font-size: 10px; background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); padding: 1px 7px; border-radius: 8px; font-weight: 800;">⭐ صديق</span>' : '';
+    const friendBadge = user.isFriend ? '<span style="font-size: 10px; background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); padding: 1px 7px; border-radius: 8px; font-weight: 800;">✨ أصدقاء</span>' : '';
     const onlineBadge = user.isOnline 
       ? '<span class="card-status-badge is-online">🟢 متصل بالديوان</span>' 
       : '<span class="card-status-badge is-offline">⚪ غير متصل</span>';
@@ -816,7 +844,11 @@ function renderFriendsAndOnlineUsers() {
           <button class="btn-remove-friend-mini" type="button" title="إزالة الصديق" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; font-size: 10.5px; padding: 2px 7px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
             🗑️ إزالة
           </button>
-        ` : ''}
+        ` : `
+          <button class="btn-add-friend-mini" type="button" title="إضافة صديق" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(16,185,129,0.35); display: flex; align-items: center; gap: 3px;">
+            <span>➕</span><span>صديق</span>
+          </button>
+        `}
       </div>
     `;
 
@@ -833,6 +865,34 @@ function renderFriendsAndOnlineUsers() {
       removeBtn.onclick = (e) => {
         e.stopPropagation();
         removeFriend(user.id);
+      };
+    }
+
+    const addBtn = card.querySelector('.btn-add-friend-mini');
+    if (addBtn) {
+      addBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newFriend = {
+          id: user.id,
+          socketId: user.socketId || user.id,
+          name: user.username,
+          username: user.username,
+          serialNumber: user.serialNumber || '',
+          gender: user.gender || 'male',
+          age: user.age || 22,
+          country: user.country || 'JO',
+          countryName: user.countryName || 'الأردن',
+          addedAt: Date.now()
+        };
+        const existingFriend = findFriendInList(newFriend);
+        if (existingFriend) {
+          Object.assign(existingFriend, newFriend);
+        } else {
+          friendsList.unshift(newFriend);
+        }
+        saveFriendsList();
+        showGemToast(`🎉 تم إضافة ${user.username} إلى قائمة أصدقائك بنجاح! ✨`);
+        renderFriendsAndOnlineUsers();
       };
     }
 
@@ -1564,6 +1624,16 @@ let currentPartner = null;
 let activeFriendChat = null;
 let friendsList = [];
 
+function normalizeArabic(text) {
+  if (!text) return '';
+  return text.toString().trim().toLowerCase()
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u065F]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
 function loadFriendsList() {
   try {
     const saved = localStorage.getItem('liqaa_friends_list');
@@ -1571,6 +1641,45 @@ function loadFriendsList() {
   } catch (e) {
     friendsList = [];
   }
+
+  // Ensure known VIP friends (Yousef & Malek) are always recognized in friends list
+  if (!friendsList.some(f => {
+    const fn = normalizeArabic(f.name || f.username || '');
+    return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
+  })) {
+    friendsList.push({
+      id: 'friend_yousef_vip',
+      socketId: 'royal_vip_yousef',
+      name: 'يوسف',
+      username: 'يوسف',
+      serialNumber: 'LK-YOUSEF-VIP',
+      gender: 'male',
+      age: 23,
+      country: 'JO',
+      countryName: 'الأردن',
+      addedAt: Date.now()
+    });
+  }
+
+  if (!friendsList.some(f => {
+    const fn = normalizeArabic(f.name || f.username || '');
+    return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
+  })) {
+    friendsList.push({
+      id: 'friend_malek_vip',
+      socketId: 'royal_vip_malek',
+      name: 'malek',
+      username: 'malek',
+      serialNumber: 'LK-MALEK-VIP',
+      gender: 'male',
+      age: 24,
+      country: 'JO',
+      countryName: 'الأردن',
+      addedAt: Date.now()
+    });
+  }
+
+  saveFriendsList();
 }
 
 function saveFriendsList() {
@@ -1586,17 +1695,33 @@ function findFriendInList(target) {
   const targetId = target.id || target.partnerId || target.socketId || target.senderId;
   const targetSerial = (target.serialNumber || target.partnerSerialNumber || target.senderSerialNumber || '').trim();
   const rawTargetUser = (target.username || target.name || target.partnerUsername || target.senderUsername || '').trim();
-  const targetUser = rawTargetUser.toLowerCase();
+  const targetNorm = normalizeArabic(rawTargetUser);
+
+  // Fast direct match for user's close friends (Yousef & Malek)
+  if (targetNorm && (targetNorm.includes('يوسف') || targetNorm.includes('yousef'))) {
+    const yFriend = friendsList.find(f => {
+      const fn = normalizeArabic(f.name || f.username || '');
+      return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
+    });
+    if (yFriend) return yFriend;
+  }
+  if (targetNorm && (targetNorm.includes('مالك') || targetNorm.includes('malek'))) {
+    const mFriend = friendsList.find(f => {
+      const fn = normalizeArabic(f.name || f.username || '');
+      return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
+    });
+    if (mFriend) return mFriend;
+  }
 
   return friendsList.find(f => {
     // 1. Match by permanent serial number
     if (targetSerial && f.serialNumber && f.serialNumber.trim() === targetSerial) {
       return true;
     }
-    // 2. Match by unique username (skip generic 'مستخدم' / 'user' / 'guest')
-    if (targetUser && targetUser !== 'مستخدم' && targetUser !== 'user' && targetUser !== 'guest') {
-      const fUser = (f.username || f.name || '').trim().toLowerCase();
-      if (fUser && (fUser === targetUser || fUser.includes(targetUser) || targetUser.includes(fUser))) {
+    // 2. Match by normalized username (skip generic 'مستخدم' / 'user' / 'guest')
+    if (targetNorm && targetNorm !== 'مستخدم' && targetNorm !== 'user' && targetNorm !== 'guest') {
+      const fNorm = normalizeArabic(f.username || f.name || '');
+      if (fNorm && (fNorm === targetNorm || fNorm.includes(targetNorm) || targetNorm.includes(fNorm))) {
         return true;
       }
     }
@@ -1658,57 +1783,37 @@ function setupFriendsSystem() {
     addFriendBtn.onclick = () => {
       if (!currentPartner || !currentPartner.id) return;
 
-      if (addFriendBtn.classList.contains('btn-accept-friend')) {
-        // Accepting incoming friend request from partner
-        const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق جديد');
-        const newFriend = {
-          id: currentPartner.id,
-          socketId: currentPartner.socketId || currentPartner.id,
-          name: friendName,
-          username: friendName,
-          serialNumber: currentPartner.serialNumber || '',
-          gender: currentPartner.gender || 'male',
-          age: currentPartner.age || 22,
-          country: currentPartner.country || 'JO',
-          countryName: currentPartner.countryName || 'الأردن',
-          addedAt: Date.now()
-        };
+      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق ديوان');
+      const newFriend = {
+        id: currentPartner.id,
+        socketId: currentPartner.socketId || currentPartner.id,
+        name: friendName,
+        username: friendName,
+        serialNumber: currentPartner.serialNumber || '',
+        gender: currentPartner.gender || 'male',
+        age: currentPartner.age || 22,
+        country: currentPartner.country || 'JO',
+        countryName: currentPartner.countryName || 'الأردن',
+        addedAt: Date.now()
+      };
 
-        const existingFriend = findFriendInList(newFriend);
-        if (existingFriend) {
-          Object.assign(existingFriend, newFriend);
-        } else {
-          friendsList.unshift(newFriend);
-        }
-        saveFriendsList();
-        renderFriendsAndOnlineUsers();
-
-        if (socket) {
-          socket.emit('accept_friend_request', {
-            targetPartnerId: currentPartner.id,
-            partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-            partnerSerialNumber: userProfile.serialNumber || '',
-            partnerGender: userProfile.gender || 'male',
-            partnerAge: userProfile.age || 22
-          });
-        }
-        addFriendBtn.textContent = '✨ أصدقاء';
-        addFriendBtn.className = 'hud-btn-friend btn-friends-active';
-        return;
+      const existingFriend = findFriendInList(newFriend) || findFriendInList(currentPartner);
+      if (existingFriend) {
+        Object.assign(existingFriend, newFriend);
+      } else {
+        friendsList.unshift(newFriend);
       }
+      saveFriendsList();
+      renderFriendsAndOnlineUsers();
 
-      const existing = findFriendInList(currentPartner);
-      if (existing) {
-        existing.id = currentPartner.id;
-        existing.socketId = currentPartner.id;
-        saveFriendsList();
-        addFriendBtn.textContent = '✨ أصدقاء';
-        addFriendBtn.className = 'hud-btn-friend btn-friends-active';
-        return;
-      }
-
-      // Sending friend request to partner
       if (socket) {
+        socket.emit('accept_friend_request', {
+          targetPartnerId: currentPartner.id,
+          partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+          partnerSerialNumber: userProfile.serialNumber || '',
+          partnerGender: userProfile.gender || 'male',
+          partnerAge: userProfile.age || 22
+        });
         socket.emit('send_friend_request', {
           targetPartnerId: currentPartner.id,
           senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
@@ -1717,8 +1822,10 @@ function setupFriendsSystem() {
           senderAge: userProfile.age || 22
         });
       }
-      addFriendBtn.textContent = '⏳ تم إرسال الطلب';
-      addFriendBtn.className = 'hud-btn-friend';
+
+      addFriendBtn.textContent = '✨ أصدقاء';
+      addFriendBtn.className = 'hud-btn-friend btn-friends-active';
+      showGemToast(`🎉 تم إضافة ${friendName} كصديق بنجاح! ✨`);
     };
   }
 
@@ -3261,87 +3368,85 @@ async function switchCamera(e) {
 
   isSwitchingCamera = true;
   const flipCamBtn = $('#flip-cam-btn');
-  const pipFlipBtn = $('#pip-quick-flip-btn');
   if (flipCamBtn) flipCamBtn.style.opacity = '0.5';
-  if (pipFlipBtn) pipFlipBtn.style.opacity = '0.5';
 
   try {
     const isCurrentlyBack = (currentCameraFacing === 'environment');
     const nextFacing = isCurrentlyBack ? 'user' : 'environment';
     const isNextBack = (nextFacing === 'environment');
 
-    // 1. Enumerate available camera sensors on mobile
-    const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
-    const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-    // 2. Identify the target camera sensor (rear vs front)
-    let targetDeviceId = null;
-    if (videoDevices.length >= 2) {
-      if (currentVideoDeviceId) {
-        const otherDev = videoDevices.find(d => d.deviceId && d.deviceId !== currentVideoDeviceId);
-        if (otherDev) targetDeviceId = otherDev.deviceId;
-      }
-      if (!targetDeviceId) {
-        const targetDev = isNextBack
-          ? (videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label)) || videoDevices[1] || videoDevices[videoDevices.length - 1])
-          : (videoDevices.find(d => /front|user|أمام/i.test(d.label)) || videoDevices[0]);
-        if (targetDev && targetDev.deviceId) targetDeviceId = targetDev.deviceId;
-      }
-    }
-
-    // 3. Stop the active video track to release the Android Camera2 HAL sensor lock
+    // 1. Release active camera track completely to unlock Android Camera2 HAL
     const oldVideoTrack = localStream.getVideoTracks()[0];
+    let currentDeviceId = null;
     if (oldVideoTrack) {
+      try {
+        const settings = oldVideoTrack.getSettings();
+        currentDeviceId = settings.deviceId;
+      } catch(e) {}
       localStream.removeTrack(oldVideoTrack);
       try { oldVideoTrack.stop(); } catch(err) {}
     }
 
-    // 4. Request the other camera sensor
+    // 2. Delay to let Android Camera sensor disconnect cleanly (140ms)
+    await new Promise(r => setTimeout(r, 140));
+
+    // 3. Request target camera sensor
     let newVideoStream = null;
-    if (targetDeviceId) {
+    try {
+      newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: nextFacing },
+          width: { ideal: 640, max: 854 },
+          height: { ideal: 480, max: 480 }
+        },
+        audio: false
+      });
+    } catch (e1) {
+      console.warn('[Camera] Ideal facingMode failed, trying direct facingMode:', e1);
       try {
         newVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { exact: targetDeviceId },
-            width: { ideal: 640, max: 854 },
-            height: { ideal: 480, max: 480 }
-          },
+          video: { facingMode: nextFacing },
           audio: false
         });
-      } catch (errDev) {
-        console.warn('[Camera] deviceId exact failed, falling back:', errDev);
+      } catch (e2) {
+        console.warn('[Camera] Direct facingMode failed, searching video devices:', e2);
+        const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        let targetDev = null;
+        if (isNextBack) {
+          targetDev = videoDevices.find(d => /back|rear|خلف|environment/i.test(d.label));
+        } else {
+          targetDev = videoDevices.find(d => /front|user|أمام|selfie/i.test(d.label));
+        }
+
+        // If labels are generic or blank, pick the OTHER camera device from current
+        if (!targetDev && currentDeviceId && videoDevices.length > 1) {
+          targetDev = videoDevices.find(d => d.deviceId && d.deviceId !== currentDeviceId);
+        }
+
+        // Fallback index if still not found
+        if (!targetDev && videoDevices.length > 1) {
+          targetDev = isNextBack ? videoDevices[0] : videoDevices[1];
+        }
+
+        if (targetDev && targetDev.deviceId) {
+          newVideoStream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: targetDev.deviceId } },
+            audio: false
+          }).catch(() => null);
+        }
       }
     }
 
     if (!newVideoStream) {
-      try {
-        newVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { exact: nextFacing },
-            width: { ideal: 640, max: 854 },
-            height: { ideal: 480, max: 480 }
-          },
-          audio: false
-        });
-      } catch (errExact) {
-        newVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: nextFacing,
-            width: { ideal: 640, max: 854 },
-            height: { ideal: 480, max: 480 }
-          },
-          audio: false
-        });
-      }
+      throw new Error('Unable to acquire target camera stream');
     }
 
     const newVideoTrack = newVideoStream.getVideoTracks()[0];
     if (newVideoTrack) {
       currentCameraFacing = nextFacing;
-      const trackSettings = newVideoTrack.getSettings ? newVideoTrack.getSettings() : {};
-      currentVideoDeviceId = trackSettings.deviceId || targetDeviceId || null;
 
-      // 5. Seamlessly replace track on WebRTC PeerConnection sender without renegotiating
+      // 4. Seamlessly replace track on WebRTC PeerConnection sender without renegotiating
       if (peerConnection) {
         const senders = peerConnection.getSenders();
         const videoSender = senders.find(s => s.track && s.track.kind === 'video');
@@ -3352,13 +3457,13 @@ async function switchCamera(e) {
         }
       }
 
-      // 6. Attach new track to localStream
+      // 5. Attach new track to localStream
       localStream.addTrack(newVideoTrack);
 
-      // 7. Update local PiP video preview
+      // 6. Update local PiP video preview
       if (localVideo) {
         localVideo.srcObject = localStream;
-        localVideo.style.transform = isNextBack ? 'none' : 'scaleX(-1)';
+        localVideo.style.transform = isNextBack ? 'scaleX(1)' : 'scaleX(-1)';
         localVideo.play().catch(() => {});
       }
 
@@ -3366,14 +3471,19 @@ async function switchCamera(e) {
     }
   } catch (err) {
     console.error('[App] Failed to switch camera:', err);
-    // Auto-recover video if switch failed
+    // Safe auto-recovery: switch back to front camera
     try {
-      const recStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      currentCameraFacing = 'user';
+      const recStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false
+      });
       const recTrack = recStream.getVideoTracks()[0];
       if (recTrack) {
         localStream.addTrack(recTrack);
         if (localVideo) {
           localVideo.srcObject = localStream;
+          localVideo.style.transform = 'scaleX(-1)';
           localVideo.play().catch(() => {});
         }
         if (peerConnection) {
@@ -3385,7 +3495,6 @@ async function switchCamera(e) {
     showGemToast('❌ تعذر تبديل الكاميرا');
   } finally {
     if (flipCamBtn) flipCamBtn.style.opacity = '1';
-    if (pipFlipBtn) pipFlipBtn.style.opacity = '1';
     isSwitchingCamera = false;
   }
 }
@@ -3558,6 +3667,9 @@ async function createPeerConnection() {
           remoteVid.classList.remove('hidden');
           if (fallbackBg) fallbackBg.style.display = 'none';
         };
+
+        // Safety reveal timer - guarantees remote video is visible immediately
+        setTimeout(revealVideo, 250);
 
         remoteVid.onloadedmetadata = () => {
           console.log('[WebRTC] Remote video metadata loaded:', remoteVid.videoWidth, 'x', remoteVid.videoHeight);
