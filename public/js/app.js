@@ -19,25 +19,17 @@ const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:stun.services.mozilla.com' },
     { urls: 'stun:global.stun.twilio.com:3478' },
     {
       urls: [
         'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:80?transport=tcp',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp',
-        'turns:openrelay.metered.ca:443?transport=tcp',
-        'turns:openrelay.metered.ca:5349?transport=tcp'
+        'turn:openrelay.metered.ca:443?transport=tcp'
       ],
       username: 'openrelay',
       credential: 'openrelay'
     }
   ],
-  iceCandidatePoolSize: 10,
+  iceCandidatePoolSize: 2,
   bundlePolicy: 'max-bundle',
   rtcpMuxPolicy: 'require'
 };
@@ -1280,7 +1272,7 @@ function setupAuthSystem() {
     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
       try {
         google.accounts.id.initialize({
-          client_id: window.GOOGLE_CLIENT_ID || '1043964722881-q3p5o1j8r5k8m8t8o3m5v9g6p0l3j4d1.apps.googleusercontent.com',
+          client_id: window.GOOGLE_CLIENT_ID || '1053705568109-36n6cjlr3s1nqn65muuamnku62sg2f1p.apps.googleusercontent.com',
           callback: (res) => {
             if (res && res.credential) {
               const payload = decodeJwtResponse(res.credential);
@@ -3266,6 +3258,7 @@ async function requestMediaPermission() {
           localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
           localVideo.play().catch(() => {});
         }
+        syncMicAudioState();
         return true;
       } catch (eAudio) {
         console.warn('Audio only acquire failed, will request full stream:', eAudio);
@@ -3293,16 +3286,8 @@ async function requestMediaPermission() {
       localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
       await localVideo.play().catch(() => {});
     }
-    /*
-    const welcomePreview = $('#welcome-camera-preview');
-    if (welcomePreview) {
-      welcomePreview.srcObject = localStream;
-      welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
-      welcomePreview.classList.add('video-ready');
-      welcomePreview.play().catch(() => {});
-    }
-    */
     welcomeCamStream = localStream;
+    syncMicAudioState();
     return true;
 
   } catch (err) {
@@ -3317,16 +3302,8 @@ async function requestMediaPermission() {
         localVideo.style.transform = isBack ? 'none' : 'scaleX(-1)';
         await localVideo.play().catch(() => {});
       }
-      /*
-      const welcomePreview = $('#welcome-camera-preview');
-      if (welcomePreview) {
-        welcomePreview.srcObject = localStream;
-        welcomePreview.style.transform = isBack ? 'none' : 'scaleX(-1)';
-        welcomePreview.classList.add('video-ready');
-        welcomePreview.play().catch(() => {});
-      }
-      */
       welcomeCamStream = localStream;
+      syncMicAudioState();
       return true;
     } catch (err2) {
       console.error('[Media] All media requests failed:', err2);
@@ -3515,20 +3492,23 @@ function setupControls() {
   }
 }
 
-function toggleMic() {
-  if (!localStream) return;
-  isMicOn = !isMicOn;
-
-  localStream.getAudioTracks().forEach(track => {
-    track.enabled = isMicOn;
-  });
+function syncMicAudioState() {
+  if (localStream) {
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !!isMicOn;
+    });
+  }
 
   if (peerConnection) {
-    peerConnection.getSenders().forEach(sender => {
-      if (sender.track && sender.track.kind === 'audio') {
-        sender.track.enabled = isMicOn;
-      }
-    });
+    try {
+      peerConnection.getSenders().forEach(sender => {
+        if (sender.track && sender.track.kind === 'audio') {
+          sender.track.enabled = !!isMicOn;
+        }
+      });
+    } catch (e) {
+      console.warn('[Mic] sync peerConnection audio error:', e);
+    }
   }
 
   if (micBtn) {
@@ -3538,6 +3518,11 @@ function toggleMic() {
     if (micOn) micOn.classList.toggle('hidden', !isMicOn);
     if (micOff) micOff.classList.toggle('hidden', isMicOn);
   }
+}
+
+function toggleMic() {
+  isMicOn = !isMicOn;
+  syncMicAudioState();
 }
 
 function toggleCamera() {
@@ -3827,6 +3812,7 @@ async function createPeerConnection(forceFresh = false) {
           console.warn('[WebRTC] addTrack warning:', e);
         }
       });
+      syncMicAudioState();
     }
 
     // Ensure bidirectional transceivers exist for both audio and video
@@ -3869,7 +3855,7 @@ async function createPeerConnection(forceFresh = false) {
         remoteVid.autoplay = true;
 
         const checkAndReveal = () => {
-          if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+          if (remoteVid && (remoteVid.videoWidth > 0 || remoteVid.readyState >= 2)) {
             remoteVid.classList.remove('hidden');
             if (fallbackBg) fallbackBg.style.display = 'none';
           }
@@ -3891,6 +3877,20 @@ async function createPeerConnection(forceFresh = false) {
         remoteVid.play().then(checkAndReveal).catch(err => {
           console.warn('[WebRTC] Remote video play error:', err);
         });
+
+        // Fast watchdog: poll every 100ms for up to 4s to reveal video immediately
+        let pollCount = 0;
+        const revealInterval = setInterval(() => {
+          pollCount++;
+          if (remoteVid && (remoteVid.videoWidth > 0 || remoteVid.readyState >= 2)) {
+            remoteVid.classList.remove('hidden');
+            if (fallbackBg) fallbackBg.style.display = 'none';
+            remoteVid.play().catch(() => {});
+            clearInterval(revealInterval);
+          } else if (pollCount > 40) {
+            clearInterval(revealInterval);
+          }
+        }, 100);
       }
 
       // 2. Dedicated Remote Audio Element (prevents video pause/mute from silencing voice)
@@ -4183,15 +4183,17 @@ function showPartnerInfo(data) {
     nameEl.textContent = (data.partnerUsername || 'مستخدم') + (data.partnerSerialNumber ? ` ${data.partnerSerialNumber}` : '');
   }
 
-  const isMale = data.partnerGender === 'male';
+  const isFemale = (data.partnerGender === 'female' || (currentPartner && currentPartner.gender === 'female'));
+  const isMale = !isFemale;
   const badgeEl = $('#partner-gender-badge');
   const iconEl = $('#partner-gender-icon');
   const textEl = $('#partner-gender-text');
 
-  if (iconEl) iconEl.textContent = isMale ? '👨' : '👩';
-  if (textEl) textEl.textContent = isMale ? 'ذكر' : 'أنثى';
+  if (iconEl) iconEl.textContent = isFemale ? '👩' : '👨';
+  if (textEl) textEl.textContent = isFemale ? 'أنثى' : 'ذكر';
   if (badgeEl) {
-    badgeEl.className = `partner-gender-tag ${isMale ? 'gender-male' : 'gender-female'}`;
+    badgeEl.style.display = 'inline-flex';
+    badgeEl.className = `partner-gender-tag ${isFemale ? 'gender-female' : 'gender-male'}`;
   }
 
   const badgesEl = $('#partner-badges-display');
