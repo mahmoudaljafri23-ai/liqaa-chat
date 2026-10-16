@@ -3240,6 +3240,37 @@ function setupControls() {
   if (controlsSetup) return;
   controlsSetup = true;
 
+  // 1. Transparent Touch Shield on Video Stream:
+  // Absorb all clicks/taps over the partner video so Android WebView NEVER triggers native play/pause overlay button
+  const touchShield = $('#remote-video-touch-shield');
+  if (touchShield) {
+    ['click', 'dblclick', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'contextmenu'].forEach(evt => {
+      touchShield.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, { passive: false });
+    });
+  }
+
+  // 2. Direct Video Element Hardening:
+  const remoteVidEl = $('#remote-video');
+  if (remoteVidEl) {
+    ['click', 'dblclick', 'touchstart', 'touchend', 'pointerdown', 'pointerup', 'contextmenu'].forEach(evt => {
+      remoteVidEl.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, { passive: false });
+    });
+
+    // Auto-resume live feed if Android system ever tries to pause the video tag
+    remoteVidEl.addEventListener('pause', () => {
+      if (currentState === 'connected' && remoteVidEl.srcObject) {
+        console.log('[WebRTC] Auto-resuming live video feed');
+        remoteVidEl.play().catch(() => {});
+      }
+    });
+  }
+
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
       startNextButtonCooldown();
@@ -3833,7 +3864,6 @@ function setState(state) {
   const localVideoWrapper = $('#local-video-wrapper');
   const remoteVid = $('#remote-video');
   const welcomePreview = $('#welcome-camera-preview');
-  const idleTrigger = $('#camera-match-trigger');
   const floatingToolbar = $('#welcome-floating-toolbar');
   const filterRow = $('.modern-filter-row');
   const bottomNav = $('.modern-bottom-nav');
@@ -3859,7 +3889,6 @@ function setState(state) {
         remoteAudIdle.srcObject = null;
       }
       if (welcomePreview) welcomePreview.style.display = 'none';
-      if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.remove('hidden');
@@ -3896,7 +3925,6 @@ function setState(state) {
         remoteAudSearch.srcObject = null;
       }
       if (welcomePreview) welcomePreview.style.display = 'block';
-      if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.add('hidden');
@@ -3912,6 +3940,7 @@ function setState(state) {
       if (searchingOverlay) searchingOverlay.classList.add('hidden');
       if (partnerLeftOverlay) partnerLeftOverlay.classList.add('hidden');
       if (partnerInfo) partnerInfo.classList.remove('hidden');
+      if (controlsBar) controlsBar.classList.remove('hidden');
       if (localVideoWrapper) {
         localVideoWrapper.classList.remove('hidden');
         localVideoWrapper.style.top = '';
@@ -3930,7 +3959,6 @@ function setState(state) {
         fallbackBgConnected.style.display = 'flex';
       }
       if (welcomePreview) welcomePreview.style.display = 'none';
-      if (idleTrigger) idleTrigger.classList.add('hidden');
       if (floatingToolbar) floatingToolbar.classList.add('hidden');
       if (filterRow) filterRow.classList.add('hidden');
       if (bottomNav) bottomNav.classList.add('hidden');

@@ -288,60 +288,21 @@ body {
   display: none !important;
 }
 
-.camera-match-trigger {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #f59e0b 100%);
-  color: #fff;
-  padding: 12px 26px;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  z-index: 15;
-  box-shadow: 0 8px 25px rgba(255, 75, 43, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.3);
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  white-space: nowrap;
-  animation: royalPulseBtn 2.2s infinite;
-}
-
-@keyframes royalPulseBtn {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-    box-shadow: 0 8px 25px rgba(255, 75, 43, 0.55), 0 0 15px rgba(255, 215, 0, 0.3);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.04);
-    box-shadow: 0 12px 32px rgba(255, 75, 43, 0.75), 0 0 25px rgba(255, 215, 0, 0.6);
-  }
-}
-
-.camera-match-trigger:hover {
-  transform: translateX(-50%) scale(1.06);
-}
-
-.camera-match-trigger:active {
-  transform: translateX(-50%) scale(0.94);
-}
-
-.match-pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: #fff;
-  border-radius: 50%;
-  animation: pulseDot 1.2s infinite;
-}
-
-.match-arrow {
-  font-size: 14px;
+/* Transparent Touch Shield directly over Remote Video Feed - absorbs all tap events so Android WebView never pauses or displays play/pause button overlays */
+.remote-video-touch-shield {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2 !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
 }
 
 #welcome-camera-preview, #remote-video, #local-video {
@@ -602,6 +563,24 @@ body {
   object-fit: cover !important;
   z-index: 1 !important;
   background: transparent !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
+}
+
+#remote-video,
+#local-video,
+.call-remote-video,
+video {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
 }
 
 .welcome-camera-card.in-call .camera-floating-toolbar,
