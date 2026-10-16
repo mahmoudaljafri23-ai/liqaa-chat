@@ -335,8 +335,8 @@ body {
 }
 
 #remote-video {
-  z-index: 5;
-  background: #000;
+  z-index: 1;
+  background: transparent !important;
 }
 
 /* Floating Picture-in-Picture (PiP) Window */
@@ -967,14 +967,26 @@ video::-webkit-media-controls-overlay-play-button,
 video::-webkit-media-controls,
 video::-webkit-media-controls-enclosure,
 video::-webkit-media-controls-panel,
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-play-button,
 video::-webkit-media-controls-overlay-play-button,
 video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-timeline,
+video::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-time-remaining-display,
+video::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-volume-slider,
+video::-internal-media-controls-overlay-cast-button,
 #remote-video::-webkit-media-controls,
 #remote-video::-webkit-media-controls-enclosure,
 #remote-video::-webkit-media-controls-panel,
+#remote-video::-webkit-media-controls-play-button,
 #remote-video::-webkit-media-controls-overlay-play-button,
 #remote-video::-webkit-media-controls-start-playback-button,
 #local-video::-webkit-media-controls,
+#local-video::-webkit-media-controls-play-button,
 #local-video::-webkit-media-controls-overlay-play-button {
   display: none !important;
   -webkit-appearance: none !important;

@@ -1623,6 +1623,7 @@ function startNextButtonCooldown() {
 let currentPartner = null;
 let activeFriendChat = null;
 let friendsList = [];
+let removedFriendsList = [];
 
 function normalizeArabic(text) {
   if (!text) return '';
@@ -1634,7 +1635,74 @@ function normalizeArabic(text) {
     .replace(/\s+/g, ' ');
 }
 
+function loadRemovedFriends() {
+  try {
+    const saved = localStorage.getItem('liqaa_removed_friends');
+    removedFriendsList = saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    removedFriendsList = [];
+  }
+}
+
+function saveRemovedFriends() {
+  localStorage.setItem('liqaa_removed_friends', JSON.stringify(removedFriendsList));
+}
+
+function isRemoved(user) {
+  if (!user) return false;
+  loadRemovedFriends();
+  if (!removedFriendsList || removedFriendsList.length === 0) return false;
+  const uId = user.id || user.socketId || user.partnerId || user.senderId;
+  const uSerial = (user.serialNumber || user.partnerSerialNumber || user.senderSerialNumber || '').trim();
+  const uNorm = normalizeArabic(user.username || user.name || user.partnerUsername || user.senderUsername || '');
+
+  return removedFriendsList.some(r => {
+    if (uId && (r.id === uId || r.socketId === uId)) return true;
+    if (uSerial && r.serialNumber && r.serialNumber === uSerial) return true;
+    if (uNorm && r.nameNorm && (r.nameNorm === uNorm || (uNorm.length > 2 && (r.nameNorm.includes(uNorm) || uNorm.includes(r.nameNorm))))) return true;
+    return false;
+  });
+}
+
+function addToRemovedFriends(user) {
+  if (!user) return;
+  loadRemovedFriends();
+  const uId = user.id || user.socketId || user.partnerId;
+  const uSerial = (user.serialNumber || user.partnerSerialNumber || '').trim();
+  const rawName = user.username || user.name || user.partnerUsername || '';
+  const uNorm = normalizeArabic(rawName);
+
+  if (!isRemoved(user)) {
+    removedFriendsList.push({
+      id: uId,
+      socketId: user.socketId || uId,
+      serialNumber: uSerial,
+      name: rawName,
+      nameNorm: uNorm,
+      removedAt: Date.now()
+    });
+    saveRemovedFriends();
+  }
+}
+
+function removeFromRemovedFriends(user) {
+  if (!user) return;
+  loadRemovedFriends();
+  const uId = user.id || user.socketId || user.partnerId;
+  const uSerial = (user.serialNumber || user.partnerSerialNumber || '').trim();
+  const uNorm = normalizeArabic(user.username || user.name || user.partnerUsername || '');
+
+  removedFriendsList = removedFriendsList.filter(r => {
+    if (uId && (r.id === uId || r.socketId === uId)) return false;
+    if (uSerial && r.serialNumber && r.serialNumber === uSerial) return false;
+    if (uNorm && r.nameNorm && (r.nameNorm === uNorm || r.nameNorm.includes(uNorm) || uNorm.includes(r.nameNorm))) return false;
+    return true;
+  });
+  saveRemovedFriends();
+}
+
 function loadFriendsList() {
+  loadRemovedFriends();
   try {
     const saved = localStorage.getItem('liqaa_friends_list');
     friendsList = saved ? JSON.parse(saved) : [];
@@ -1642,41 +1710,50 @@ function loadFriendsList() {
     friendsList = [];
   }
 
-  // Ensure known VIP friends (Yousef & Malek) are always recognized in friends list
-  if (!friendsList.some(f => {
-    const fn = normalizeArabic(f.name || f.username || '');
-    return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
-  })) {
-    friendsList.push({
-      id: 'friend_yousef_vip',
-      socketId: 'royal_vip_yousef',
-      name: 'يوسف',
-      username: 'يوسف',
-      serialNumber: 'LK-YOUSEF-VIP',
-      gender: 'male',
-      age: 23,
-      country: 'JO',
-      countryName: 'الأردن',
-      addedAt: Date.now()
-    });
+  // Filter out any friends that were deliberately removed
+  friendsList = friendsList.filter(f => !isRemoved(f));
+
+  // Ensure known VIP friends (Yousef & Malek) are auto-populated ONLY if not explicitly removed by user
+  const yousefDummy = { name: 'يوسف', serialNumber: 'LK-YOUSEF-VIP' };
+  if (!isRemoved(yousefDummy)) {
+    if (!friendsList.some(f => {
+      const fn = normalizeArabic(f.name || f.username || '');
+      return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
+    })) {
+      friendsList.push({
+        id: 'friend_yousef_vip',
+        socketId: 'royal_vip_yousef',
+        name: 'يوسف',
+        username: 'يوسف',
+        serialNumber: 'LK-YOUSEF-VIP',
+        gender: 'male',
+        age: 23,
+        country: 'JO',
+        countryName: 'الأردن',
+        addedAt: Date.now()
+      });
+    }
   }
 
-  if (!friendsList.some(f => {
-    const fn = normalizeArabic(f.name || f.username || '');
-    return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
-  })) {
-    friendsList.push({
-      id: 'friend_malek_vip',
-      socketId: 'royal_vip_malek',
-      name: 'malek',
-      username: 'malek',
-      serialNumber: 'LK-MALEK-VIP',
-      gender: 'male',
-      age: 24,
-      country: 'JO',
-      countryName: 'الأردن',
-      addedAt: Date.now()
-    });
+  const malekDummy = { name: 'malek', serialNumber: 'LK-MALEK-VIP' };
+  if (!isRemoved(malekDummy)) {
+    if (!friendsList.some(f => {
+      const fn = normalizeArabic(f.name || f.username || '');
+      return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
+    })) {
+      friendsList.push({
+        id: 'friend_malek_vip',
+        socketId: 'royal_vip_malek',
+        name: 'malek',
+        username: 'malek',
+        serialNumber: 'LK-MALEK-VIP',
+        gender: 'male',
+        age: 24,
+        country: 'JO',
+        countryName: 'الأردن',
+        addedAt: Date.now()
+      });
+    }
   }
 
   saveFriendsList();
@@ -1687,17 +1764,20 @@ function saveFriendsList() {
 }
 
 function findFriendInList(target) {
+  if (!target) return null;
+  if (isRemoved(target)) return null;
+
   if (!friendsList || friendsList.length === 0) {
     loadFriendsList();
   }
-  if (!target || !friendsList || friendsList.length === 0) return null;
+  if (!friendsList || friendsList.length === 0) return null;
 
   const targetId = target.id || target.partnerId || target.socketId || target.senderId;
   const targetSerial = (target.serialNumber || target.partnerSerialNumber || target.senderSerialNumber || '').trim();
   const rawTargetUser = (target.username || target.name || target.partnerUsername || target.senderUsername || '').trim();
   const targetNorm = normalizeArabic(rawTargetUser);
 
-  // Fast direct match for user's close friends (Yousef & Malek)
+  // Fast direct match for user's close friends (Yousef & Malek) if not removed
   if (targetNorm && (targetNorm.includes('يوسف') || targetNorm.includes('yousef'))) {
     const yFriend = friendsList.find(f => {
       const fn = normalizeArabic(f.name || f.username || '');
@@ -1783,49 +1863,60 @@ function setupFriendsSystem() {
     addFriendBtn.onclick = () => {
       if (!currentPartner || !currentPartner.id) return;
 
-      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'صديق ديوان');
-      const newFriend = {
-        id: currentPartner.id,
-        socketId: currentPartner.socketId || currentPartner.id,
-        name: friendName,
-        username: friendName,
-        serialNumber: currentPartner.serialNumber || '',
-        gender: currentPartner.gender || 'male',
-        age: currentPartner.age || 22,
-        country: currentPartner.country || 'JO',
-        countryName: currentPartner.countryName || 'الأردن',
-        addedAt: Date.now()
-      };
+      const isAlreadyFriend = isFriend(currentPartner);
+      const friendName = (currentPartner.username && currentPartner.username !== 'مستخدم') ? currentPartner.username : (currentPartner.name || 'الشريك');
 
-      const existingFriend = findFriendInList(newFriend) || findFriendInList(currentPartner);
-      if (existingFriend) {
-        Object.assign(existingFriend, newFriend);
+      if (isAlreadyFriend) {
+        if (confirm(`هل أنت متأكد من رغبتك في إزالة ${friendName} من قائمة الأصدقاء؟`)) {
+          const friendObj = findFriendInList(currentPartner) || currentPartner;
+          removeFriend(friendObj.id || currentPartner.id, true);
+        }
       } else {
-        friendsList.unshift(newFriend);
-      }
-      saveFriendsList();
-      renderFriendsAndOnlineUsers();
+        removeFromRemovedFriends(currentPartner);
 
-      if (socket) {
-        socket.emit('accept_friend_request', {
-          targetPartnerId: currentPartner.id,
-          partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-          partnerSerialNumber: userProfile.serialNumber || '',
-          partnerGender: userProfile.gender || 'male',
-          partnerAge: userProfile.age || 22
-        });
-        socket.emit('send_friend_request', {
-          targetPartnerId: currentPartner.id,
-          senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-          senderSerialNumber: userProfile.serialNumber || '',
-          senderGender: userProfile.gender || 'male',
-          senderAge: userProfile.age || 22
-        });
-      }
+        const newFriend = {
+          id: currentPartner.id,
+          socketId: currentPartner.socketId || currentPartner.id,
+          name: friendName,
+          username: friendName,
+          serialNumber: currentPartner.serialNumber || '',
+          gender: currentPartner.gender || 'male',
+          age: currentPartner.age || 22,
+          country: currentPartner.country || 'JO',
+          countryName: currentPartner.countryName || 'الأردن',
+          addedAt: Date.now()
+        };
 
-      addFriendBtn.textContent = '✨ أصدقاء';
-      addFriendBtn.className = 'hud-btn-friend btn-friends-active';
-      showGemToast(`🎉 تم إضافة ${friendName} كصديق بنجاح! ✨`);
+        const existingFriend = findFriendInList(newFriend) || findFriendInList(currentPartner);
+        if (existingFriend) {
+          Object.assign(existingFriend, newFriend);
+        } else {
+          friendsList.unshift(newFriend);
+        }
+        saveFriendsList();
+        renderFriendsAndOnlineUsers();
+
+        if (socket && socket.connected) {
+          socket.emit('accept_friend_request', {
+            targetPartnerId: currentPartner.id,
+            partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+            partnerSerialNumber: userProfile.serialNumber || '',
+            partnerGender: userProfile.gender || 'male',
+            partnerAge: userProfile.age || 22
+          });
+          socket.emit('send_friend_request', {
+            targetPartnerId: currentPartner.id,
+            senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+            senderSerialNumber: userProfile.serialNumber || '',
+            senderGender: userProfile.gender || 'male',
+            senderAge: userProfile.age || 22
+          });
+        }
+
+        addFriendBtn.textContent = '✨ أصدقاء';
+        addFriendBtn.className = 'hud-btn-friend btn-friends-active';
+        showGemToast(`🎉 تم إضافة ${friendName} كصديق بنجاح! ✨`);
+      }
     };
   }
 
@@ -1870,15 +1961,49 @@ function setupFriendsSystem() {
   }
 }
 
-function removeFriend(friendId) {
-  const friend = friendsList.find(f => f.id === friendId);
+function removeFriend(friendId, skipConfirm = false) {
+  const friend = friendsList.find(f => f.id === friendId || f.socketId === friendId || (f.serialNumber && f.serialNumber === friendId)) ||
+    (currentPartner && (currentPartner.id === friendId || currentPartner.socketId === friendId) ? currentPartner : null);
+  
   const name = friend ? (friend.name || friend.username) : 'الصديق';
-  if (!confirm(`هل أنت متأكد من رغبتك في إزالة ${name} من قائمة الأصدقاء؟`)) return;
+  if (!skipConfirm) {
+    if (!confirm(`هل أنت متأكد من رغبتك في إزالة ${name} من قائمة الأصدقاء؟`)) return;
+  }
 
-  friendsList = friendsList.filter(f => f.id !== friendId);
+  if (friend) {
+    addToRemovedFriends(friend);
+  }
+
+  friendsList = friendsList.filter(f => f.id !== friendId && (!friend || (f.socketId !== friend.socketId && (!friend.serialNumber || f.serialNumber !== friend.serialNumber))));
   saveFriendsList();
-  $('#private-chat-view').classList.add('hidden');
-  $('#friends-list-view').classList.remove('hidden');
+
+  // If in call with this partner, instantly update HUD button to '+ صديق'
+  if (currentPartner && friend && (currentPartner.id === friend.id || currentPartner.socketId === friend.socketId || (friend.serialNumber && currentPartner.serialNumber === friend.serialNumber) || normalizeArabic(currentPartner.username) === normalizeArabic(friend.username))) {
+    const addBtn = $('#add-friend-btn');
+    if (addBtn) {
+      addBtn.textContent = '➕ صديق';
+      addBtn.className = 'hud-btn-friend';
+    }
+  }
+
+  // Emit bidirectional removal to server so partner's device also removes it in real-time
+  if (socket && socket.connected && friend) {
+    socket.emit('sync_remove_friend', {
+      targetId: friend.id,
+      targetSocketId: friend.socketId || friend.id,
+      targetSerialNumber: friend.serialNumber || '',
+      targetUsername: friend.username || friend.name || '',
+      mySerialNumber: (userProfile && userProfile.serialNumber) || '',
+      myUsername: (userProfile && userProfile.username) || 'مستخدم'
+    });
+  }
+
+  const pChatView = $('#private-chat-view');
+  if (pChatView && !pChatView.classList.contains('hidden')) {
+    pChatView.classList.add('hidden');
+    const fListView = $('#friends-list-view');
+    if (fListView) fListView.classList.remove('hidden');
+  }
   renderFriendsAndOnlineUsers();
   showGemToast(`🗑️ تم إزالة ${name} من قائمة الأصدقاء`);
 }
@@ -2923,6 +3048,47 @@ function connectSocket() {
     showInCallAlert(`🎉 أصبحتم أصدقاء الآن مع ${friendName}! ✨`);
   });
 
+  socket.on('friend_removed_by_partner', (data) => {
+    console.log('[Socket] Friend removed by partner:', data);
+    const pNorm = normalizeArabic(data.partnerUsername || '');
+    const pSerial = (data.partnerSerialNumber || '').trim();
+    const pId = data.partnerId;
+
+    const foundFriend = friendsList.find(f => {
+      if (pId && (f.id === pId || f.socketId === pId)) return true;
+      if (pSerial && f.serialNumber && f.serialNumber === pSerial) return true;
+      if (pNorm) {
+        const fNorm = normalizeArabic(f.username || f.name || '');
+        if (fNorm && (fNorm === pNorm || fNorm.includes(pNorm) || pNorm.includes(fNorm))) return true;
+      }
+      return false;
+    });
+
+    if (foundFriend) {
+      addToRemovedFriends(foundFriend);
+      friendsList = friendsList.filter(f => f !== foundFriend);
+      saveFriendsList();
+    } else {
+      addToRemovedFriends({ id: pId, socketId: pId, serialNumber: pSerial, username: data.partnerUsername });
+    }
+
+    renderFriendsAndOnlineUsers();
+
+    if (currentPartner) {
+      const cpNorm = normalizeArabic(currentPartner.username || '');
+      const cpSerial = (currentPartner.serialNumber || '').trim();
+      if (currentPartner.id === pId || currentPartner.socketId === pId || (pSerial && cpSerial === pSerial) || (pNorm && cpNorm === pNorm)) {
+        const addBtn = $('#add-friend-btn');
+        if (addBtn) {
+          addBtn.textContent = '➕ صديق';
+          addBtn.className = 'hud-btn-friend';
+        }
+      }
+    }
+
+    showGemToast(`ℹ️ قام ${data.partnerUsername || 'الشريك'} بإلغاء الصداقة`);
+  });
+
   socket.on('referral_reward_received', (data) => {
     if (!userProfile.isAdmin) {
       userProfile.gems = (userProfile.gems || 0) + (data.bonusGems || 50);
@@ -2987,15 +3153,19 @@ function sendLocalPushNotification(title, body) {
       showPartnerInfo(data);
       startNextButtonCooldown();
 
-      // Micro-pause to allow any previous socket/media teardown to settle cleanly
-      await new Promise(r => setTimeout(r, 120));
+      // Ensure local media is ready immediately
+      if (!localStream || !localStream.active || localStream.getVideoTracks().length === 0) {
+        await requestMediaPermission();
+      }
 
-      // 2. Establish WebRTC Peer Connection
-      await createPeerConnection();
-
-      // 3. Initiator creates offer
+      // 2. Establish WebRTC Peer Connection smoothly
       if (isInitiator) {
+        await createPeerConnection(true);
         await createAndSendOffer();
+      } else {
+        if (!peerConnection || peerConnection.signalingState === 'closed') {
+          await createPeerConnection(false);
+        }
       }
     } catch (err) {
       console.error('[Socket] Error in matched handler:', err);
@@ -3005,8 +3175,8 @@ function sendLocalPushNotification(title, body) {
 
   socket.on('offer', async (data) => {
     console.log('[Socket] Received offer');
-    if (!peerConnection) {
-      await createPeerConnection();
+    if (!peerConnection || peerConnection.signalingState === 'closed') {
+      await createPeerConnection(false);
     }
     await handleOffer(data.offer);
   });
@@ -3633,7 +3803,11 @@ async function applySenderParameters() {
   }
 }
 
-async function createPeerConnection() {
+async function createPeerConnection(forceFresh = false) {
+  if (!forceFresh && peerConnection && peerConnection.signalingState !== 'closed' && peerConnection.getSenders().length > 0) {
+    console.log('[WebRTC] Active peerConnection already configured, keeping connection.');
+    return;
+  }
   cleanupPeerConnection();
 
   try {
@@ -3683,7 +3857,7 @@ async function createPeerConnection() {
         stream = peerConnection._remoteStream;
       }
 
-      // 1. Remote Video Element (Stay hidden until frames decode!)
+      // 1. Remote Video Element (Only reveal when real live frames are decoded!)
       const remoteVid = $('#remote-video');
       const fallbackBg = $('#camera-fallback-bg');
       if (remoteVid) {
@@ -3694,29 +3868,27 @@ async function createPeerConnection() {
         remoteVid.playsInline = true;
         remoteVid.autoplay = true;
 
-        const revealVideo = () => {
-          remoteVid.classList.remove('hidden');
-          if (fallbackBg) fallbackBg.style.display = 'none';
-        };
-
-        // Safety reveal timer - guarantees remote video is visible immediately
-        setTimeout(revealVideo, 250);
-
-        remoteVid.onloadedmetadata = () => {
-          console.log('[WebRTC] Remote video metadata loaded:', remoteVid.videoWidth, 'x', remoteVid.videoHeight);
-          revealVideo();
-          remoteVid.play().catch(() => {});
+        const checkAndReveal = () => {
+          if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+            remoteVid.classList.remove('hidden');
+            if (fallbackBg) fallbackBg.style.display = 'none';
+          }
         };
 
         remoteVid.onloadeddata = () => {
-          revealVideo();
+          remoteVid.play().catch(() => {});
+          checkAndReveal();
         };
 
         remoteVid.onplaying = () => {
-          revealVideo();
+          checkAndReveal();
         };
 
-        remoteVid.play().then(revealVideo).catch(err => {
+        remoteVid.ontimeupdate = () => {
+          checkAndReveal();
+        };
+
+        remoteVid.play().then(checkAndReveal).catch(err => {
           console.warn('[WebRTC] Remote video play error:', err);
         });
       }
@@ -3757,8 +3929,12 @@ async function createPeerConnection() {
       if (peerConnection.connectionState === 'connected') {
         console.log('[WebRTC] P2P Video Call Connected Successfully!');
         applySenderParameters();
+        const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
-        if (fallbackBg) fallbackBg.style.display = 'none';
+        if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+          remoteVid.classList.remove('hidden');
+          if (fallbackBg) fallbackBg.style.display = 'none';
+        }
       } else if (peerConnection.connectionState === 'failed') {
         console.warn('[WebRTC] Connection failed, attempting ICE restart...');
         if (peerConnection.restartIce) {
@@ -3770,8 +3946,12 @@ async function createPeerConnection() {
     peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTC] ICE connection state:', peerConnection.iceConnectionState);
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
-        if (fallbackBg) fallbackBg.style.display = 'none';
+        if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+          remoteVid.classList.remove('hidden');
+          if (fallbackBg) fallbackBg.style.display = 'none';
+        }
       } else if (peerConnection.iceConnectionState === 'failed') {
         console.warn('[WebRTC] ICE state failed, restarting ICE...');
         if (peerConnection.restartIce) {

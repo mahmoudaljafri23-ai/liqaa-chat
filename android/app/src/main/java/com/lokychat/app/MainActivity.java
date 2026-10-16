@@ -64,6 +64,11 @@ public class MainActivity extends BridgeActivity {
 
                 webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
                     @Override
+                    public android.graphics.Bitmap getDefaultVideoPoster() {
+                        return android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.ARGB_8888);
+                    }
+
+                    @Override
                     public void onPermissionRequest(final PermissionRequest request) {
                         runOnUiThread(() -> {
                             try {

@@ -796,6 +796,36 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Relay real-time bidirectional friend removal so both sides instantly become non-friends
+  socket.on('sync_remove_friend', (data) => {
+    const user = users.get(socket.id);
+    let targetId = (data && (data.targetPartnerId || data.targetSocketId || data.targetId)) || (user && user.partnerId);
+    if (!targetId || !users.has(targetId)) {
+      if (data) {
+        for (const [sId, u] of users.entries()) {
+          if (sId === socket.id) continue;
+          if (data.targetSerialNumber && u.serialNumber && u.serialNumber === data.targetSerialNumber) {
+            targetId = sId;
+            break;
+          }
+          if (data.targetUsername && u.username && u.username.toLowerCase() === data.targetUsername.toLowerCase()) {
+            targetId = sId;
+            break;
+          }
+        }
+      }
+    }
+    if (targetId) {
+      const myUsername = (data && data.myUsername && data.myUsername.trim()) ? data.myUsername.trim() : (user && user.username ? user.username : 'مستخدم');
+      io.to(targetId).emit('friend_removed_by_partner', {
+        partnerId: socket.id,
+        partnerSerialNumber: (data && data.mySerialNumber) || (user && user.serialNumber) || '',
+        partnerUsername: myUsername
+      });
+      console.log(`[Friend Removed] Relayed bidirectional removal from ${socket.id} (${myUsername}) to ${targetId}`);
+    }
+  });
+
   socket.on('update_profile', (data) => {
     let user = users.get(socket.id);
     if (user && data) {
