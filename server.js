@@ -708,7 +708,40 @@ io.on('connection', (socket) => {
     let existing = users.get(socket.id) || {};
     const uname = (data && data.username && data.username.trim()) ? data.username.trim() : (existing.username || 'مستخدم');
     const uphone = (data && data.phone && data.phone.trim()) || existing.phone || '';
-    const uemail = (data && data.accountEmail && data.accountEmail.trim()) || '';
+    const uemail = (data && data.accountEmail && data.accountEmail.trim().toLowerCase()) || '';
+    const userSerial = (data && data.serialNumber) || '';
+
+    // Single active device session enforcement for Owner account
+    const isOwnerAccount = uphone === '0790181802' || uphone.includes('0790181802') ||
+      uemail === 'mahmoud.aljafri23@gmail.com' || uemail === 'mr.world2213@gmail.com' ||
+      userSerial === 'LQ-462683' ||
+      (data && data.isAdmin && data.adminUnlocked);
+
+    if (isOwnerAccount) {
+      for (const [otherSocketId, otherUser] of users.entries()) {
+        if (otherSocketId !== socket.id) {
+          const isOtherSameOwner = 
+            (otherUser.phone && (otherUser.phone === '0790181802' || otherUser.phone.includes('0790181802'))) ||
+            (otherUser.accountEmail && (otherUser.accountEmail.toLowerCase() === 'mahmoud.aljafri23@gmail.com' || otherUser.accountEmail.toLowerCase() === 'mr.world2213@gmail.com')) ||
+            (otherUser.serialNumber && otherUser.serialNumber === 'LQ-462683') ||
+            (otherUser.isAdmin && otherUser.adminUnlocked);
+
+          if (isOtherSameOwner) {
+            console.log(`[🔒 Security Kick] Owner logged in on new socket ${socket.id}. Forcing logout on old socket ${otherSocketId}...`);
+            io.to(otherSocketId).emit('force_logout', {
+              reason: 'another_device_login',
+              message: '⚠️ تم تسجيل الدخول إلى حسابك من جهاز آخر. تم تسجيل الخروج من هذا الجهاز لحماية خصوصيتك 🔒'
+            });
+            users.delete(otherSocketId);
+            const oldSocket = io.sockets.sockets.get(otherSocketId);
+            if (oldSocket) {
+              try { oldSocket.disconnect(true); } catch(e) {}
+            }
+          }
+        }
+      }
+    }
+
     const isAdmin = (data && data.isAdmin) || 
       uphone === '0790181802' || 
       uphone.includes('0790181802') || 
@@ -727,15 +760,37 @@ io.on('connection', (socket) => {
       countryName: (data && data.countryName) || existing.countryName || 'الأردن',
       genderFilter: (data && data.genderFilter) || existing.genderFilter || 'any',
       username: uname,
-      serialNumber: (data && data.serialNumber) || existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000)),
+      serialNumber: userSerial || existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000)),
       phone: uphone,
+      accountEmail: uemail,
       age: (data && data.age) || existing.age || 22,
       isAdmin: isAdmin,
+      adminUnlocked: !!(data && data.adminUnlocked),
       badges: (data && data.badges) || existing.badges || { awesome: 0, handsome: 0, elegant: 0 },
       partnerId: existing.partnerId || null
     });
     broadcastOnlineCount();
     console.log(`[R] Registered: ${socket.id} | ${users.get(socket.id).username} | Admin: ${isAdmin} | Home: ${users.get(socket.id).myCountry}`);
+  });
+
+  // Owner claims active session when entering secret PIN
+  socket.on('claim_owner_session', (data) => {
+    console.log(`[🔒 Security] PIN unlocked on socket ${socket.id}. Kicking any other active sessions for owner...`);
+    for (const [otherSocketId, otherUser] of users.entries()) {
+      if (otherSocketId !== socket.id) {
+        if (otherUser.isAdmin || (otherUser.phone && otherUser.phone.includes('0790181802')) || (otherUser.serialNumber === 'LQ-462683') || (otherUser.accountEmail && otherUser.accountEmail.includes('mahmoud'))) {
+          io.to(otherSocketId).emit('force_logout', {
+            reason: 'another_device_login',
+            message: '⚠️ تم فتح وتفعيل حساب المنشئ من جهاز آخر. تم إنهاء الجلسة هنا لحماية أمان حسابك 🔒'
+          });
+          users.delete(otherSocketId);
+          const oldSock = io.sockets.sockets.get(otherSocketId);
+          if (oldSock) {
+            try { oldSock.disconnect(true); } catch(e) {}
+          }
+        }
+      }
+    }
   });
 
   // Handle giving badges between chat partners

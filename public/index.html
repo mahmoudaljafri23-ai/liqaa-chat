@@ -842,6 +842,20 @@
     </div>
   </div>
 
+  <!-- Security Single-Session Force Logout Modal -->
+  <div id="security-kick-modal" class="modal hidden" style="z-index: 10006; background: rgba(0,0,0,0.96); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);">
+    <div class="modal-content" style="max-width: 400px; text-align: center; border: 2px solid #ef4444; background: #181124; padding: 25px 20px; border-radius: 20px; box-shadow: 0 0 35px rgba(239, 68, 68, 0.45);">
+      <div style="font-size: 55px; margin-bottom: 12px;">🔒</div>
+      <h2 style="color: #f87171; margin-bottom: 10px; font-size: 20px; font-weight: 800;">تم تسجيل الدخول من جهاز آخر</h2>
+      <p id="security-kick-msg" style="color: #e2e8f0; font-size: 13.5px; line-height: 1.6; margin-bottom: 22px;">
+        تم فتح حسابك الملكي من جهاز أو متصفح آخر، وتم تسجيل الخروج من هذا الجهاز تلقائياً للحفاظ على خصوصيتك وأمان حسابك.
+      </p>
+      <button type="button" onclick="location.reload()" class="action-button" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-weight: 800; padding: 12px; border-radius: 12px; border: none; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(239,68,68,0.4);">
+        🔄 إعادة فتح الحساب من هذا الجهاز
+      </button>
+    </div>
+  </div>
+
   <!-- Royal WhatsApp Style Friends & Online Messenger Modal -->
   <div id="friends-modal" class="modal hidden" style="z-index: 9999; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
     <div class="modal-content royal-messenger-content">

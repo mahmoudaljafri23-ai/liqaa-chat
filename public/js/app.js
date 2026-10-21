@@ -577,6 +577,15 @@ function setupAdminPinModal() {
           fetchAdminReports();
         }
 
+        // Claim exclusive single session on server (kicks any older devices)
+        if (socket && socket.connected) {
+          socket.emit('claim_owner_session', {
+            serialNumber: userProfile.serialNumber,
+            phone: userProfile.phone,
+            accountEmail: userProfile.accountEmail
+          });
+        }
+
         showGemToast('👑 أهلاً بك يا منشئ التطبيق! تم فتح كامل الصلاحيات والجواهر بنجاح.');
       } else {
         showGemToast('❌ الرمز السري غير صحيح! تم رفض الدخول.');
@@ -3264,6 +3273,30 @@ function connectSocket() {
   socket.on('admin_transfer_result', (data) => {
     if (data && data.message) {
       showGemToast((data.success ? '✅ ' : '⚠️ ') + data.message);
+    }
+  });
+
+  socket.on('force_logout', (data) => {
+    console.warn('[Security] Force logout triggered from server:', data);
+    userProfile.adminUnlocked = false;
+    userProfile.isAdmin = false;
+    saveUserProfile();
+    updateProfileUI();
+
+    if (currentState !== 'idle') {
+      cleanupPeerConnection();
+      if (chatScreen) chatScreen.classList.remove('active');
+      if (welcomeScreen) welcomeScreen.classList.add('active');
+      setState('idle');
+    }
+
+    const kickModal = $('#security-kick-modal');
+    const kickMsg = $('#security-kick-msg');
+    if (kickMsg && data && data.message) {
+      kickMsg.textContent = data.message;
+    }
+    if (kickModal) {
+      kickModal.classList.remove('hidden');
     }
   });
 
