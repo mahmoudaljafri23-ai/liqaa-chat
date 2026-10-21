@@ -72,37 +72,62 @@ function initFirebase() {
     }
     firestoreDb = firebase.firestore();
     console.log('[Firebase] Cloud Firestore connected successfully! 🔥');
+    syncUserToFirebase();
     initFirebaseFriendsListener();
   } catch (err) {
     console.warn('[Firebase] Init error:', err);
   }
 }
 
-// Unique Username System - Check & Claim
-async function checkAndClaimFirebaseUsername(desiredUsername, serialNumber) {
-  if (!firestoreDb) return { available: true };
-  const raw = (desiredUsername || '').trim();
-  if (!raw || raw === 'مستخدم') return { available: true };
-  const cleanKey = raw.toLowerCase();
-
+// Central Cloud User Directory & Google Accounts Sync
+async function syncUserToFirebase(extraData = {}) {
+  if (!firestoreDb || !userProfile || !userProfile.serialNumber) return;
   try {
-    const docRef = firestoreDb.collection('usernames').doc(cleanKey);
-    const docSnap = await docRef.get();
-    if (docSnap.exists) {
-      const data = docSnap.data();
-      if (data && data.serialNumber && data.serialNumber !== serialNumber) {
-        return { available: false, owner: data.serialNumber };
-      }
+    const sNum = userProfile.serialNumber;
+    const email = (extraData.accountEmail || userProfile.accountEmail || '').trim();
+    const cleanUsername = (extraData.username || userProfile.username || 'مستخدم').trim();
+    const nowLocal = new Date().toLocaleString('ar-JO', { timeZone: 'Asia/Amman' });
+
+    const userData = {
+      serialNumber: sNum,
+      username: cleanUsername,
+      accountEmail: email,
+      isGoogleUser: !!(email && email.includes('@')),
+      phone: extraData.phone || userProfile.phone || '',
+      gender: extraData.gender || userProfile.gender || selectedGender || 'male',
+      age: extraData.age || userProfile.age || 22,
+      country: myHomeCountryCode || userProfile.country || 'JO',
+      countryName: selectedCountryName || userProfile.countryName || 'الأردن',
+      gems: userProfile.gems !== undefined ? userProfile.gems : 50,
+      photoUrl: extraData.photoUrl || userProfile.photoUrl || '',
+      isAdmin: !!userProfile.isAdmin,
+      lastSeen: Date.now(),
+      lastSeenDate: nowLocal
+    };
+
+    // 1. Central users collection: every user that registers or updates profile appears here
+    await firestoreDb.collection('users').doc(sNum).set(userData, { merge: true });
+    console.log('[Firebase] User profile synced to Firestore users/' + sNum, userData.username, email);
+
+    // 2. If signed in with Google/Gmail, also record directly in 'gmail_users' so the owner can instantly view all Google accounts
+    if (email && email.includes('@')) {
+      const cleanEmailDocId = email.toLowerCase().replace(/[^a-z0-9@_.-]/g, '_');
+      await firestoreDb.collection('gmail_users').doc(cleanEmailDocId).set({
+        email: email,
+        username: cleanUsername,
+        serialNumber: sNum,
+        phone: userData.phone,
+        gender: userData.gender,
+        countryName: userData.countryName,
+        photoUrl: userData.photoUrl,
+        gems: userData.gems,
+        lastLogin: Date.now(),
+        lastLoginDate: nowLocal
+      }, { merge: true });
+      console.log('[Firebase] Google account recorded in Firestore gmail_users/' + cleanEmailDocId);
     }
-    await docRef.set({
-      username: raw,
-      serialNumber: serialNumber,
-      updatedAt: Date.now()
-    }, { merge: true });
-    return { available: true };
   } catch (err) {
-    console.warn('[Firebase] checkUsername error:', err);
-    return { available: true };
+    console.warn('[Firebase] syncUserToFirebase error:', err);
   }
 }
 
@@ -685,6 +710,9 @@ function loadUserProfile() {
 
 function saveUserProfile() {
   localStorage.setItem('liqaa_user_profile', JSON.stringify(userProfile));
+  if (typeof syncUserToFirebase === 'function') {
+    syncUserToFirebase();
+  }
   if (socket && socket.connected) {
     socket.emit('register', {
       gender: selectedGender || userProfile.gender || 'male',
@@ -1388,6 +1416,11 @@ function setupAuthSystem() {
     }
 
     saveUserProfile();
+    syncUserToFirebase({
+      accountEmail: email,
+      username: userProfile.username,
+      photoUrl: picture
+    });
     updateProfileUI();
     updateAuthModalView();
 
@@ -2532,11 +2565,6 @@ function setupSettingsUI() {
       const newGender = isFemaleSelected ? 'female' : 'male';
 
       if (newName) {
-        const check = await checkAndClaimFirebaseUsername(newName, userProfile.serialNumber);
-        if (!check.available) {
-          showGemToast(`⚠️ اسم "${newName}" محجوز مسبقاً! يرجى اختيار اسم مختلف.`);
-          return;
-        }
         userProfile.username = newName;
       }
       userProfile.phone = newPhone;
