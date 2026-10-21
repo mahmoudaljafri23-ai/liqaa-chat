@@ -517,36 +517,31 @@ async function autoDetectCountry() {
 // Admin Developer Permissions & Security PIN
 // =============================================
 function checkAdminPermissions() {
-  const uname = (userProfile.username || '').toLowerCase();
-  const phone = (userProfile.phone || '').trim();
-  const email = (userProfile.accountEmail || '').trim().toLowerCase();
-
   // Ensure default admin PIN exists
   if (!userProfile.adminPin) {
     userProfile.adminPin = '2026';
   }
 
-  // Check if username/phone/email matches Admin identity
-  const isAdminIdentity = phone === '0790181802' || phone === '07901818188' || phone.includes('0790181802') ||
-    email === 'mr.world2213@gmail.com' || uname === 'mahmoud' || uname === 'محمود' || uname === 'admin';
-
-  if (isAdminIdentity) {
+  // Creator privileges are ONLY active when unlocked with the secret PIN!
+  if (userProfile.adminUnlocked === true) {
     userProfile.isAdmin = true;
-    userProfile.adminUnlocked = true;
     userProfile.gems = 999999;
     delete userProfile.bannedUntil; // Full immunity
-  } else {
-    userProfile.isAdmin = false;
-    userProfile.adminUnlocked = false;
+    return true;
   }
-  return userProfile.isAdmin;
+
+  userProfile.isAdmin = false;
+  return false;
 }
 
 function promptAdminPinModal() {
   const adminPinModal = $('#admin-pin-modal');
   const adminPinInput = $('#admin-pin-input');
   if (adminPinModal) adminPinModal.classList.remove('hidden');
-  if (adminPinInput) adminPinInput.focus();
+  if (adminPinInput) {
+    adminPinInput.value = '';
+    adminPinInput.focus();
+  }
 }
 
 function setupAdminPinModal() {
@@ -558,19 +553,34 @@ function setupAdminPinModal() {
   if (submitAdminPinBtn) {
     submitAdminPinBtn.onclick = () => {
       const enteredPin = adminPinInput ? adminPinInput.value.trim() : '';
-      const correctPin = userProfile.adminPin || '2026';
+      const customPin = userProfile.adminPin || '2026';
 
-      if (enteredPin === correctPin) {
+      // Secret PIN check: matches userProfile.adminPin, '2026', or owner phone '0790181802'
+      if (enteredPin && (enteredPin === customPin || enteredPin === '2026' || enteredPin === '0790181802')) {
         userProfile.adminUnlocked = true;
         userProfile.isAdmin = true;
         userProfile.gems = 999999;
         delete userProfile.bannedUntil;
         saveUserProfile();
         updateProfileUI();
+
         if (adminPinModal) adminPinModal.classList.add('hidden');
-        showGemToast('🔓 تم تفعيل حساب منشئ التطبيق بنجاح!');
+        if (adminPinInput) adminPinInput.value = '';
+
+        // Reveal creator tools and hide the gate
+        const creatorGate = $('#creator-access-gate');
+        const adminSection = $('#admin-broadcast-section');
+        if (creatorGate) creatorGate.classList.add('hidden');
+        if (adminSection) {
+          adminSection.classList.remove('hidden');
+          fetchAdminRechargeStats();
+          fetchAdminReports();
+        }
+
+        showGemToast('👑 أهلاً بك يا منشئ التطبيق! تم فتح كامل الصلاحيات والجواهر بنجاح.');
       } else {
-        showGemToast('❌ الرمز السري غير صحيح!');
+        showGemToast('❌ الرمز السري غير صحيح! تم رفض الدخول.');
+        if (adminPinInput) adminPinInput.value = '';
       }
     };
   }
@@ -578,9 +588,14 @@ function setupAdminPinModal() {
   if (cancelAdminPinBtn) {
     cancelAdminPinBtn.onclick = () => {
       if (adminPinModal) adminPinModal.classList.add('hidden');
-      userProfile.isAdmin = false;
-      userProfile.adminUnlocked = false;
-      updateProfileUI();
+      if (adminPinInput) adminPinInput.value = '';
+    };
+  }
+
+  const openCreatorBtn = $('#open-creator-panel-btn');
+  if (openCreatorBtn) {
+    openCreatorBtn.onclick = () => {
+      promptAdminPinModal();
     };
   }
 }
@@ -696,9 +711,13 @@ function loadUserProfile() {
   if (!userProfile.gender) {
     userProfile.gender = 'male';
   }
-  if (userProfile.gems === undefined || userProfile.gems === null) {
-    userProfile.gems = 50;
-  }
+
+  // Security: Lock creator controls by default until secret PIN is verified
+  userProfile.adminUnlocked = false;
+  userProfile.isAdmin = false;
+
+  // Zero out all gems for regular accounts as requested ("صفرلي كل الرصيد عن اي حساب كلو صفر")
+  userProfile.gems = 0;
 
   selectedGender = userProfile.gender;
   saveUserProfile();
@@ -1015,6 +1034,11 @@ function renderFriendsAndOnlineUsers() {
           <span>💬</span>
           <span>دردشة</span>
         </button>
+        ${(isAdmin && userProfile.adminUnlocked) ? `
+          <button class="btn-transfer-gems-mini" type="button" title="تحويل رصيد" style="background: linear-gradient(135deg, #ffd700, #ff8e53); border: none; color: #000; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(255,215,0,0.35); display: flex; align-items: center; gap: 3px;">
+            <span>💎</span><span>تحويل</span>
+          </button>
+        ` : ''}
         ${user.isFriend ? `
           <button class="btn-remove-friend-mini" type="button" title="إزالة الصديق" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; font-size: 10.5px; padding: 2px 7px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
             🗑️ إزالة
@@ -1032,6 +1056,19 @@ function renderFriendsAndOnlineUsers() {
       chatBtn.onclick = (e) => {
         e.stopPropagation();
         openPrivateChatWindow(user);
+      };
+    }
+
+    const transferBtn = card.querySelector('.btn-transfer-gems-mini');
+    if (transferBtn) {
+      transferBtn.onclick = (e) => {
+        e.stopPropagation();
+        openSettingsModal();
+        const targetInput = $('#admin-transfer-target');
+        const amountInput = $('#admin-transfer-amount');
+        if (targetInput) targetInput.value = user.serialNumber || user.username;
+        if (amountInput) amountInput.focus();
+        showGemToast(`💎 تم اختيار (${user.username}) لتحويل الرصيد!`);
       };
     }
 
@@ -2418,10 +2455,16 @@ function openSettingsModal() {
       };
     }
 
+    const isUnlockedAdmin = !!(userProfile && userProfile.isAdmin && userProfile.adminUnlocked);
+    const creatorAccessGate = $('#creator-access-gate');
     const adminBroadcastSection = $('#admin-broadcast-section');
+
+    if (creatorAccessGate) {
+      creatorAccessGate.classList.toggle('hidden', isUnlockedAdmin);
+    }
     if (adminBroadcastSection) {
-      adminBroadcastSection.classList.toggle('hidden', !userProfile.isAdmin);
-      if (userProfile.isAdmin) {
+      adminBroadcastSection.classList.toggle('hidden', !isUnlockedAdmin);
+      if (isUnlockedAdmin) {
         fetchAdminRechargeStats();
         fetchAdminReports();
       }
@@ -2434,6 +2477,81 @@ function openSettingsModal() {
 }
 window.openSettingsModal = openSettingsModal;
 
+// Admin Gems Transfer to any user or friend
+async function handleAdminTransferGems() {
+  if (!userProfile.isAdmin || !userProfile.adminUnlocked) {
+    showGemToast('❌ غير مصرح لك! خاصية تحويل الرصيد متاحة فقط لمنشئ التطبيق.');
+    return;
+  }
+
+  const targetInput = $('#admin-transfer-target');
+  const amountInput = $('#admin-transfer-amount');
+  const target = targetInput ? targetInput.value.trim() : '';
+  const amount = parseInt(amountInput ? amountInput.value.trim() : '500', 10);
+
+  if (!target) {
+    showGemToast('⚠️ يرجى إدخال اسم المستخدم أو الرقم التسلسلي (ID)!');
+    return;
+  }
+  if (!amount || amount <= 0) {
+    showGemToast('⚠️ يرجى إدخال عدد جواهر صالح (أكبر من 0)!');
+    return;
+  }
+
+  showGemToast('⏳ جاري تحويل الرصيد...');
+
+  let targetDisplayName = target;
+
+  // 1. Update recipient in Firebase Firestore
+  if (firestoreDb) {
+    try {
+      // First check if target matches doc ID (serialNumber like LQ-XXXXXX)
+      const userDocRef = firestoreDb.collection('users').doc(target);
+      const docSnap = await userDocRef.get();
+      if (docSnap.exists) {
+        const uData = docSnap.data();
+        targetDisplayName = uData.username || target;
+        const currentGems = parseInt(uData.gems, 10) || 0;
+        await userDocRef.update({
+          gems: currentGems + amount,
+          lastTransfer: {
+            amount: amount,
+            from: 'منشئ التطبيق 👑',
+            date: new Date().toLocaleString('ar-JO')
+          }
+        });
+      } else {
+        // Query by username
+        const querySnap = await firestoreDb.collection('users').where('username', '==', target).get();
+        if (!querySnap.empty) {
+          const doc = querySnap.docs[0];
+          const uData = doc.data();
+          targetDisplayName = uData.username || target;
+          const currentGems = parseInt(uData.gems, 10) || 0;
+          await doc.ref.update({
+            gems: currentGems + amount,
+            lastTransfer: {
+              amount: amount,
+              from: 'منشئ التطبيق 👑',
+              date: new Date().toLocaleString('ar-JO')
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Firebase] Transfer gems error:', err);
+    }
+  }
+
+  // 2. Emit via socket to notify target immediately if they are online
+  if (socket && socket.connected) {
+    socket.emit('admin_transfer_gems', { target: target, amount: amount });
+  }
+
+  showGemToast(`🎉 تم بنجاح تحويل +${amount} 💎 إلى (${targetDisplayName})!`);
+  if (targetInput) targetInput.value = '';
+}
+
 function setupSettingsUI() {
   const settingsPhone = $('#settings-phone');
   const adminPinGroup = $('#settings-admin-pin-group');
@@ -2441,7 +2559,7 @@ function setupSettingsUI() {
   function updateAdminPinVisibility() {
     const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
     if (adminPinGroup) {
-      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
+      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin && userProfile.adminUnlocked)) {
         adminPinGroup.classList.remove('hidden');
       } else {
         adminPinGroup.classList.add('hidden');
@@ -2451,6 +2569,12 @@ function setupSettingsUI() {
 
   if (settingsPhone) {
     settingsPhone.addEventListener('input', updateAdminPinVisibility);
+  }
+
+  // Transfer Gems Button for Admin
+  const adminTransferBtn = $('#admin-transfer-btn');
+  if (adminTransferBtn) {
+    adminTransferBtn.onclick = handleAdminTransferGems;
   }
 
   $$('#open-settings-modal-btn, [id="open-settings-modal-btn"], #tab-open-settings, [id="tab-open-settings"]').forEach(btn => {
@@ -2574,14 +2698,10 @@ function setupSettingsUI() {
       selectedGender = newGender;
       userProfile.hasCompletedSetup = true;
 
-      // Re-evaluate Admin status based on new phone/username
-      if (newPhone !== '0790181802' && !newPhone.includes('0790181802') && !newName.toLowerCase().includes('mahmoud')) {
+      // Admin privileges are strictly guarded by secret PIN
+      if (!userProfile.adminUnlocked) {
         userProfile.isAdmin = false;
-        userProfile.adminUnlocked = false;
-        userProfile.gems = userProfile.gems || 50;
-      } else {
-        userProfile.isAdmin = true;
-        userProfile.gems = 999999;
+        userProfile.gems = 0;
       }
 
       saveUserProfile();
@@ -3128,6 +3248,23 @@ function connectSocket() {
   socket.on('global_notification', (data) => {
     showGemToast(`📢 ${data.title}: ${data.message}`);
     sendLocalPushNotification(data.title || 'Loky Chat - لوكي شات 🚀', data.message);
+  });
+
+  socket.on('gems_gift_received', (data) => {
+    const amount = parseInt(data.amount, 10) || 0;
+    if (amount > 0) {
+      userProfile.gems = (parseInt(userProfile.gems, 10) || 0) + amount;
+      saveUserProfile();
+      updateProfileUI();
+      showGemToast(data.message || `🎉 وصلتك هدية +${amount} مجوهرة من منشئ التطبيق!`);
+      sendLocalPushNotification('🎁 هدية جواهر من منشئ التطبيق!', `تمت إضافة +${amount} مجوهرة إلى حسابك بنجاح 💎`);
+    }
+  });
+
+  socket.on('admin_transfer_result', (data) => {
+    if (data && data.message) {
+      showGemToast((data.success ? '✅ ' : '⚠️ ') + data.message);
+    }
   });
 
   socket.on('admin_new_report', (data) => {

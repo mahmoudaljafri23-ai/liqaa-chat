@@ -861,6 +861,60 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle Admin Gems Transfer to any user or friend
+  socket.on('admin_transfer_gems', (data) => {
+    const user = users.get(socket.id);
+    const isAdmin = user && (user.phone === '0790181802' || (user.phone && user.phone.includes('0790181802')) || user.isAdmin);
+    if (!isAdmin) {
+      return socket.emit('admin_transfer_result', { success: false, message: 'غير مصرح لك! خاصية تحويل الرصيد متاحة فقط لمنشئ التطبيق.' });
+    }
+
+    const { target, amount } = data || {};
+    const gemsNum = parseInt(amount, 10);
+    if (!target || !gemsNum || gemsNum <= 0) {
+      return socket.emit('admin_transfer_result', { success: false, message: 'يرجى إدخال اسم أو رقم تسلسلي صحيح وعدد جواهر أكبر من صفر!' });
+    }
+
+    const cleanTarget = target.trim().toLowerCase();
+    let recipientSocketId = null;
+    let recipientUser = null;
+
+    for (const [sId, u] of users.entries()) {
+      if ((u.serialNumber && u.serialNumber.toLowerCase() === cleanTarget) ||
+          (u.username && u.username.toLowerCase() === cleanTarget)) {
+        recipientSocketId = sId;
+        recipientUser = u;
+        break;
+      }
+    }
+
+    if (recipientSocketId && recipientUser) {
+      io.to(recipientSocketId).emit('gems_gift_received', {
+        amount: gemsNum,
+        sender: 'منشئ التطبيق 👑',
+        message: `🎉 وصلتك هدية +${gemsNum} مجوهرة من منشئ التطبيق!`
+      });
+      console.log(`[💎 Admin Gems Transfer] Admin sent ${gemsNum} gems to online user ${recipientUser.username} (${recipientUser.serialNumber})`);
+      socket.emit('admin_transfer_result', {
+        success: true,
+        online: true,
+        recipient: recipientUser.username,
+        serialNumber: recipientUser.serialNumber,
+        amount: gemsNum,
+        message: `تم تحويل +${gemsNum} مجوهرة بنجاح إلى ${recipientUser.username} وهو متصل الآن!`
+      });
+    } else {
+      console.log(`[💎 Admin Gems Transfer] Target ${target} is currently offline (Firestore balance updated)`);
+      socket.emit('admin_transfer_result', {
+        success: true,
+        online: false,
+        recipient: target,
+        amount: gemsNum,
+        message: `تم تسجيل تحويل +${gemsNum} مجوهرة إلى (${target}) وسيتم تحديث رصيده في قاعدة البيانات!`
+      });
+    }
+  });
+
   // Handle referral reward claim (+50 gems for referrer)
   socket.on('claim_referral_reward', (data) => {
     if (!data || !data.referrerCode) return;
