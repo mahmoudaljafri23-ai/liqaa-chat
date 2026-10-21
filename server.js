@@ -527,11 +527,7 @@ function findMatch(socketId) {
   const user = users.get(socketId);
   if (!user) return null;
 
-  if (!user.recentPartners) user.recentPartners = [];
-
-  let bestMatch = null;
-  let fallbackMatch = null;
-
+  // 1. Try matching with strict filters first
   for (let i = 0; i < waitingQueue.length; i++) {
     const candidateId = waitingQueue[i];
     if (candidateId === socketId) continue;
@@ -546,29 +542,29 @@ function findMatch(socketId) {
       !candidate.genderFilter || candidate.genderFilter === 'any' || candidate.genderFilter === user.gender;
 
     // Check country filter compatibility:
-    // User wants candidate if user's targetCountry is ALL, or candidate's home country matches
     const userWantsCandidateCountry =
       !user.targetCountry || user.targetCountry === 'ALL' || 
       !candidate.myCountry || candidate.myCountry === 'ALL' || 
       user.targetCountry === candidate.myCountry;
     
-    // Candidate wants user if candidate's targetCountry is ALL, or user's home country matches
     const candidateWantsUserCountry =
       !candidate.targetCountry || candidate.targetCountry === 'ALL' || 
       !user.myCountry || user.myCountry === 'ALL' || 
       candidate.targetCountry === user.myCountry;
 
     if (userWantsCandidateGender && candidateWantsUserGender && userWantsCandidateCountry && candidateWantsUserCountry) {
-      if (!user.recentPartners.includes(candidateId)) {
-        bestMatch = candidateId;
-        break;
-      } else if (!fallbackMatch) {
-        fallbackMatch = candidateId;
-      }
+      return candidateId;
     }
   }
 
-  return bestMatch || fallbackMatch;
+  // 2. Instant Match Fallback: If no strict filter match found, match with the first available person immediately! Zero wait!
+  for (let i = 0; i < waitingQueue.length; i++) {
+    if (waitingQueue[i] !== socketId) {
+      return waitingQueue[i];
+    }
+  }
+
+  return null;
 }
 
 const ROYAL_VIP_MEMBERS = [
@@ -626,7 +622,7 @@ function broadcastOnlineCount() {
   });
 }
 
-// Automatic Fast Queue Processor - runs every 500ms for instant matching
+// Automatic Ultra-Fast Queue Processor - runs every 200ms for instant matching
 setInterval(() => {
   if (waitingQueue.length < 2) return;
 
@@ -681,7 +677,7 @@ setInterval(() => {
       }
     }
   }
-}, 500);
+}, 200);
 
 // =============================================
 // Socket.IO Events

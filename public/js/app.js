@@ -3843,7 +3843,7 @@ async function createPeerConnection(forceFresh = false) {
         stream = peerConnection._remoteStream;
       }
 
-      // 1. Remote Video Element (Only reveal when real live frames are decoded!)
+      // 1. Remote Video Element (Instant Reveal: zero lag, zero delay)
       const remoteVid = $('#remote-video');
       const fallbackBg = $('#camera-fallback-bg');
       if (remoteVid) {
@@ -3855,11 +3855,15 @@ async function createPeerConnection(forceFresh = false) {
         remoteVid.autoplay = true;
 
         const checkAndReveal = () => {
-          if (remoteVid && (remoteVid.videoWidth > 0 || remoteVid.readyState >= 2)) {
+          if (remoteVid) {
             remoteVid.classList.remove('hidden');
             if (fallbackBg) fallbackBg.style.display = 'none';
+            remoteVid.play().catch(() => {});
           }
         };
+
+        // Instantly trigger reveal
+        checkAndReveal();
 
         remoteVid.onloadeddata = () => {
           remoteVid.play().catch(() => {});
@@ -3878,19 +3882,15 @@ async function createPeerConnection(forceFresh = false) {
           console.warn('[WebRTC] Remote video play error:', err);
         });
 
-        // Fast watchdog: poll every 100ms for up to 4s to reveal video immediately
+        // Fast watchdog: poll every 80ms to guarantee instant reveal
         let pollCount = 0;
         const revealInterval = setInterval(() => {
           pollCount++;
-          if (remoteVid && (remoteVid.videoWidth > 0 || remoteVid.readyState >= 2)) {
-            remoteVid.classList.remove('hidden');
-            if (fallbackBg) fallbackBg.style.display = 'none';
-            remoteVid.play().catch(() => {});
-            clearInterval(revealInterval);
-          } else if (pollCount > 40) {
+          checkAndReveal();
+          if (pollCount > 25) {
             clearInterval(revealInterval);
           }
-        }, 100);
+        }, 80);
       }
 
       // 2. Dedicated Remote Audio Element (prevents video pause/mute from silencing voice)
@@ -3931,9 +3931,10 @@ async function createPeerConnection(forceFresh = false) {
         applySenderParameters();
         const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
-        if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+        if (remoteVid) {
           remoteVid.classList.remove('hidden');
           if (fallbackBg) fallbackBg.style.display = 'none';
+          remoteVid.play().catch(() => {});
         }
       } else if (peerConnection.connectionState === 'failed') {
         console.warn('[WebRTC] Connection failed, attempting ICE restart...');
@@ -3948,9 +3949,10 @@ async function createPeerConnection(forceFresh = false) {
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
         const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
-        if (remoteVid && remoteVid.videoWidth > 0 && !remoteVid.paused) {
+        if (remoteVid) {
           remoteVid.classList.remove('hidden');
           if (fallbackBg) fallbackBg.style.display = 'none';
+          remoteVid.play().catch(() => {});
         }
       } else if (peerConnection.iceConnectionState === 'failed') {
         console.warn('[WebRTC] ICE state failed, restarting ICE...');
