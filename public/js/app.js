@@ -42,6 +42,160 @@ const GEO_APIS = [
 ];
 
 // =============================================
+// Firebase Cloud Firestore Configuration & Sync
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDvpy5jXHgAhBjM0KH8bv3daHj_oFF69q8",
+  authDomain: "loky-chat-a84a6.firebaseapp.com",
+  projectId: "loky-chat-a84a6",
+  storageBucket: "loky-chat-a84a6.firebasestorage.app",
+  messagingSenderId: "962362893467",
+  appId: "1:962362893467:web:d00ac6b5ae17115507123e",
+  measurementId: "G-DKJ3587VE6"
+};
+
+let fbApp = null;
+let firestoreDb = null;
+let friendsUnsubscribe = null;
+
+function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    console.warn('[Firebase] SDK not loaded yet, will retry');
+    setTimeout(initFirebase, 1200);
+    return;
+  }
+  try {
+    if (!firebase.apps.length) {
+      fbApp = firebase.initializeApp(firebaseConfig);
+    } else {
+      fbApp = firebase.app();
+    }
+    firestoreDb = firebase.firestore();
+    console.log('[Firebase] Cloud Firestore connected successfully! 🔥');
+    initFirebaseFriendsListener();
+  } catch (err) {
+    console.warn('[Firebase] Init error:', err);
+  }
+}
+
+// Unique Username System - Check & Claim
+async function checkAndClaimFirebaseUsername(desiredUsername, serialNumber) {
+  if (!firestoreDb) return { available: true };
+  const raw = (desiredUsername || '').trim();
+  if (!raw || raw === 'مستخدم') return { available: true };
+  const cleanKey = raw.toLowerCase();
+
+  try {
+    const docRef = firestoreDb.collection('usernames').doc(cleanKey);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      if (data && data.serialNumber && data.serialNumber !== serialNumber) {
+        return { available: false, owner: data.serialNumber };
+      }
+    }
+    await docRef.set({
+      username: raw,
+      serialNumber: serialNumber,
+      updatedAt: Date.now()
+    }, { merge: true });
+    return { available: true };
+  } catch (err) {
+    console.warn('[Firebase] checkUsername error:', err);
+    return { available: true };
+  }
+}
+
+// Bidirectional Cloud Friends Sync
+async function addFriendToFirebase(partnerData) {
+  if (!firestoreDb || !userProfile.serialNumber) return;
+  const partnerSerial = partnerData.serialNumber || ('LK-' + (partnerData.socketId || partnerData.id || '').substr(0, 6).toUpperCase());
+  if (!partnerSerial) return;
+
+  try {
+    const myDoc = {
+      id: partnerSerial,
+      serialNumber: partnerSerial,
+      username: partnerData.username || partnerData.name || 'مستخدم',
+      gender: partnerData.gender || 'male',
+      age: partnerData.age || 22,
+      country: partnerData.country || 'JO',
+      countryName: partnerData.countryName || 'الأردن',
+      addedAt: Date.now()
+    };
+
+    const partnerDoc = {
+      id: userProfile.serialNumber,
+      serialNumber: userProfile.serialNumber,
+      username: userProfile.username || 'مستخدم',
+      gender: userProfile.gender || 'male',
+      age: userProfile.age || 22,
+      country: myHomeCountryCode || userProfile.country || 'JO',
+      countryName: selectedCountryName || 'الأردن',
+      addedAt: Date.now()
+    };
+
+    await firestoreDb.collection('users').doc(userProfile.serialNumber).collection('friends').doc(partnerSerial).set(myDoc);
+    await firestoreDb.collection('users').doc(partnerSerial).collection('friends').doc(userProfile.serialNumber).set(partnerDoc);
+    console.log('[Firebase] Cloud friendship saved for both sides! 🤝');
+  } catch (err) {
+    console.warn('[Firebase] addFriendToFirebase error:', err);
+  }
+}
+
+async function removeFriendFromFirebase(targetSerial) {
+  if (!firestoreDb || !userProfile.serialNumber || !targetSerial) return;
+  try {
+    await firestoreDb.collection('users').doc(userProfile.serialNumber).collection('friends').doc(targetSerial).delete();
+    await firestoreDb.collection('users').doc(targetSerial).collection('friends').doc(userProfile.serialNumber).delete();
+    console.log('[Firebase] Cloud friendship removed from both sides! 🗑️');
+  } catch (err) {
+    console.warn('[Firebase] removeFriendFromFirebase error:', err);
+  }
+}
+
+function initFirebaseFriendsListener() {
+  if (!firestoreDb || !userProfile || !userProfile.serialNumber) return;
+  if (friendsUnsubscribe) {
+    try { friendsUnsubscribe(); } catch(e) {}
+  }
+
+  try {
+    const friendsCol = firestoreDb.collection('users').doc(userProfile.serialNumber).collection('friends');
+    friendsUnsubscribe = friendsCol.onSnapshot((snapshot) => {
+      const cloudFriends = [];
+      snapshot.forEach(doc => {
+        cloudFriends.push(doc.data());
+      });
+      console.log(`[Firebase] Live friends snapshot: ${cloudFriends.length} friends`);
+
+      friendsList = cloudFriends;
+      saveFriendsList();
+      renderFriendsAndOnlineUsers();
+
+      if (currentPartner) {
+        const partnerSerial = currentPartner.serialNumber || ('LK-' + (currentPartner.socketId || currentPartner.id || '').substr(0, 6).toUpperCase());
+        const isStillFriend = friendsList.some(f => f.serialNumber === partnerSerial || f.id === currentPartner.id);
+        const addBtn = $('#add-friend-btn');
+        if (addBtn) {
+          if (isStillFriend) {
+            addBtn.textContent = '✓ صديقك';
+            addBtn.className = 'hud-btn-friend btn-friends-active';
+          } else {
+            addBtn.textContent = '➕ صديق';
+            addBtn.className = 'hud-btn-friend';
+          }
+        }
+      }
+    }, (err) => {
+      console.warn('[Firebase] Friends onSnapshot error:', err);
+    });
+  } catch (err) {
+    console.warn('[Firebase] Listener setup error:', err);
+  }
+}
+
+// =============================================
 // State
 // =============================================
 let socket = null;
@@ -526,6 +680,7 @@ function loadUserProfile() {
   updateProfileUI();
   updateSetupSectionVisibility();
   checkBanStatus();
+  initFirebaseFriendsListener();
 }
 
 function saveUserProfile() {
@@ -1887,6 +2042,7 @@ function setupFriendsSystem() {
         }
         saveFriendsList();
         renderFriendsAndOnlineUsers();
+        addFriendToFirebase(newFriend);
 
         if (socket && socket.connected) {
           socket.emit('accept_friend_request', {
@@ -1968,6 +2124,9 @@ function removeFriend(friendId, skipConfirm = false) {
 
   friendsList = friendsList.filter(f => f.id !== friendId && (!friend || (f.socketId !== friend.socketId && (!friend.serialNumber || f.serialNumber !== friend.serialNumber))));
   saveFriendsList();
+
+  const targetSerial = (friend && friend.serialNumber) || friendId;
+  removeFriendFromFirebase(targetSerial);
 
   // If in call with this partner, instantly update HUD button to '+ صديق'
   if (currentPartner && friend && (currentPartner.id === friend.id || currentPartner.socketId === friend.socketId || (friend.serialNumber && currentPartner.serialNumber === friend.serialNumber) || normalizeArabic(currentPartner.username) === normalizeArabic(friend.username))) {
@@ -2372,7 +2531,14 @@ function setupSettingsUI() {
       const isFemaleSelected = settingsGenderFemale && settingsGenderFemale.classList.contains('selected');
       const newGender = isFemaleSelected ? 'female' : 'male';
 
-      if (newName) userProfile.username = newName;
+      if (newName) {
+        const check = await checkAndClaimFirebaseUsername(newName, userProfile.serialNumber);
+        if (!check.available) {
+          showGemToast(`⚠️ اسم "${newName}" محجوز مسبقاً! يرجى اختيار اسم مختلف.`);
+          return;
+        }
+        userProfile.username = newName;
+      }
       userProfile.phone = newPhone;
       userProfile.age = newAge;
       if (newPin) userProfile.adminPin = newPin;
@@ -4340,5 +4506,6 @@ function setupDraggableLocalVideo() {
 // =============================================
 document.addEventListener('DOMContentLoaded', () => {
   init();
+  initFirebase();
   setupDraggableLocalVideo();
 });
