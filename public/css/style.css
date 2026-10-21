@@ -612,23 +612,24 @@ video {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   z-index: 40;
   pointer-events: auto;
   direction: rtl;
-  background: rgba(14, 8, 24, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 5px 12px 5px 8px;
-  border-radius: 50px;
-  border: 1.2px solid rgba(255, 215, 0, 0.38);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 215, 0, 0.18);
+  background: rgba(14, 10, 24, 0.82) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  padding: 6px 14px 6px 10px;
+  border-radius: 50px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.75), 0 0 24px rgba(255, 215, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .partner-meta-box {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   background: transparent;
   padding: 0;
   border: none;
@@ -636,24 +637,27 @@ video {
 }
 
 .hud-flag {
-  font-size: 18px;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
+  line-height: 1;
 }
 
 .hud-user-details {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .hud-username {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: #ffffff;
   max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.2px;
 }
 
 .hud-actions-box {
@@ -668,17 +672,20 @@ video {
 }
 
 .hud-btn-friend {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 50px;
-  font-size: 11px;
-  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+  padding: 5px 12px !important;
+  border-radius: 50px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.5);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .hud-btn-friend:active {
@@ -689,7 +696,7 @@ video {
   background: linear-gradient(135deg, #22c55e, #16a34a) !important;
   border-color: #86efac !important;
   color: #ffffff !important;
-  box-shadow: 0 0 16px rgba(34, 197, 94, 0.9) !important;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
   animation: pulseGreenGlow 1.2s infinite alternate !important;
 }
 
@@ -706,18 +713,19 @@ video {
 }
 
 .hud-btn-report {
-  background: rgba(239, 68, 68, 0.35);
-  border: 1px solid rgba(239, 68, 68, 0.7);
-  color: #fca5a5;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.25) !important;
+  border: 1px solid rgba(239, 68, 68, 0.65) !important;
+  color: #fca5a5 !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
+  transition: all 0.2s ease !important;
 }
 
 .hud-btn-report:active {
@@ -739,7 +747,7 @@ video::-webkit-media-controls-overlay-play-button,
   pointer-events: none !important;
 }
 
-/* Floating Picture-in-Picture Window in Fullscreen Call - Strictly Top Left Without Corners (Full View) */
+/* Floating Picture-in-Picture Window in Fullscreen Call - Luxury Curved Glass Gem */
 #local-video-wrapper,
 .call-local-pip {
   position: absolute !important;
@@ -747,44 +755,57 @@ video::-webkit-media-controls-overlay-play-button,
   left: 12px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 98px !important;
-  height: 144px !important;
-  border-radius: 0px !important;
+  width: 104px !important;
+  height: 152px !important;
+  border-radius: 20px !important;
   overflow: hidden !important;
-  border: 2px solid #ffd700 !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
+  border: 2px solid rgba(255, 215, 0, 0.75) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
   z-index: 55 !important;
   background: #000 !important;
   pointer-events: auto !important;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+#local-video-wrapper:active,
+.call-local-pip:active {
+  transform: scale(0.96) !important;
 }
 
 .pip-live-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  top: 7px;
+  right: 7px;
+  background: rgba(10, 8, 20, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #ffd700;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 2px 6.5px;
-  border-radius: 10px;
-  border: 0.8px solid rgba(255, 215, 0, 0.5);
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 215, 0, 0.45);
   display: flex;
   align-items: center;
-  gap: 3.5px;
+  gap: 4px;
   z-index: 5;
   pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.2px;
 }
 
 .pip-live-badge .pip-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 6px #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pipPulseDot 1.6s infinite ease-in-out;
+}
+
+@keyframes pipPulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
 }
 
 .pip-quick-flip-btn {
@@ -799,7 +820,7 @@ video::-webkit-media-controls-overlay-play-button,
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
-  border-radius: 0px !important;
+  border-radius: 18px !important;
 }
 
 .welcome-camera-card.in-call ~ .toast-container,
@@ -807,7 +828,7 @@ video::-webkit-media-controls-overlay-play-button,
   display: none !important;
 }
 
-/* In-Call Bottom Control Bar - Grand Royal Floating Island */
+/* In-Call Bottom Control Bar - Luxury Glassmorphic Floating Dock */
 .royal-call-controls {
   position: absolute;
   bottom: max(16px, calc(env(safe-area-inset-bottom, 12px) + 12px));
@@ -823,28 +844,29 @@ video::-webkit-media-controls-overlay-play-button,
   justify-content: center;
   gap: 10px;
   z-index: 60;
-  background: rgba(14, 10, 24, 0.94);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  background: rgba(12, 9, 22, 0.85);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   padding: 8px 14px;
   border-radius: 60px;
-  border: 1.8px solid rgba(255, 215, 0, 0.55);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.95), 0 0 28px rgba(255, 215, 0, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.88), 0 0 25px rgba(255, 215, 0, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.3);
   direction: ltr;
   animation: slideUpControls 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .royal-call-controls .control-btn {
-  width: 50px;
-  height: 50px;
-  min-width: 50px;
-  font-size: 22px;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
   border-radius: 50%;
   flex-shrink: 0;
   padding: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   cursor: pointer;
   outline: none;
   border: none;
@@ -853,87 +875,104 @@ video::-webkit-media-controls-overlay-play-button,
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.65), inset 0 2px 3px rgba(255, 255, 255, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .royal-call-controls .control-btn:active {
   transform: scale(0.90) translateY(2px);
 }
 
-/* 1. End Call Button (✕ Imperial Crimson Ruby Gem) */
-.royal-call-controls .control-btn.end-btn {
-  background: radial-gradient(circle at 35% 30%, #ef4444 0%, #dc2626 50%, #7f1d1d 100%);
-  border: 2px solid rgba(254, 202, 202, 0.9);
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.75), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(100, 0, 0, 0.8);
+.royal-call-controls .btn-ctrl-svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  transition: transform 0.2s ease;
 }
 
-.royal-call-controls .control-btn.end-btn .btn-ctrl-symbol {
-  font-size: 23px;
-  font-weight: 900;
+.royal-call-controls .btn-ctrl-label {
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* 1. End Call Button (✕ Imperial Crimson Ruby Gem) */
+.royal-call-controls .control-btn.end-btn {
+  background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 55%, #800f2f 100%);
+  border: 1.8px solid rgba(255, 200, 210, 0.7);
+  box-shadow: 0 0 20px rgba(201, 24, 74, 0.65), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.65), inset 0 -3px 5px rgba(100, 0, 0, 0.75);
   color: #ffffff;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
 }
 
 /* 2. Microphone Button (Royal Ocean Sapphire Orb) */
 .royal-call-controls .control-btn.mic-btn {
-  background: radial-gradient(circle at 35% 30%, #38bdf8 0%, #0284c7 50%, #0c4a6e 100%);
-  border: 2px solid rgba(224, 242, 254, 0.9);
-  box-shadow: 0 0 18px rgba(2, 132, 199, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(3, 105, 161, 0.8);
-  color: #fff;
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 55%, #075985 100%);
+  border: 1.8px solid rgba(224, 242, 254, 0.75);
+  box-shadow: 0 0 18px rgba(2, 132, 199, 0.55), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.65), inset 0 -3px 5px rgba(3, 105, 161, 0.75);
+  color: #ffffff;
 }
 
 .royal-call-controls .control-btn.mic-btn.muted {
-  background: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
-  border: 2px solid #fecaca;
-  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 55%, #7f1d1d 100%);
+  border: 1.8px solid #fecaca;
+  box-shadow: 0 0 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
 /* 3. Camera Button (Royal Amethyst Orchid Orb) */
 .royal-call-controls .control-btn.camera-btn {
-  background: radial-gradient(circle at 35% 30%, #c084fc 0%, #7c3aed 50%, #3b0764 100%);
-  border: 2px solid rgba(243, 232, 255, 0.9);
-  box-shadow: 0 0 18px rgba(124, 58, 237, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(59, 7, 100, 0.8);
-  color: #fff;
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 55%, #581c87 100%);
+  border: 1.8px solid rgba(243, 232, 255, 0.75);
+  box-shadow: 0 0 18px rgba(147, 51, 234, 0.55), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.65), inset 0 -3px 5px rgba(59, 7, 100, 0.75);
+  color: #ffffff;
 }
 
 .royal-call-controls .control-btn.camera-btn.muted {
-  background: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 50%, #7f1d1d 100%);
-  border: 2px solid #fecaca;
-  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 55%, #7f1d1d 100%);
+  border: 1.8px solid #fecaca;
+  box-shadow: 0 0 22px rgba(220, 38, 38, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
 /* 4. Flip Camera Button (Royal Jade Emerald Orb) */
 .royal-call-controls .control-btn.flip-btn {
-  background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 50%, #064e3b 100%);
-  border: 2px solid rgba(209, 250, 229, 0.9);
-  box-shadow: 0 0 18px rgba(5, 150, 105, 0.6), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.7), inset 0 -3px 5px rgba(6, 78, 59, 0.8);
-  color: #fff;
+  background: linear-gradient(135deg, #34d399 0%, #059669 55%, #064e3b 100%);
+  border: 1.8px solid rgba(209, 250, 229, 0.75);
+  box-shadow: 0 0 18px rgba(5, 150, 105, 0.55), 0 8px 20px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.65), inset 0 -3px 5px rgba(6, 78, 59, 0.75);
+  color: #ffffff;
 }
 
-/* 5. The Grand Emperor Next Button (👑 التالي ⏭️ - 24k Solar Blaze Capsule) */
+.royal-call-controls .control-btn.flip-btn:active .btn-ctrl-svg {
+  transform: rotate(180deg);
+}
+
+/* 5. The Grand Emperor Next Button (👑 التالي » - 24k Solar Blaze Capsule) */
 .royal-call-controls .control-btn.next-btn {
   width: auto;
-  min-width: 114px;
-  height: 50px;
+  min-width: 120px;
+  height: 52px;
   padding: 0 18px;
   border-radius: 50px;
-  background: linear-gradient(135deg, #fffbeb 0%, #fde047 30%, #f59e0b 65%, #b45309 100%);
+  flex-direction: row;
+  gap: 8px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fde047 25%, #f59e0b 65%, #b45309 100%);
   border: 2px solid #ffffff;
   box-shadow: 0 8px 26px rgba(245, 158, 11, 0.75), 0 0 24px rgba(255, 215, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(120, 53, 15, 0.7);
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 900;
   color: #2b0b00;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
   letter-spacing: 0.3px;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
   animation: royalNextPulse 2s infinite ease-in-out;
 }
 
 .royal-call-controls .control-btn.next-btn .next-crown-icon {
-  font-size: 16.5px;
+  font-size: 17px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   animation: crownBob 1.6s infinite alternate ease-in-out;
 }
@@ -942,6 +981,19 @@ video::-webkit-media-controls-overlay-play-button,
   font-family: inherit;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.royal-call-controls .control-btn.next-btn .next-arrow-svg {
+  width: 18px;
+  height: 18px;
+  stroke: #2b0b00;
+  stroke-width: 3;
+  animation: arrowSlide 1.2s infinite ease-in-out;
+}
+
+@keyframes arrowSlide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-3px); }
 }
 
 @keyframes royalNextPulse {
@@ -1054,37 +1106,92 @@ video::-webkit-media-controls-volume-slider {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, #571520 0%, #200812 60%, #0c0817 100%);
+  background: radial-gradient(circle at 50% 45%, #2a0b2e 0%, #16081c 45%, #07030e 100%) !important;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   z-index: 0;
+  overflow: hidden;
 }
 
 .camera-fallback-glow {
   position: absolute;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(255, 107, 107, 0.3) 0%, transparent 70%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, rgba(168, 85, 247, 0.2) 40%, transparent 70%);
   animation: pulseGlow 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.camera-fallback-pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+  pointer-events: none;
+  animation: fallbackRingPulse 3.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.camera-fallback-pulse-ring.ring-1 { width: 120px; height: 120px; animation-delay: 0s; }
+.camera-fallback-pulse-ring.ring-2 { width: 200px; height: 200px; animation-delay: 1.1s; }
+.camera-fallback-pulse-ring.ring-3 { width: 300px; height: 300px; animation-delay: 2.2s; }
+
+@keyframes fallbackRingPulse {
+  0% { transform: scale(0.6); opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 @keyframes pulseGlow {
-  0%, 100% { transform: scale(0.9); opacity: 0.4; }
-  50% { transform: scale(1.2); opacity: 0.8; }
+  0%, 100% { transform: scale(0.9); opacity: 0.5; }
+  50% { transform: scale(1.25); opacity: 0.9; }
 }
 
 .camera-fallback-avatar {
-  font-size: 52px;
-  filter: drop-shadow(0 4px 15px rgba(0,0,0,0.5));
+  font-size: 64px;
+  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.65)) drop-shadow(0 10px 25px rgba(0,0,0,0.8));
+  animation: royalAvatarFloat 2.6s infinite ease-in-out;
+  z-index: 2;
+  position: relative;
+}
+
+@keyframes royalAvatarFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.06); }
 }
 
 .camera-status-hint {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 500;
+  font-size: 13.5px;
+  color: #ffd700;
+  font-weight: 700;
+  background: rgba(14, 10, 24, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 8px 20px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 15px rgba(255, 215, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+  letter-spacing: 0.2px;
+}
+
+.camera-status-hint .status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffd700;
+  box-shadow: 0 0 8px #ffd700;
+  animation: statusDotPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes statusDotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.4; }
 }
 
 /* Floating Left Toolbar on Camera Card & In-Call Screen (Royal 3D Crystal Gem Pillar) */
@@ -2186,12 +2293,12 @@ video::-webkit-media-controls-volume-slider {
   left: 12px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 98px !important;
-  height: 144px !important;
-  border-radius: 0px !important;
+  width: 104px !important;
+  height: 152px !important;
+  border-radius: 20px !important;
   overflow: hidden !important;
-  border: 2px solid #ffd700 !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.4) !important;
+  border: 2px solid rgba(255, 215, 0, 0.75) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.35) !important;
   z-index: 55 !important;
   background: #000 !important;
   cursor: grab;
@@ -2206,7 +2313,7 @@ video::-webkit-media-controls-volume-slider {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 0px !important;
+  border-radius: 18px !important;
   transform: scaleX(-1);
 }
 
@@ -2851,13 +2958,13 @@ video::-webkit-media-controls-volume-slider {
   }
 
   #local-video-wrapper {
-    width: 98px !important;
-    height: 144px !important;
+    width: 104px !important;
+    height: 152px !important;
     top: max(14px, env(safe-area-inset-top, 14px)) !important;
     left: 12px !important;
     right: auto !important;
     bottom: auto !important;
-    border-radius: 0px !important;
+    border-radius: 20px !important;
   }
 
   .controls-group {
