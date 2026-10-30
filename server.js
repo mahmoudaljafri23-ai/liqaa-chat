@@ -567,23 +567,12 @@ function findMatch(socketId) {
   return null;
 }
 
-const ROYAL_VIP_MEMBERS = [
-  { socketId: 'royal_vip_yousef', username: 'يوسف', serialNumber: 'LK-YOUSEF-VIP', gender: 'male', country: 'JO', countryName: 'الأردن', isAdmin: false, isOnline: true },
-  { socketId: 'royal_vip_malek', username: 'malek', serialNumber: 'LK-MALEK-VIP', gender: 'male', country: 'JO', countryName: 'الأردن', isAdmin: false, isOnline: true },
-  { socketId: 'royal_vip_sara', username: 'سارة', serialNumber: 'LK-882194', gender: 'female', country: 'AE', countryName: 'الإمارات', isAdmin: false, isOnline: true },
-  { socketId: 'royal_vip_ahmad', username: 'أحمد', serialNumber: 'LK-459201', gender: 'male', country: 'SA', countryName: 'السعودية', isAdmin: false, isOnline: true },
-  { socketId: 'royal_vip_noor', username: 'نور', serialNumber: 'LK-732014', gender: 'female', country: 'EG', countryName: 'مصر', isAdmin: false, isOnline: true },
-  { socketId: 'royal_vip_kareem', username: 'كريم', serialNumber: 'LK-619420', gender: 'male', country: 'IQ', countryName: 'العراق', isAdmin: false, isOnline: true }
-];
-
 function broadcastOnlineCount() {
   const usersList = [];
-  const seenUsernames = new Set();
 
-  // 1. Add all active connected sockets
+  // Add ONLY real active connected users
   for (const [socketId, u] of users.entries()) {
     const uname = (u.username || 'مستخدم').trim();
-    seenUsernames.add(uname.toLowerCase());
     usersList.push({
       socketId: socketId,
       username: uname,
@@ -598,26 +587,8 @@ function broadcastOnlineCount() {
     });
   }
 
-  // 2. Complement with Royal VIP network members so community list is always active and vibrant
-  for (const vip of ROYAL_VIP_MEMBERS) {
-    if (!seenUsernames.has(vip.username.toLowerCase())) {
-      usersList.push({
-        socketId: vip.socketId,
-        username: vip.username,
-        serialNumber: vip.serialNumber,
-        phone: '',
-        gender: vip.gender,
-        country: vip.country,
-        countryName: vip.countryName,
-        isAdmin: false,
-        isOnline: true,
-        badges: { awesome: 3, handsome: 2, elegant: 1 }
-      });
-    }
-  }
-
   io.emit('online_count', {
-    count: Math.max(users.size, 1),
+    count: users.size,
     usersList: usersList
   });
 }

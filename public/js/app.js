@@ -1936,51 +1936,17 @@ function loadFriendsList() {
     friendsList = [];
   }
 
-  // Filter out any friends that were deliberately removed
-  friendsList = friendsList.filter(f => !isRemoved(f));
-
-  // Ensure known VIP friends (Yousef & Malek) are auto-populated ONLY if not explicitly removed by user
-  const yousefDummy = { name: 'يوسف', serialNumber: 'LK-YOUSEF-VIP' };
-  if (!isRemoved(yousefDummy)) {
-    if (!friendsList.some(f => {
-      const fn = normalizeArabic(f.name || f.username || '');
-      return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
-    })) {
-      friendsList.push({
-        id: 'friend_yousef_vip',
-        socketId: 'royal_vip_yousef',
-        name: 'يوسف',
-        username: 'يوسف',
-        serialNumber: 'LK-YOUSEF-VIP',
-        gender: 'male',
-        age: 23,
-        country: 'JO',
-        countryName: 'الأردن',
-        addedAt: Date.now()
-      });
+  // Purge any legacy dummy / fake accounts completely
+  friendsList = friendsList.filter(f => {
+    if (isRemoved(f)) return false;
+    const s = (f.serialNumber || '').toUpperCase();
+    const id = (f.id || '').toUpperCase();
+    const n = (f.name || f.username || '').toLowerCase();
+    if (s.includes('VIP') || id.includes('VIP') || n.includes('يوسف') || n.includes('yousef') || n.includes('مالك') || n.includes('malek')) {
+      return false;
     }
-  }
-
-  const malekDummy = { name: 'malek', serialNumber: 'LK-MALEK-VIP' };
-  if (!isRemoved(malekDummy)) {
-    if (!friendsList.some(f => {
-      const fn = normalizeArabic(f.name || f.username || '');
-      return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
-    })) {
-      friendsList.push({
-        id: 'friend_malek_vip',
-        socketId: 'royal_vip_malek',
-        name: 'malek',
-        username: 'malek',
-        serialNumber: 'LK-MALEK-VIP',
-        gender: 'male',
-        age: 24,
-        country: 'JO',
-        countryName: 'الأردن',
-        addedAt: Date.now()
-      });
-    }
-  }
+    return true;
+  });
 
   saveFriendsList();
 }
@@ -2002,22 +1968,6 @@ function findFriendInList(target) {
   const targetSerial = (target.serialNumber || target.partnerSerialNumber || target.senderSerialNumber || '').trim();
   const rawTargetUser = (target.username || target.name || target.partnerUsername || target.senderUsername || '').trim();
   const targetNorm = normalizeArabic(rawTargetUser);
-
-  // Fast direct match for user's close friends (Yousef & Malek) if not removed
-  if (targetNorm && (targetNorm.includes('يوسف') || targetNorm.includes('yousef'))) {
-    const yFriend = friendsList.find(f => {
-      const fn = normalizeArabic(f.name || f.username || '');
-      return fn.includes('يوسف') || fn.includes('yousef') || (f.serialNumber && f.serialNumber.includes('YOUSEF'));
-    });
-    if (yFriend) return yFriend;
-  }
-  if (targetNorm && (targetNorm.includes('مالك') || targetNorm.includes('malek'))) {
-    const mFriend = friendsList.find(f => {
-      const fn = normalizeArabic(f.name || f.username || '');
-      return fn.includes('مالك') || fn.includes('malek') || (f.serialNumber && f.serialNumber.includes('MALEK'));
-    });
-    if (mFriend) return mFriend;
-  }
 
   return friendsList.find(f => {
     // 1. Match by permanent serial number
@@ -2751,6 +2701,70 @@ function setupSettingsUI() {
       if (settingsModal) settingsModal.classList.add('hidden');
       showGemToast('✨ تم حفظ بيانات الحساب بنجاح!');
     });
+  }
+
+  function switchOrResetAccount() {
+    localStorage.removeItem('liqaa_user_profile');
+    localStorage.removeItem('liqaa_friends_list');
+
+    userProfile = {
+      username: '',
+      serialNumber: 'LQ-' + Math.floor(100000 + Math.random() * 900000),
+      phone: '',
+      accountEmail: '',
+      gender: 'male',
+      age: 22,
+      country: myHomeCountryCode || 'JO',
+      countryName: selectedCountryName || 'الأردن',
+      gems: 0,
+      isAdmin: false,
+      adminUnlocked: false,
+      hasCompletedSetup: false,
+      hasAccount: false
+    };
+
+    friendsList = [];
+    saveUserProfile();
+    saveFriendsList();
+    updateProfileUI();
+    updateAuthModalView();
+
+    const kickModal = $('#security-kick-modal');
+    if (kickModal) kickModal.classList.add('hidden');
+    const settingsModal = $('#settings-modal');
+    if (settingsModal) settingsModal.classList.add('hidden');
+
+    if (socket && socket.connected) {
+      socket.emit('register', {
+        gender: 'male',
+        country: myHomeCountryCode || 'JO',
+        username: 'مستخدم',
+        serialNumber: userProfile.serialNumber,
+        phone: '',
+        accountEmail: '',
+        isAdmin: false,
+        adminUnlocked: false
+      });
+    }
+
+    openSettingsModal();
+    const settingsUsername = $('#settings-username');
+    if (settingsUsername) {
+      settingsUsername.value = '';
+      settingsUsername.focus();
+    }
+    showGemToast('🚪 تم تسجيل الخروج! أدخل اسمك الجديد أو سجل دخولك بحساب آخر.');
+  }
+  window.switchOrResetAccount = switchOrResetAccount;
+
+  const kickSwitchBtn = $('#kick-switch-account-btn');
+  if (kickSwitchBtn) {
+    kickSwitchBtn.onclick = switchOrResetAccount;
+  }
+
+  const settingsSwitchBtn = $('#settings-switch-account-btn');
+  if (settingsSwitchBtn) {
+    settingsSwitchBtn.onclick = switchOrResetAccount;
   }
 }
 
