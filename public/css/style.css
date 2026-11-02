@@ -591,7 +591,7 @@ video {
 }
 
 .welcome-camera-card.in-call .camera-fallback-bg {
-  display: flex !important;
+  display: flex;
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
@@ -600,29 +600,41 @@ video {
   z-index: 0 !important;
   background: radial-gradient(circle at center, #2a0b1b 0%, #150818 55%, #08040f 100%) !important;
   pointer-events: none !important;
-  transition: opacity 0.4s ease !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.camera-fallback-bg.hidden,
+#camera-fallback-bg.hidden,
+.welcome-camera-card.in-call .camera-fallback-bg.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .royal-partner-hud {
-  position: absolute;
-  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  position: absolute !important;
+  top: max(12px, env(safe-area-inset-top, 12px)) !important;
+  left: 12px !important;
   right: 12px !important;
-  left: auto !important;
-  max-width: calc(100vw - 120px);
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  width: auto !important;
+  max-width: calc(100vw - 24px) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
   gap: 10px;
-  z-index: 40;
-  pointer-events: auto;
-  direction: rtl;
-  background: rgba(14, 10, 24, 0.82) !important;
+  z-index: 45 !important;
+  pointer-events: auto !important;
+  direction: rtl !important;
+  background: rgba(14, 10, 24, 0.88) !important;
   backdrop-filter: blur(28px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  padding: 6px 14px 6px 10px;
+  padding: 6px 14px !important;
   border-radius: 50px !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.75), 0 0 24px rgba(255, 215, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 215, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  box-sizing: border-box !important;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -751,16 +763,16 @@ video::-webkit-media-controls-overlay-play-button,
 #local-video-wrapper,
 .call-local-pip {
   position: absolute !important;
-  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  top: calc(max(12px, env(safe-area-inset-top, 12px)) + 58px) !important;
   left: 12px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 104px !important;
-  height: 152px !important;
-  border-radius: 20px !important;
+  width: 98px !important;
+  height: 144px !important;
+  border-radius: 18px !important;
   overflow: hidden !important;
   border: 2px solid rgba(255, 215, 0, 0.75) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
   z-index: 55 !important;
   background: #000 !important;
   pointer-events: auto !important;
@@ -1013,6 +1025,33 @@ video::-webkit-media-controls-overlay-play-button,
 @keyframes slideUpControls {
   from { transform: translateY(40px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 390px) {
+  .royal-call-controls {
+    gap: 6px !important;
+    padding: 6px 10px !important;
+    max-width: calc(100vw - 12px) !important;
+  }
+  .royal-call-controls .control-btn {
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+  }
+  .royal-call-controls .control-btn .btn-ctrl-svg {
+    width: 19px !important;
+    height: 19px !important;
+  }
+  .royal-call-controls .control-btn .btn-ctrl-label {
+    font-size: 8.5px !important;
+  }
+  .royal-call-controls .control-btn.next-btn {
+    min-width: 98px !important;
+    height: 46px !important;
+    padding: 0 12px !important;
+    font-size: 14px !important;
+    gap: 5px !important;
+  }
 }
 
 /* Eradicate any Android WebView / Chromium Native Play Button or Media Controls */
@@ -2289,16 +2328,16 @@ video::-webkit-media-controls-volume-slider {
 /* Local Video PiP */
 #local-video-wrapper {
   position: absolute !important;
-  top: max(14px, env(safe-area-inset-top, 14px)) !important;
+  top: calc(max(12px, env(safe-area-inset-top, 12px)) + 58px) !important;
   left: 12px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 104px !important;
-  height: 152px !important;
-  border-radius: 20px !important;
+  width: 98px !important;
+  height: 144px !important;
+  border-radius: 18px !important;
   overflow: hidden !important;
   border: 2px solid rgba(255, 215, 0, 0.75) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 215, 0, 0.35) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 215, 0, 0.35) !important;
   z-index: 55 !important;
   background: #000 !important;
   cursor: grab;
@@ -2958,13 +2997,13 @@ video::-webkit-media-controls-volume-slider {
   }
 
   #local-video-wrapper {
-    width: 104px !important;
-    height: 152px !important;
-    top: max(14px, env(safe-area-inset-top, 14px)) !important;
+    width: 96px !important;
+    height: 140px !important;
+    top: calc(max(12px, env(safe-area-inset-top, 12px)) + 58px) !important;
     left: 12px !important;
     right: auto !important;
     bottom: auto !important;
-    border-radius: 20px !important;
+    border-radius: 18px !important;
   }
 
   .controls-group {

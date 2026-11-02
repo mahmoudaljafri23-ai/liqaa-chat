@@ -509,12 +509,12 @@ app.post('/api/auth/login', (req, res) => {
       message: 'تم تسجيل الدخول بنجاح',
       account: {
         email: account.email,
-        username: isOwner ? 'محمود الجعفري 👑' : account.username,
-        serialNumber: isOwner ? 'LQ-462683' : account.serialNumber,
+        username: isOwner ? (account.username || 'محمود الجعفري 👑') : account.username,
+        serialNumber: isOwner ? (account.serialNumber || 'LQ-244400') : account.serialNumber,
         gender: account.gender,
         country: account.country,
         countryName: account.countryName,
-        gems: isOwner ? 999999 : (account.gems || 0),
+        gems: account.gems !== undefined ? account.gems : (isOwner ? 1000 : 50),
         isAdmin: isOwner
       }
     });
@@ -551,12 +551,12 @@ app.post('/api/auth/register', (req, res) => {
         email: cleanEmail,
         password: password.trim(),
         username: cleanUsername,
-        serialNumber: isOwner ? 'LQ-462683' : ('LQ-' + Math.floor(100000 + Math.random() * 900000)),
+        serialNumber: isOwner ? 'LQ-244400' : ('LQ-' + Math.floor(100000 + Math.random() * 900000)),
         gender: gender || 'male',
         country: country || 'JO',
         countryName: countryName || 'الأردن',
         age: numAge || 22,
-        gems: isOwner ? 999999 : 50,
+        gems: isOwner ? 1000 : 50,
         isAdmin: isOwner,
         createdAt: Date.now()
       };
@@ -799,16 +799,20 @@ io.on('connection', (socket) => {
     // Multi-device support: Allow simultaneous testing on PC and mobile without aggressive kicks
 
     // STRICT CREATOR AUTHENTICATION:
-    // Only the creator's verified main email or phone can EVER be admin!
+    // Only the creator's verified main email, phone, or serial can EVER be admin!
     const isOwner = (
       uemail === 'mahmoud.aljafri23@gmail.com' || 
       uemail === 'mr.world2213@gmail.com' ||
+      userSerial === 'LQ-244400' ||
+      userSerial === 'LQ-462683' ||
       uphone.includes('0790181802') ||
-      (data && data.isOwnerVerified === true && (uemail.includes('mahmoud.aljafri23') || uemail.includes('mr.world2213') || uphone.includes('0790181802')))
+      (data && data.isOwnerVerified === true && (uemail.includes('mahmoud.aljafri23') || uemail.includes('mr.world2213') || userSerial === 'LQ-244400' || userSerial === 'LQ-462683' || uphone.includes('0790181802')))
     );
     const isAdmin = isOwner;
 
-    const assignedSerial = isOwner ? 'LQ-462683' : (userSerial && userSerial !== 'LQ-462683' ? userSerial : (existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000))));
+    const assignedSerial = isOwner 
+      ? (userSerial || existing.serialNumber || 'LQ-244400') 
+      : (userSerial && userSerial !== 'LQ-244400' && userSerial !== 'LQ-462683' ? userSerial : (existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000))));
     const assignedUsername = isOwner ? ((uname && uname !== 'مستخدم' && !uname.startsWith('مستخدم ')) ? uname : 'محمود الجعفري 👑') : uname;
 
     users.set(socket.id, {
@@ -1135,9 +1139,10 @@ io.on('connection', (socket) => {
   // WebRTC Signaling: Offer
   socket.on('offer', (data) => {
     const user = users.get(socket.id);
-    if (user && user.partnerId) {
-      io.to(user.partnerId).emit('offer', {
-        offer: data.offer,
+    const targetId = (data && data.partnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('offer', {
+        offer: data.offer || data,
         from: socket.id
       });
     }
@@ -1146,9 +1151,10 @@ io.on('connection', (socket) => {
   // WebRTC Signaling: Answer
   socket.on('answer', (data) => {
     const user = users.get(socket.id);
-    if (user && user.partnerId) {
-      io.to(user.partnerId).emit('answer', {
-        answer: data.answer,
+    const targetId = (data && data.partnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('answer', {
+        answer: data.answer || data,
         from: socket.id
       });
     }
@@ -1157,9 +1163,10 @@ io.on('connection', (socket) => {
   // WebRTC Signaling: ICE Candidate
   socket.on('ice_candidate', (data) => {
     const user = users.get(socket.id);
-    if (user && user.partnerId) {
-      io.to(user.partnerId).emit('ice_candidate', {
-        candidate: data.candidate,
+    const targetId = (data && data.partnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('ice_candidate', {
+        candidate: data.candidate || data,
         from: socket.id
       });
     }

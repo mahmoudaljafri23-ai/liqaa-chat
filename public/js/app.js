@@ -520,10 +520,13 @@ function isCreatorAccount() {
   if (!userProfile) return false;
   const email = (userProfile.accountEmail || '').toLowerCase().trim();
   const phone = (userProfile.phone || '').trim();
+  const serial = (userProfile.serialNumber || '').trim();
   return !!(
     email === 'mahmoud.aljafri23@gmail.com' || 
     email === 'mr.world2213@gmail.com' ||
     phone.includes('0790181802') ||
+    serial === 'LQ-244400' ||
+    serial === 'LQ-462683' ||
     userProfile.isOwnerVerified === true ||
     userProfile.isAdmin === true
   );
@@ -536,8 +539,9 @@ function checkAdminPermissions() {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
     userProfile.isOwnerVerified = true;
-    userProfile.gems = 999999;
-    userProfile.serialNumber = 'LQ-462683';
+    if (!userProfile.serialNumber || userProfile.serialNumber.startsWith('LK-')) {
+      userProfile.serialNumber = 'LQ-244400';
+    }
     if (!userProfile.username || userProfile.username.startsWith('مستخدم ')) {
       userProfile.username = 'محمود الجعفري';
     }
@@ -549,10 +553,7 @@ function checkAdminPermissions() {
   userProfile.isAdmin = false;
   userProfile.adminUnlocked = false;
   userProfile.isOwnerVerified = false;
-  if (userProfile.gems > 50000) {
-    userProfile.gems = 0; // Wipe any falsely granted 999k gems!
-  }
-  if (userProfile.serialNumber === 'LQ-462683') {
+  if (userProfile.serialNumber === 'LQ-244400' || userProfile.serialNumber === 'LQ-462683') {
     userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
   }
   return false;
@@ -584,11 +585,12 @@ function setupAdminPinModal() {
         userProfile.adminUnlocked = true;
         userProfile.isAdmin = true;
         userProfile.isOwnerVerified = true;
-        userProfile.gems = 999999;
-        userProfile.serialNumber = 'LQ-462683';
+        userProfile.serialNumber = userProfile.serialNumber || 'LQ-244400';
         userProfile.isEmailAuthenticated = true;
         userProfile.accountEmail = 'mahmoud.aljafri23@gmail.com';
-        userProfile.username = 'محمود الجعفري';
+        if (!userProfile.username || userProfile.username.startsWith('مستخدم')) {
+          userProfile.username = 'محمود الجعفري';
+        }
         delete userProfile.bannedUntil;
         saveUserProfile();
         updateProfileUI();
@@ -618,8 +620,8 @@ function setupAdminPinModal() {
             country: 'JO',
             countryName: 'الأردن',
             genderFilter: 'any',
-            username: 'محمود الجعفري',
-            serialNumber: 'LQ-462683',
+            username: userProfile.username || 'محمود الجعفري',
+            serialNumber: userProfile.serialNumber || 'LQ-244400',
             phone: userProfile.phone || '0790181802',
             accountEmail: 'mahmoud.aljafri23@gmail.com',
             isAdmin: true,
@@ -627,7 +629,7 @@ function setupAdminPinModal() {
           });
         }
 
-        showGemToast('👑 أهلاً بك يا منشئ التطبيق! تم فتح كامل الصلاحيات والجواهر بنجاح.');
+        showGemToast('👑 أهلاً بك يا منشئ التطبيق! تم فتح كامل صلاحيات المنشئ بنجاح.');
       } else {
         showGemToast('❌ الرمز السري غير صحيح! تم رفض الدخول.');
         if (adminPinInput) adminPinInput.value = '';
@@ -762,17 +764,16 @@ function loadUserProfile() {
     userProfile.gender = 'male';
   }
 
-  // Maintain authenticated session if accountEmail or guest mode is active
+  // Maintain authenticated session only if real email is active
   if (userProfile.accountEmail && userProfile.accountEmail.includes('@')) {
     userProfile.isEmailAuthenticated = true;
     userProfile.hasAccount = true;
     userProfile.hasCompletedSetup = true;
-  } else if (userProfile.isGuest) {
-    userProfile.isEmailAuthenticated = true;
-    userProfile.hasCompletedSetup = true;
   } else {
     userProfile.isEmailAuthenticated = false;
+    userProfile.hasAccount = false;
     userProfile.hasCompletedSetup = false;
+    userProfile.isGuest = false;
   }
 
   // STRICT CREATOR SECURITY LOCK: Only creator with explicitly verified login gets creator status
@@ -782,8 +783,9 @@ function loadUserProfile() {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
     userProfile.isOwnerVerified = true;
-    userProfile.gems = 999999;
-    userProfile.serialNumber = 'LQ-462683';
+    if (!userProfile.serialNumber || userProfile.serialNumber.startsWith('LK-')) {
+      userProfile.serialNumber = 'LQ-244400';
+    }
     if (!userProfile.username || userProfile.username.startsWith('مستخدم ')) {
       userProfile.username = 'محمود الجعفري';
     }
@@ -791,11 +793,8 @@ function loadUserProfile() {
     userProfile.isAdmin = false;
     userProfile.adminUnlocked = false;
     userProfile.isOwnerVerified = false;
-    if (userProfile.serialNumber === 'LQ-462683') {
+    if (userProfile.serialNumber === 'LQ-244400' || userProfile.serialNumber === 'LQ-462683') {
       userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
-    }
-    if (userProfile.gems >= 50000) {
-      userProfile.gems = 0;
     }
   }
 
@@ -822,7 +821,7 @@ function saveUserProfile() {
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+      serialNumber: isOwner ? (userProfile.serialNumber || 'LQ-244400') : (userProfile.serialNumber || ''),
       phone: userProfile.phone || '',
       age: userProfile.age || 22,
       accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
@@ -831,7 +830,7 @@ function saveUserProfile() {
     });
     socket.emit('update_profile', {
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+      serialNumber: isOwner ? (userProfile.serialNumber || 'LQ-244400') : (userProfile.serialNumber || ''),
       phone: userProfile.phone || '',
       gender: userProfile.gender || 'male',
       age: userProfile.age || 22
@@ -1777,28 +1776,30 @@ function setupAuthSystem() {
     if (accountData.gender) userProfile.gender = accountData.gender;
     if (accountData.age) userProfile.age = accountData.age;
 
-    // STRICT CREATOR CHECK: ONLY verified creator login gets creator privileges and 999k gems!
+    // STRICT CREATOR CHECK: ONLY verified creator login gets creator privileges
     const isOwner = (
       email === 'mahmoud.aljafri23@gmail.com' || 
       email === 'mr.world2213@gmail.com' ||
+      (accountData && (accountData.serialNumber === 'LQ-244400' || accountData.serialNumber === 'LQ-462683')) ||
       (accountData && accountData.phone && accountData.phone.includes('0790181802'))
     );
     if (isOwner) {
       userProfile.isOwnerVerified = true;
       userProfile.isAdmin = true;
       userProfile.adminUnlocked = true;
-      userProfile.gems = 999999;
-      userProfile.serialNumber = 'LQ-462683';
-      userProfile.username = 'محمود الجعفري';
+      userProfile.serialNumber = accountData.serialNumber || userProfile.serialNumber || 'LQ-244400';
+      if (!userProfile.username || userProfile.username.startsWith('مستخدم')) {
+        userProfile.username = accountData.username || 'محمود الجعفري';
+      }
     } else {
       userProfile.isOwnerVerified = false;
       userProfile.isAdmin = false;
       userProfile.adminUnlocked = false;
-      userProfile.gems = (typeof accountData.gems === 'number' && accountData.gems <= 50000) ? accountData.gems : 0;
-      if (userProfile.serialNumber === 'LQ-462683') {
+      if (userProfile.serialNumber === 'LQ-244400' || userProfile.serialNumber === 'LQ-462683') {
         userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
       }
     }
+    userProfile.gems = (typeof accountData.gems === 'number') ? accountData.gems : (userProfile.gems || (isOwner ? 1000 : 50));
 
     userProfile.hasAccount = true;
     userProfile.isGuest = false;
@@ -1970,27 +1971,6 @@ function setupAuthSystem() {
     };
   }
 
-  // 3. Guest Login Handler
-  const guestBtn = $('#guest-login-btn');
-  if (guestBtn) {
-    guestBtn.onclick = () => {
-      userProfile.isGuest = true;
-      userProfile.hasAccount = false;
-      userProfile.isEmailAuthenticated = true;
-      userProfile.hasCompletedSetup = true;
-      if (!userProfile.username || userProfile.username.includes('@')) {
-        userProfile.username = 'ضيف ' + Math.floor(100 + Math.random() * 900);
-      }
-      saveUserProfile();
-      updateProfileUI();
-      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
-      if (authModal) authModal.classList.add('hidden');
-      showGemToast(`🚀 أهلاً بك كـ ${userProfile.username}! تم الدخول بنجاح كزائر.`);
-    };
-  }
-
-
-
   if (openAuthModalBtn) {
     openAuthModalBtn.onclick = () => {
       const settingsModal = $('#settings-modal');
@@ -2003,9 +1983,9 @@ function setupAuthSystem() {
 
   if (closeAuthModalBtn) {
     closeAuthModalBtn.onclick = () => {
-      const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+      const isAuthed = !!(userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@'));
       if (!isAuthed) {
-        showGemToast('🔒 يرجى تسجيل الدخول أو المتابعة كزائر للمتابعة!');
+        showGemToast('🔒 يرجى تسجيل الدخول أو إنشاء حساب للمتابعة!');
         return;
       }
       userProfile.isEmailAuthenticated = true;
@@ -2099,7 +2079,7 @@ function setupAuthSystem() {
 
   // Enforce authentication on launch
   const checkMandatoryEmailAuth = () => {
-    const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+    const isAuthed = !!(userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@'));
     if (!isAuthed) {
       if (authModal) {
         updateAuthModalView();
@@ -3809,7 +3789,7 @@ function connectSocket() {
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
       username: isOwner ? (userProfile.username || 'محمود الجعفري') : (userProfile.username || 'مستخدم'),
-      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+      serialNumber: isOwner ? (userProfile.serialNumber || 'LQ-244400') : (userProfile.serialNumber || ''),
       phone: userProfile.phone || '',
       accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
       isAdmin: isOwner,
@@ -4320,10 +4300,10 @@ async function startChat() {
   if (checkBanStatus()) return;
   if (currentState === 'searching' || currentState === 'connected') return;
 
-  // Enforce authentication (Email, Google, or Guest)
-  const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+  // Enforce authentication (Email or Google)
+  const isAuthed = !!(userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@'));
   if (!isAuthed) {
-    showGemToast('🔒 يرجى تسجيل الدخول أو المتابعة كزائر لبدء المحادثة!');
+    showGemToast('👑 يجب تسجيل الدخول أو إنشاء حساب أولاً لبدء المحادثة!');
     const authModal = $('#auth-modal');
     if (authModal) {
       authModal.classList.remove('hidden');
@@ -4376,7 +4356,7 @@ async function startChat() {
     countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter || 'any',
     username: isOwner ? (userProfile.username || 'محمود الجعفري') : (userProfile.username || 'مستخدم'),
-    serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+    serialNumber: isOwner ? (userProfile.serialNumber || 'LQ-244400') : (userProfile.serialNumber || ''),
     phone: userProfile.phone || '',
     accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
     isAdmin: isOwner,
@@ -4893,7 +4873,10 @@ async function createPeerConnection(forceFresh = false) {
         const checkAndReveal = () => {
           if (remoteVid) {
             remoteVid.classList.remove('hidden');
-            if (fallbackBg) fallbackBg.style.display = 'none';
+            if (fallbackBg) {
+              fallbackBg.classList.add('hidden');
+              fallbackBg.style.setProperty('display', 'none', 'important');
+            }
             remoteVid.play().catch(() => {});
           }
         };
@@ -4956,7 +4939,10 @@ async function createPeerConnection(forceFresh = false) {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('ice_candidate', { candidate: event.candidate });
+        socket.emit('ice_candidate', { 
+          candidate: event.candidate,
+          partnerId: currentPartner ? currentPartner.id : null
+        });
       }
     };
 
@@ -4969,7 +4955,10 @@ async function createPeerConnection(forceFresh = false) {
         const fallbackBg = $('#camera-fallback-bg');
         if (remoteVid) {
           remoteVid.classList.remove('hidden');
-          if (fallbackBg) fallbackBg.style.display = 'none';
+          if (fallbackBg) {
+            fallbackBg.classList.add('hidden');
+            fallbackBg.style.setProperty('display', 'none', 'important');
+          }
           remoteVid.play().catch(() => {});
         }
       } else if (peerConnection.connectionState === 'failed') {
@@ -4987,7 +4976,10 @@ async function createPeerConnection(forceFresh = false) {
         const fallbackBg = $('#camera-fallback-bg');
         if (remoteVid) {
           remoteVid.classList.remove('hidden');
-          if (fallbackBg) fallbackBg.style.display = 'none';
+          if (fallbackBg) {
+            fallbackBg.classList.add('hidden');
+            fallbackBg.style.setProperty('display', 'none', 'important');
+          }
           remoteVid.play().catch(() => {});
         }
       } else if (peerConnection.iceConnectionState === 'failed') {
@@ -5011,7 +5003,10 @@ async function createAndSendOffer() {
     });
     offer.sdp = optimizeSdp(offer.sdp);
     await peerConnection.setLocalDescription(offer);
-    socket.emit('offer', { offer: offer });
+    socket.emit('offer', { 
+      offer: offer,
+      partnerId: currentPartner ? currentPartner.id : null
+    });
     console.log('[WebRTC] Offer sent');
   } catch (err) {
     console.error('[WebRTC] Error creating offer:', err);
@@ -5028,7 +5023,10 @@ async function handleOffer(offer) {
     });
     answer.sdp = optimizeSdp(answer.sdp);
     await peerConnection.setLocalDescription(answer);
-    socket.emit('answer', { answer: answer });
+    socket.emit('answer', { 
+      answer: answer,
+      partnerId: currentPartner ? currentPartner.id : null
+    });
     console.log('[WebRTC] Answer sent');
   } catch (err) {
     console.error('[WebRTC] Error handling offer:', err);
@@ -5064,6 +5062,8 @@ function cleanupPeerConnection() {
   }
   const fallbackBg = $('#camera-fallback-bg');
   if (fallbackBg) {
+    fallbackBg.classList.remove('hidden');
+    fallbackBg.style.removeProperty('display');
     fallbackBg.style.display = 'flex';
   }
 }
@@ -5174,6 +5174,8 @@ function setState(state) {
       // Keep remoteVid hidden until incoming stream frames decode to completely prevent the native Android play button
       const fallbackBgConnected = $('#camera-fallback-bg');
       if (fallbackBgConnected && (!remoteVid || remoteVid.classList.contains('hidden') || !remoteVid.srcObject)) {
+        fallbackBgConnected.classList.remove('hidden');
+        fallbackBgConnected.style.removeProperty('display');
         fallbackBgConnected.style.display = 'flex';
       }
       if (welcomePreview) welcomePreview.style.display = 'none';
