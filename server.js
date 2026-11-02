@@ -482,6 +482,97 @@ app.post('/api/admin/dismiss-report', (req, res) => {
 
 // Server persistent profiles storage
 const persistentProfiles = new Map();
+const userAccounts = new Map(); // email.toLowerCase() -> { email, password, username, serialNumber, gender, country, countryName, gems, isAdmin, createdAt }
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال بريد إلكتروني صحيح' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    const account = userAccounts.get(cleanEmail);
+    if (!account) {
+      return res.status(404).json({ success: false, isNew: true, message: 'هذا البريد غير مسجل مسبقاً، يرجى إنشاء حساب جديد' });
+    }
+
+    if (account.password && account.password !== cleanPassword) {
+      return res.status(401).json({ success: false, message: 'الرقم السري غير صحيح' });
+    }
+
+    res.json({
+      success: true,
+      message: 'تم تسجيل الدخول بنجاح',
+      account: {
+        email: account.email,
+        username: account.username,
+        serialNumber: account.serialNumber,
+        gender: account.gender,
+        country: account.country,
+        countryName: account.countryName,
+        gems: account.gems || 0,
+        isAdmin: !!account.isAdmin
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { email, password, username, gender, country, countryName } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال بريد إلكتروني صحيح' });
+    }
+    if (!password || password.length < 3) {
+      return res.status(400).json({ success: false, message: 'يجب أن لا يقل الرقم السري عن 3 خانات' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = (username && username.trim()) ? username.trim() : cleanEmail.split('@')[0];
+
+    let account = userAccounts.get(cleanEmail);
+    if (account) {
+      account.password = password.trim();
+      if (username) account.username = cleanUsername;
+      if (gender) account.gender = gender;
+    } else {
+      const isOwner = cleanEmail === 'mahmoud.aljafri23@gmail.com' || cleanEmail === 'mr.world2213@gmail.com';
+      account = {
+        email: cleanEmail,
+        password: password.trim(),
+        username: cleanUsername,
+        serialNumber: isOwner ? 'LQ-462683' : ('LQ-' + Math.floor(100000 + Math.random() * 900000)),
+        gender: gender || 'male',
+        country: country || 'JO',
+        countryName: countryName || 'الأردن',
+        gems: isOwner ? 99999 : 50,
+        isAdmin: isOwner,
+        createdAt: Date.now()
+      };
+      userAccounts.set(cleanEmail, account);
+    }
+
+    res.json({
+      success: true,
+      message: 'تم إنشاء الحساب بنجاح',
+      account: {
+        email: account.email,
+        username: account.username,
+        serialNumber: account.serialNumber,
+        gender: account.gender,
+        country: account.country,
+        countryName: account.countryName,
+        gems: account.gems,
+        isAdmin: account.isAdmin
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 app.post('/api/profile/update', (req, res) => {
   try {

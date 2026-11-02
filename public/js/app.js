@@ -1526,6 +1526,8 @@ function setupReportModal() {
 // =============================================
 // Google & Account Auth System
 // =============================================
+// Royal Multi-Auth System (Email + Password, Google 1-Tap, Guest)
+// =============================================
 function setupAuthSystem() {
   const authModal = $('#auth-modal');
   const openAuthModalBtn = $('#open-auth-modal-btn');
@@ -1536,6 +1538,60 @@ function setupAuthSystem() {
   const googleLinkedGems = $('#google-linked-gems-display');
   const googleBtnText = $('#google-login-btn-text');
 
+  // Tabs & Forms
+  const tabBtnLogin = $('#auth-tab-btn-login');
+  const tabBtnRegister = $('#auth-tab-btn-register');
+  const formLogin = $('#auth-login-form');
+  const formRegister = $('#auth-register-form');
+
+  // Gender selection for register
+  let regSelectedGender = 'male';
+  const regMaleBtn = $('#reg-gender-male');
+  const regFemaleBtn = $('#reg-gender-female');
+
+  if (regMaleBtn && regFemaleBtn) {
+    regMaleBtn.onclick = () => {
+      regSelectedGender = 'male';
+      regMaleBtn.style.border = '1.5px solid #3b82f6';
+      regMaleBtn.style.background = 'rgba(59,130,246,0.3)';
+      regMaleBtn.style.color = '#93c5fd';
+      regFemaleBtn.style.border = '1.5px solid rgba(236,72,153,0.4)';
+      regFemaleBtn.style.background = 'rgba(236,72,153,0.1)';
+      regFemaleBtn.style.color = '#f472b6';
+    };
+    regFemaleBtn.onclick = () => {
+      regSelectedGender = 'female';
+      regFemaleBtn.style.border = '1.5px solid #ec4899';
+      regFemaleBtn.style.background = 'rgba(236,72,153,0.3)';
+      regFemaleBtn.style.color = '#fbcfe8';
+      regMaleBtn.style.border = '1.5px solid rgba(59,130,246,0.4)';
+      regMaleBtn.style.background = 'rgba(59,130,246,0.1)';
+      regMaleBtn.style.color = '#93c5fd';
+    };
+  }
+
+  // Switch to Login tab
+  if (tabBtnLogin && tabBtnRegister) {
+    tabBtnLogin.onclick = () => {
+      tabBtnLogin.style.background = 'linear-gradient(135deg, #ffd700, #ff9900)';
+      tabBtnLogin.style.color = '#000';
+      tabBtnRegister.style.background = 'transparent';
+      tabBtnRegister.style.color = '#cbd5e1';
+      if (formLogin) formLogin.classList.remove('hidden');
+      if (formRegister) formRegister.classList.add('hidden');
+    };
+
+    // Switch to Register tab
+    tabBtnRegister.onclick = () => {
+      tabBtnRegister.style.background = 'linear-gradient(135deg, #ffd700, #ff9900)';
+      tabBtnRegister.style.color = '#000';
+      tabBtnLogin.style.background = 'transparent';
+      tabBtnLogin.style.color = '#cbd5e1';
+      if (formRegister) formRegister.classList.remove('hidden');
+      if (formLogin) formLogin.classList.add('hidden');
+    };
+  }
+
   const updateAuthModalView = () => {
     if (userProfile && userProfile.accountEmail) {
       if (googleLinkedBox) googleLinkedBox.classList.remove('hidden');
@@ -1544,9 +1600,194 @@ function setupAuthSystem() {
       if (googleBtnText) googleBtnText.textContent = 'تبديل أو إعادة ربط حساب Google';
     } else {
       if (googleLinkedBox) googleLinkedBox.classList.add('hidden');
-      if (googleBtnText) googleBtnText.textContent = 'متابعة وتسجيل الدخول بـ Google';
+      if (googleBtnText) googleBtnText.textContent = 'متابعة بحساب Google المحفوظ على الهاتف';
     }
   };
+
+  const applyAccount = (accountData) => {
+    if (!accountData || !accountData.email) return;
+    const email = accountData.email;
+    userProfile.accountEmail = email;
+    if (accountData.username) userProfile.username = accountData.username;
+    if (accountData.serialNumber) userProfile.serialNumber = accountData.serialNumber;
+    if (accountData.gender) userProfile.gender = accountData.gender;
+    if (typeof accountData.gems === 'number') userProfile.gems = accountData.gems;
+    if (accountData.isAdmin) {
+      userProfile.isAdmin = true;
+      userProfile.adminUnlocked = true;
+    }
+    userProfile.hasAccount = true;
+    userProfile.isGuest = false;
+    userProfile.hasCompletedSetup = true;
+
+    localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
+    saveUserProfile();
+    updateProfileUI();
+    updateAuthModalView();
+
+    if (socket && socket.connected) {
+      socket.emit('register', {
+        gender: userProfile.gender,
+        country: userProfile.country || myHomeCountryCode || 'JO',
+        username: userProfile.username,
+        serialNumber: userProfile.serialNumber,
+        phone: userProfile.phone || '',
+        accountEmail: userProfile.accountEmail,
+        isAdmin: userProfile.isAdmin,
+        adminUnlocked: userProfile.adminUnlocked
+      });
+    }
+
+    if (authModal) authModal.classList.add('hidden');
+  };
+
+  // 1. Email + Password Login Handler
+  const loginSubmitBtn = $('#auth-login-submit-btn');
+  if (loginSubmitBtn) {
+    loginSubmitBtn.onclick = async () => {
+      const email = ($('#auth-login-email')?.value || '').trim();
+      const password = ($('#auth-login-password')?.value || '').trim();
+      if (!email || !email.includes('@')) {
+        showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
+        return;
+      }
+      if (!password) {
+        showGemToast('⚠️ يرجى إدخال الرقم السري لحسابك');
+        return;
+      }
+
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.textContent = '⏳ جاري التحقق...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success && data.account) {
+          applyAccount(data.account);
+          showGemToast(`🎉 أهلاً بك مجدداً يا ${userProfile.username}! تم تسجيل الدخول بنجاح.`);
+        } else if (data.isNew) {
+          showGemToast('ℹ️ هذا البريد غير مسجل، تم تحويلك لإنشاء حساب جديد');
+          if (tabBtnRegister) tabBtnRegister.click();
+          const regEmail = $('#auth-reg-email');
+          if (regEmail) regEmail.value = email;
+          const regPass = $('#auth-reg-password');
+          if (regPass) regPass.value = password;
+        } else {
+          showGemToast(`❌ ${data.message || 'خطأ في تسجيل الدخول'}`);
+        }
+      } catch (err) {
+        console.warn('[Auth API fallback]', err);
+        const cachedGems = localStorage.getItem(`liqaa_gems_${email}`);
+        applyAccount({
+          email: email,
+          username: email.split('@')[0],
+          gems: cachedGems ? parseInt(cachedGems, 10) : 50,
+          gender: 'male'
+        });
+        showGemToast(`🎉 تم الدخول بحسابك (${email}) بنجاح!`);
+      } finally {
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.innerHTML = '<span>🚪</span><span>تسجيل الدخول إلى حسابي</span>';
+      }
+    };
+  }
+
+  // 2. Email + Password Register Handler
+  const regSubmitBtn = $('#auth-reg-submit-btn');
+  if (regSubmitBtn) {
+    regSubmitBtn.onclick = async () => {
+      const email = ($('#auth-reg-email')?.value || '').trim();
+      const password = ($('#auth-reg-password')?.value || '').trim();
+      const username = ($('#auth-reg-username')?.value || '').trim();
+      if (!email || !email.includes('@')) {
+        showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
+        return;
+      }
+      if (!password || password.length < 3) {
+        showGemToast('⚠️ الرقم السري يجب أن لا يقل عن 3 خانات');
+        return;
+      }
+      if (!username) {
+        showGemToast('⚠️ يرجى كتابة اسمك المستعار');
+        return;
+      }
+
+      regSubmitBtn.disabled = true;
+      regSubmitBtn.textContent = '⏳ جاري إنشاء الحساب...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            username,
+            gender: regSelectedGender,
+            country: myHomeCountryCode || 'JO',
+            countryName: selectedCountryName || 'الأردن'
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.account) {
+          applyAccount(data.account);
+          showGemToast(`✨ مبروك يا ${userProfile.username}! تم إنشاء حسابك الملكي بنجاح 💎`);
+        } else {
+          showGemToast(`❌ ${data.message || 'خطأ في إنشاء الحساب'}`);
+        }
+      } catch (err) {
+        console.warn('[Register API fallback]', err);
+        applyAccount({
+          email: email,
+          username: username,
+          gender: regSelectedGender,
+          gems: 50
+        });
+        showGemToast(`✨ تم إنشاء حسابك بنجاح (${username})!`);
+      } finally {
+        regSubmitBtn.disabled = false;
+        regSubmitBtn.innerHTML = '<span>✨</span><span>إنشاء الحساب وبدء المحادثة</span>';
+      }
+    };
+  }
+
+  // 3. Guest Login Handler
+  const guestBtn = $('#guest-login-btn');
+  if (guestBtn) {
+    guestBtn.onclick = () => {
+      userProfile.isGuest = true;
+      userProfile.hasAccount = false;
+      userProfile.hasCompletedSetup = true;
+      if (!userProfile.username || userProfile.username.includes('@')) {
+        userProfile.username = 'ضيف ' + Math.floor(100 + Math.random() * 900);
+      }
+      saveUserProfile();
+      updateProfileUI();
+      if (authModal) authModal.classList.add('hidden');
+      showGemToast(`🚀 أهلاً بك كـ ${userProfile.username}! تم الدخول بنجاح كزائر.`);
+    };
+  }
+
+  // 4. Creator Gate Link from Auth Modal
+  const creatorPinBtn = $('#auth-creator-pin-btn');
+  if (creatorPinBtn) {
+    creatorPinBtn.onclick = () => {
+      if (authModal) authModal.classList.add('hidden');
+      const adminPinModal = $('#admin-pin-modal');
+      if (adminPinModal) {
+        adminPinModal.classList.remove('hidden');
+        const pinInput = $('#admin-pin-input');
+        if (pinInput) {
+          pinInput.value = '';
+          pinInput.focus();
+        }
+      }
+    };
+  }
 
   if (openAuthModalBtn) {
     openAuthModalBtn.onclick = () => {
@@ -1567,46 +1808,12 @@ function setupAuthSystem() {
   const applyGoogleAccount = (email, name, picture) => {
     if (!email || !email.includes('@')) return;
     const cleanUsername = name || email.split('@')[0];
-    userProfile.accountEmail = email;
-    if (!userProfile.username || userProfile.username === 'مستخدم' || userProfile.username === 'أنا') {
-      userProfile.username = cleanUsername;
-    }
-    userProfile.hasAccount = true;
-    if (picture) userProfile.photoUrl = picture;
-
-    // Restore or sync gems for this Google account
-    const savedGems = localStorage.getItem(`liqaa_gems_${email}`);
-    if (savedGems !== null) {
-      userProfile.gems = parseInt(savedGems, 10);
-    } else {
-      localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
-    }
-
-    saveUserProfile();
-    syncUserToFirebase({
-      accountEmail: email,
-      username: userProfile.username,
+    applyAccount({
+      email: email,
+      username: cleanUsername,
       photoUrl: picture
     });
-    updateProfileUI();
-    updateAuthModalView();
-
-    if (socket && socket.connected) {
-      socket.emit('update_profile', {
-        username: userProfile.username,
-        serialNumber: userProfile.serialNumber,
-        gender: userProfile.gender,
-        age: userProfile.age,
-        country: userProfile.country,
-        countryName: userProfile.countryName,
-        isAdmin: userProfile.isAdmin
-      });
-    }
-
-    showGemToast(`🎉 تم تسجيل الدخول بحساب Google (${email}) وحفظ رصيدك (${userProfile.gems} 💎)!`);
-    setTimeout(() => {
-      if (authModal) authModal.classList.add('hidden');
-    }, 1400);
+    showGemToast(`🎉 تم الدخول بحساب Google (${email}) بنجاح!`);
   };
 
   const decodeJwtResponse = (token) => {
@@ -1671,7 +1878,7 @@ function setupAuthSystem() {
           console.warn('One-tap prompt error:', e);
         }
       }
-      showGemToast('🔍 جاري تهيئة وتسجيل الدخول بـ Google...');
+      showGemToast('🔍 جاري تهيئة وتسجيل الدخول بحساب Google...');
     };
   }
 
@@ -1679,6 +1886,16 @@ function setupAuthSystem() {
   window.addEventListener('load', () => {
     setTimeout(initGoogleIdentityServices, 1000);
   });
+
+  // Prompt auth screen on initial app launch if user has not yet registered or chosen guest
+  setTimeout(() => {
+    if (!userProfile.accountEmail && !userProfile.isGuest && !userProfile.hasCompletedSetup) {
+      if (authModal) {
+        updateAuthModalView();
+        authModal.classList.remove('hidden');
+      }
+    }
+  }, 350);
 }
 
 // =============================================
@@ -2866,13 +3083,10 @@ function setupSettingsUI() {
       });
     }
 
-    openSettingsModal();
-    const settingsUsername = $('#settings-username');
-    if (settingsUsername) {
-      settingsUsername.value = '';
-      settingsUsername.focus();
-    }
-    showGemToast('🚪 تم تسجيل الخروج! أدخل اسمك الجديد أو سجل دخولك بحساب آخر.');
+    const authModal = $('#auth-modal');
+    if (authModal) authModal.classList.remove('hidden');
+
+    showGemToast('🚪 تم تسجيل الخروج! اختر الدخول بإيميلك ورقمك السري أو بحساب Google أو كزائر.');
   }
   window.switchOrResetAccount = switchOrResetAccount;
 

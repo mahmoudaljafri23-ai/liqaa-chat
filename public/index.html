@@ -542,49 +542,126 @@
     </div>
   </div>
 
-  <!-- Google Sign In & Account Login Modal (Royal Edition) -->
+  <!-- Royal Auth & Sign-In Modal (Email + Password, Google 1-Tap, Guest) -->
   <div id="auth-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
-    <div class="modal-content royal-auth-content" style="max-width: 420px; width: 92%; padding: 26px 22px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
+    <div class="modal-content royal-auth-content" style="max-width: 440px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 24px 20px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
       <button id="close-auth-modal-btn" class="royal-close-round-btn" style="position: absolute; left: 16px; top: 16px;" title="إغلاق">✕</button>
       
       <!-- Royal Crown Orb -->
-      <div style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 12px; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #fff;">
+      <div style="width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 10px; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #fff;">
         👑
       </div>
 
-      <h2 style="font-size: 22px; color: #fff; margin-bottom: 5px; font-weight: 900;"><span style="color:#ffd700;">ديوان Loky Chat</span> الملكي</h2>
-      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 18px;">تسجيل الدخول السريع بـ Google لحفظ حسابك ورصيدك الملكي 💎</p>
+      <h2 style="font-size: 21px; color: #fff; margin-bottom: 4px; font-weight: 900;"><span style="color:#ffd700;">ديوان Loky Chat</span> الملكي</h2>
+      <p style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 16px;">سجّل دخولك لحفظ هويتك الملكية ورصيدك وأصدقائك 💎</p>
 
       <!-- Current Connected Account Status Box (shown when linked) -->
-      <div id="google-linked-info-box" class="hidden" style="width: 100%; margin-bottom: 16px; background: rgba(16, 185, 129, 0.12); padding: 14px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;">
-        <div style="font-size: 12px; color: #34d399; font-weight: bold;">✅ حسابك الملكي موثق ومتصل بـ Google:</div>
-        <div id="google-linked-email-display" style="font-size: 15px; color: #fff; font-weight: 800; margin: 4px 0;" dir="ltr">user@gmail.com</div>
+      <div id="google-linked-info-box" class="hidden" style="width: 100%; margin-bottom: 14px; background: rgba(16, 185, 129, 0.12); padding: 12px; border-radius: 14px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;">
+        <div style="font-size: 12px; color: #34d399; font-weight: bold;">✅ حسابك الملكي موثق ومسجل:</div>
+        <div id="google-linked-email-display" style="font-size: 14px; color: #fff; font-weight: 800; margin: 3px 0;" dir="ltr">user@gmail.com</div>
         <div style="font-size: 11px; color: #ffd700;">💎 رصيد الجواهر المحفوظ: <span id="google-linked-gems-display" style="font-weight:bold;">0</span></div>
       </div>
 
-      <!-- Google Sign In Card -->
-      <div id="google-auth-box" style="width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.04); padding: 16px; border-radius: 18px; border: 1px solid rgba(255,215,0,0.25);">
-        <!-- Direct 1-Tap Google Button -->
-        <button id="google-login-btn" class="action-button" style="width: 100%; padding: 13px; font-size: 15px; font-weight: 800; background: #ffffff; color: #202124; border: 1.5px solid #dadce0; border-radius: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); margin:0; transition: all 0.2s ease;">
-          <svg width="22" height="22" viewBox="0 0 48 48">
+      <!-- Auth Mode Switcher Tabs (Login vs Register) -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.25);">
+        <button type="button" id="auth-tab-btn-login" style="flex: 1; padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s ease; background: linear-gradient(135deg, #ffd700, #ff9900); color: #000;">
+          🔑 تسجيل الدخول
+        </button>
+        <button type="button" id="auth-tab-btn-register" style="flex: 1; padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s ease; background: transparent; color: #cbd5e1;">
+          ✨ إنشاء حساب جديد
+        </button>
+      </div>
+
+      <!-- 1. Email & Password Login Form -->
+      <form id="auth-login-form" onsubmit="return false;" style="text-align: right;">
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
+          <input type="email" id="auth-login-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">الرقم السري / كلمة المرور 🔒:</label>
+          <input type="password" id="auth-login-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+        </div>
+
+        <button type="button" id="auth-login-submit-btn" style="width: 100%; padding: 13px; font-size: 14.5px; font-weight: 800; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🚪</span>
+          <span>تسجيل الدخول إلى حسابي</span>
+        </button>
+      </form>
+
+      <!-- 2. Email & Password Register Form -->
+      <form id="auth-register-form" class="hidden" onsubmit="return false;" style="text-align: right;">
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
+          <input type="email" id="auth-reg-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اختر رقماً سرياً 🔒:</label>
+          <input type="password" id="auth-reg-password" placeholder="أدخل رقم سري لا يقل عن 4 خانات" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اسمك المستعار في المحادثات 👤:</label>
+          <input type="text" id="auth-reg-username" placeholder="مثال: الفارس الملكي" dir="auto" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">تحديد الجنس:</label>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="reg-gender-male" style="flex: 1; padding: 9px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border: 1.5px solid #3b82f6; background: rgba(59,130,246,0.3); color: #93c5fd;">
+              👨 ذكر
+            </button>
+            <button type="button" id="reg-gender-female" style="flex: 1; padding: 9px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border: 1.5px solid rgba(236,72,153,0.4); background: rgba(236,72,153,0.1); color: #f472b6;">
+              👩 أنثى
+            </button>
+          </div>
+        </div>
+
+        <button type="button" id="auth-reg-submit-btn" style="width: 100%; padding: 13px; font-size: 14.5px; font-weight: 800; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>✨</span>
+          <span>إنشاء الحساب وبدء المحادثة</span>
+        </button>
+      </form>
+
+      <!-- Royal Divider -->
+      <div style="margin: 16px 0 12px; display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11.5px;">
+        <span style="flex: 1; height: 1px; background: rgba(255,215,0,0.2);"></span>
+        <span>أو عبر الخيارات السريعة</span>
+        <span style="flex: 1; height: 1px; background: rgba(255,215,0,0.2);"></span>
+      </div>
+
+      <!-- Quick Fast Action 1: Google One-Tap Sign In -->
+      <div id="google-auth-box" style="width: 100%; margin-bottom: 10px;">
+        <button id="google-login-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #ffffff; color: #202124; border: 1.5px solid #dadce0; border-radius: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); margin:0; transition: all 0.2s ease;">
+          <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
             <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
             <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
             <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
           </svg>
-          <span id="google-login-btn-text">متابعة وتسجيل الدخول بـ Google</span>
+          <span id="google-login-btn-text">متابعة بحساب Google المحفوظ على الهاتف</span>
         </button>
 
-        <!-- Slot for Official Google GIS Button Render -->
-        <div id="google-gis-slot" style="margin-top: 10px; display: flex; justify-content: center;"></div>
-        
-        <p id="google-auth-status-hint" style="font-size: 11.5px; color: #94a3b8; margin-top: 10px; line-height: 1.5;">
-          بنقرة واحدة يتم اختيار حساب Google الخاص بك وحفظ رصيدك وهويتك الملكية فوراً دون كتابة.
-        </p>
+        <div id="google-gis-slot" style="margin-top: 8px; display: flex; justify-content: center;"></div>
       </div>
 
-      <div style="margin-top: 15px; font-size: 11px; color: #888;">
-        من خلال النقر على الخيار أعلاه، فإنك تقر بأن عمرك لا يقل عن 18 عاماً وتوافق على شروط الاستخدام.
+      <!-- Quick Fast Action 2: Enter as Guest -->
+      <button id="guest-login-btn" type="button" style="width: 100%; padding: 11px; font-size: 13.5px; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.22); color: #e2e8f0; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; transition: all 0.2s ease;">
+        <span>🚀</span>
+        <span>الدخول كزائر (بدء فوري بدون تسجيل)</span>
+      </button>
+
+      <!-- Quick Fast Action 3: Creator Gate Link -->
+      <div style="margin-top: 4px;">
+        <button id="auth-creator-pin-btn" type="button" style="background: none; border: none; color: #ffd700; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: underline;">
+          👑 الدخول السريع للمنشئ برمز الحماية PIN
+        </button>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 11px; color: #888;">
+        من خلال المتابعة، فإنك تقر بأن عمرك لا يقل عن 18 عاماً وتوافق على شروط الاستخدام وسياسة الخصوصية.
       </div>
     </div>
   </div>
