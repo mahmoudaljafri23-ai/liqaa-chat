@@ -514,23 +514,32 @@ async function autoDetectCountry() {
 }
 
 // =============================================
-// Admin Developer Permissions & Security PIN
+// Admin Developer Permissions & Creator Verification
 // =============================================
-function checkAdminPermissions() {
-  // Ensure default admin PIN exists
-  if (!userProfile.adminPin) {
-    userProfile.adminPin = '2026';
-  }
+function isCreatorAccount() {
+  return !!(userProfile && userProfile.accountEmail && 
+    (userProfile.accountEmail.toLowerCase().trim() === 'mahmoud.aljafri23@gmail.com' || 
+     userProfile.accountEmail.toLowerCase().trim() === 'mr.world2213@gmail.com'));
+}
 
-  // Creator privileges are ONLY active when unlocked with the secret PIN!
-  if (userProfile.adminUnlocked === true) {
+function checkAdminPermissions() {
+  const isOwner = isCreatorAccount();
+
+  if (isOwner) {
     userProfile.isAdmin = true;
+    userProfile.adminUnlocked = true;
     userProfile.gems = 999999;
+    userProfile.serialNumber = 'LQ-462683';
     delete userProfile.bannedUntil; // Full immunity
     return true;
   }
 
+  // Strictly regular user for ANY other account
   userProfile.isAdmin = false;
+  userProfile.adminUnlocked = false;
+  if (userProfile.gems > 50000) {
+    userProfile.gems = 0; // Wipe any falsely granted 999k gems!
+  }
   return false;
 }
 
@@ -555,13 +564,25 @@ function setupAdminPinModal() {
       const enteredPin = adminPinInput ? adminPinInput.value.trim() : '';
       const customPin = userProfile.adminPin || '2026';
 
-      // Secret PIN check: matches userProfile.adminPin, '2026', or owner phone '0790181802'
+      // Secret PIN check: ONLY valid for the creator's main verified email!
       if (enteredPin && (enteredPin === customPin || enteredPin === '2026' || enteredPin === '0790181802')) {
+        if (!isCreatorAccount()) {
+          showGemToast('❌ هذا الحساب ليس حساب المنشئ الرئيسي! صلاحيات المنشئ مقفلة.');
+          userProfile.isAdmin = false;
+          userProfile.adminUnlocked = false;
+          userProfile.gems = 0;
+          saveUserProfile();
+          updateProfileUI();
+          if (adminPinModal) adminPinModal.classList.add('hidden');
+          return;
+        }
+
         userProfile.adminUnlocked = true;
         userProfile.isAdmin = true;
         userProfile.gems = 999999;
+        userProfile.serialNumber = 'LQ-462683';
         userProfile.isEmailAuthenticated = true;
-        userProfile.accountEmail = userProfile.accountEmail || 'mahmoud.aljafri23@gmail.com';
+        userProfile.accountEmail = 'mahmoud.aljafri23@gmail.com';
         delete userProfile.bannedUntil;
         saveUserProfile();
         updateProfileUI();
@@ -619,7 +640,7 @@ function setupAdminPinModal() {
 // =============================================
 function checkBanStatus() {
   checkAdminPermissions();
-  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) {
+  if (isCreatorAccount()) {
     delete userProfile.bannedUntil;
     saveUserProfile();
     if (bannedModal) bannedModal.classList.add('hidden');
@@ -638,7 +659,7 @@ function checkBanStatus() {
 }
 
 function showBanModal(bannedUntil) {
-  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) return;
+  if (isCreatorAccount()) return;
   if (bannedModal) bannedModal.classList.remove('hidden');
 
   function updateBanCountdown() {
@@ -665,8 +686,8 @@ function showBanModal(bannedUntil) {
 }
 
 function trigger24HourBan(reason, expiresAt) {
-  if (userProfile.isAdmin || (userProfile.phone && userProfile.phone.includes('0790181802'))) {
-    console.log('[BAN BYPASSED] Admin user is immune from bans');
+  if (isCreatorAccount()) {
+    console.log('[BAN BYPASSED] Creator is immune from bans');
     return;
   }
 
@@ -726,10 +747,6 @@ function loadUserProfile() {
     userProfile.gender = 'male';
   }
 
-  // Security: Lock creator controls by default until secret PIN is verified
-  userProfile.adminUnlocked = false;
-  userProfile.isAdmin = false;
-
   // Maintain authenticated session if accountEmail or guest mode is active
   if (userProfile.accountEmail && userProfile.accountEmail.includes('@')) {
     userProfile.isEmailAuthenticated = true;
@@ -743,8 +760,17 @@ function loadUserProfile() {
     userProfile.hasCompletedSetup = false;
   }
 
-  // Zero out all gems for regular accounts as requested ("صفرلي كل الرصيد عن اي حساب كلو صفر")
-  userProfile.gems = 0;
+  // STRICT CREATOR SECURITY LOCK: Only creator main email can have isAdmin and 999k gems
+  if (isCreatorAccount()) {
+    userProfile.isAdmin = true;
+    userProfile.adminUnlocked = true;
+    userProfile.gems = 999999;
+    userProfile.serialNumber = 'LQ-462683';
+  } else {
+    userProfile.isAdmin = false;
+    userProfile.adminUnlocked = false;
+    userProfile.gems = 0; // Strip any falsely cached 999k gems!
+  }
 
   selectedGender = userProfile.gender;
   saveUserProfile();
@@ -802,8 +828,10 @@ function updateProfileUI() {
     serialNumEl.textContent = userProfile.serialNumber;
   }
   
+  const isOwner = isCreatorAccount();
+
   if (userDisplayName) {
-    if (userProfile.isAdmin) {
+    if (isOwner) {
       userDisplayName.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-right: 2px;">👑 منشئ</span>`;
     } else {
       userDisplayName.textContent = userProfile.username;
@@ -812,7 +840,7 @@ function updateProfileUI() {
 
   const dashUser = $('#royal-dash-username');
   if (dashUser) {
-    if (userProfile.isAdmin) {
+    if (isOwner) {
       dashUser.innerHTML = `${userProfile.username} <span style="background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-right: 2px;">👑 منشئ</span>`;
     } else {
       dashUser.textContent = userProfile.username || 'مستخدم';
@@ -825,10 +853,10 @@ function updateProfileUI() {
   }
 
   if (gemsBalanceCount) {
-    if (userProfile.isAdmin) {
+    if (isOwner) {
       gemsBalanceCount.textContent = '999k+';
     } else {
-      gemsBalanceCount.textContent = userProfile.gems;
+      gemsBalanceCount.textContent = userProfile.gems || 0;
     }
   }
 
@@ -922,17 +950,12 @@ function renderFriendsAndOnlineUsers() {
   const searchInput = $('#messenger-search-input');
   const filterText = (searchInput ? searchInput.value.trim().toLowerCase() : '');
 
-  // Admin exclusivity check: Only Admin (Mahmoud) can view all online users ("الي بس انا الي اشاهدهم من كامل فقط")
+  // Creator exclusivity check: Only Creator (mahmoud.aljafri23@gmail.com) can view real server online counts & all online users
   const tabFilterAllUsers = $('#tab-filter-all-users');
   const tabFilterSavedFriends = $('#tab-filter-saved-friends');
-  const isAdmin = !!(userProfile && (
-    userProfile.isAdmin || 
-    (userProfile.phone && userProfile.phone.includes('0790181802')) || 
-    (userProfile.accountEmail && userProfile.accountEmail.toLowerCase() === 'mr.world2213@gmail.com') || 
-    (userProfile.username && userProfile.username.toLowerCase() === 'mahmoud')
-  ));
+  const isOwner = isCreatorAccount();
 
-  if (!isAdmin) {
+  if (!isOwner) {
     if (tabFilterAllUsers) tabFilterAllUsers.style.display = 'none';
     currentMessengerTab = 'friends';
     if (tabFilterSavedFriends) tabFilterSavedFriends.classList.add('active');
@@ -949,20 +972,24 @@ function renderFriendsAndOnlineUsers() {
   const friendsCount = (friendsList && friendsList.length > 0) ? friendsList.length : 0;
 
   const tabCountAll = $('#tab-count-all');
-  if (tabCountAll) tabCountAll.textContent = onlineCount;
+  if (tabCountAll) tabCountAll.textContent = isOwner ? onlineCount : 0;
 
   const tabCountFriends = $('#tab-count-friends');
   if (tabCountFriends) tabCountFriends.textContent = friendsCount;
 
   const onlineStatusHeader = $('#messenger-online-status');
   if (onlineStatusHeader) {
-    onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${onlineCount + 1} مستخدم)`;
+    if (isOwner) {
+      onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${onlineCount + 1} مستخدم)`;
+    } else {
+      onlineStatusHeader.textContent = `⭐ أصدقاؤك المحفوظون من المحادثات (${friendsCount})`;
+    }
   }
 
   // 2. Build list based on active tab
   const usersToRender = [];
 
-  if (currentMessengerTab === 'all' && isAdmin) {
+  if (currentMessengerTab === 'all' && isOwner) {
     if (realOnlineUsers.length > 0) {
       realOnlineUsers.forEach(u => {
         const isSaved = isFriend(u);
@@ -1624,16 +1651,25 @@ function setupAuthSystem() {
 
   const applyAccount = (accountData) => {
     if (!accountData || !accountData.email) return;
-    const email = accountData.email;
+    const email = accountData.email.toLowerCase().trim();
     userProfile.accountEmail = email;
     if (accountData.username) userProfile.username = accountData.username;
     if (accountData.serialNumber) userProfile.serialNumber = accountData.serialNumber;
     if (accountData.gender) userProfile.gender = accountData.gender;
-    if (typeof accountData.gems === 'number') userProfile.gems = accountData.gems;
-    if (accountData.isAdmin) {
+
+    // STRICT CREATOR CHECK: ONLY creator main email gets creator privileges and 999k gems!
+    const isOwner = (email === 'mahmoud.aljafri23@gmail.com' || email === 'mr.world2213@gmail.com');
+    if (isOwner) {
       userProfile.isAdmin = true;
       userProfile.adminUnlocked = true;
+      userProfile.gems = 999999;
+      userProfile.serialNumber = 'LQ-462683';
+    } else {
+      userProfile.isAdmin = false;
+      userProfile.adminUnlocked = false;
+      userProfile.gems = (typeof accountData.gems === 'number' && accountData.gems <= 50000) ? accountData.gems : 0;
     }
+
     userProfile.hasAccount = true;
     userProfile.isGuest = false;
     userProfile.isEmailAuthenticated = true;
@@ -1808,23 +1844,7 @@ function setupAuthSystem() {
     };
   }
 
-  // 4. Creator Gate Link from Auth Modal
-  const creatorPinBtn = $('#auth-creator-pin-btn');
-  if (creatorPinBtn) {
-    creatorPinBtn.onclick = () => {
-      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
-      if (authModal) authModal.classList.add('hidden');
-      const adminPinModal = $('#admin-pin-modal');
-      if (adminPinModal) {
-        adminPinModal.classList.remove('hidden');
-        const pinInput = $('#admin-pin-input');
-        if (pinInput) {
-          pinInput.value = '';
-          pinInput.focus();
-        }
-      }
-    };
-  }
+
 
   if (openAuthModalBtn) {
     openAuthModalBtn.onclick = () => {
@@ -2770,13 +2790,9 @@ function openSettingsModal() {
     if (lockedGender) lockedGender.textContent = (userProfile.gender === 'female') ? 'أنثى 👩' : 'ذكر 👨';
     if (lockedEmail) lockedEmail.textContent = userProfile.accountEmail || 'غير مسجل';
 
-    const isUnlockedAdmin = !!(userProfile && userProfile.isAdmin && userProfile.adminUnlocked);
-    const creatorAccessGate = $('#creator-access-gate');
+    const isUnlockedAdmin = isCreatorAccount();
     const adminBroadcastSection = $('#admin-broadcast-section');
 
-    if (creatorAccessGate) {
-      creatorAccessGate.classList.toggle('hidden', isUnlockedAdmin);
-    }
     if (adminBroadcastSection) {
       adminBroadcastSection.classList.toggle('hidden', !isUnlockedAdmin);
       if (isUnlockedAdmin) {
@@ -2878,7 +2894,7 @@ function setupSettingsUI() {
   function updateAdminPinVisibility() {
     const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
     if (adminPinGroup) {
-      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin && userProfile.adminUnlocked)) {
+      if (isCreatorAccount()) {
         adminPinGroup.classList.remove('hidden');
       } else {
         adminPinGroup.classList.add('hidden');
@@ -3417,11 +3433,13 @@ function setupWelcomeUI() {
       lastTap = now;
       if (tapCount >= 5) {
         tapCount = 0;
-        const adminPinModal = $('#admin-pin-modal');
-        if (adminPinModal) {
-          adminPinModal.classList.remove('hidden');
-          const pinInput = $('#admin-pin-input');
-          if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+        if (isCreatorAccount()) {
+          const adminPinModal = $('#admin-pin-modal');
+          if (adminPinModal) {
+            adminPinModal.classList.remove('hidden');
+            const pinInput = $('#admin-pin-input');
+            if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+          }
         }
       }
     });

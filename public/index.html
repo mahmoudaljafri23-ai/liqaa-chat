@@ -657,12 +657,7 @@
         </button>
       </div>
 
-      <!-- Quick Fast Action 3: Creator Gate Link -->
-      <div style="margin-top: 10px;">
-        <button id="auth-creator-pin-btn" type="button" style="background: none; border: none; color: #ffd700; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: underline;">
-          👑 الدخول السريع للمنشئ برمز الحماية PIN
-        </button>
-      </div>
+
 
       <div style="margin-top: 14px; font-size: 11px; color: #888;">
         من خلال المتابعة، فإنك تقر بأن عمرك لا يقل عن 18 عاماً وتوافق على شروط الاستخدام وسياسة الخصوصية.
@@ -709,15 +704,6 @@
             <span id="settings-locked-email" style="font-size: 12px; color: #cbd5e1; direction: ltr;">--</span>
           </div>
         </div>
-      </div>
-
-      <!-- Creator Access Gate Button (PIN Protected) -->
-      <div id="creator-access-gate" style="width:100%; margin-bottom: 12px; text-align:center;">
-        <button id="open-creator-panel-btn" type="button" class="action-button" style="width:100%; justify-content:center; background:linear-gradient(135deg, #ffd700, #ff8e53); color:#000; font-weight:800; padding:12px 14px; border-radius:12px; border:none; font-size:13px; box-shadow: 0 4px 15px rgba(255,215,0,0.25); display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <span>👑</span>
-          <span>الدخول إلى لوحة وحساب منشئ التطبيق</span>
-          <span>🔐</span>
-        </button>
       </div>
 
       <!-- Admin Push Broadcast Section (Moved to TOP for Admin) -->
@@ -924,8 +910,8 @@
             <span class="messenger-header-chat">💬</span>
           </div>
           <div>
-            <h2 class="messenger-title">ديوان المتصلين والأصدقاء الملكي</h2>
-            <span class="messenger-subtitle" id="messenger-online-status">🟢 متصلون الآن بالديوان الملكي</span>
+            <h2 class="messenger-title" id="messenger-title-heading">ديوان الأصدقاء الملكي</h2>
+            <span class="messenger-subtitle" id="messenger-online-status">⭐ أصدقاؤك المحفوظون من المحادثات</span>
           </div>
         </div>
         <button id="close-friends-btn" class="royal-close-round-btn" title="إغلاق">✕</button>
@@ -939,12 +925,12 @@
           
           <!-- Royal Tabs Filter Bar -->
           <div class="royal-messenger-tabs-bar">
-            <button type="button" class="royal-msg-tab-btn active" id="tab-filter-all-users">
+            <button type="button" class="royal-msg-tab-btn" id="tab-filter-all-users" style="display: none;">
               <span class="tab-icon">🌐</span>
               <span>جميع المتصلين</span>
-              <span class="tab-count-badge" id="tab-count-all">1</span>
+              <span class="tab-count-badge" id="tab-count-all">0</span>
             </button>
-            <button type="button" class="royal-msg-tab-btn" id="tab-filter-saved-friends">
+            <button type="button" class="royal-msg-tab-btn active" id="tab-filter-saved-friends">
               <span class="tab-icon">⭐</span>
               <span>أصدقائي المحفوظون</span>
               <span class="tab-count-badge" id="tab-count-friends">0</span>

@@ -502,18 +502,20 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ success: false, message: 'الرقم السري غير صحيح' });
     }
 
+    const isOwner = cleanEmail === 'mahmoud.aljafri23@gmail.com' || cleanEmail === 'mr.world2213@gmail.com';
+
     res.json({
       success: true,
       message: 'تم تسجيل الدخول بنجاح',
       account: {
         email: account.email,
-        username: account.username,
-        serialNumber: account.serialNumber,
+        username: isOwner ? 'محمود الجعفري 👑' : account.username,
+        serialNumber: isOwner ? 'LQ-462683' : account.serialNumber,
         gender: account.gender,
         country: account.country,
         countryName: account.countryName,
-        gems: account.gems || 0,
-        isAdmin: !!account.isAdmin
+        gems: isOwner ? 999999 : (account.gems || 0),
+        isAdmin: isOwner
       }
     });
   } catch (e) {
@@ -804,13 +806,11 @@ io.on('connection', (socket) => {
       }
     }
 
-    const isAdmin = (data && data.isAdmin) || 
-      uphone === '0790181802' || 
-      uphone.includes('0790181802') || 
-      uemail.toLowerCase() === 'mr.world2213@gmail.com' ||
-      uname.toLowerCase() === 'mahmoud' || 
-      uname === 'محمود' || 
-      uname.toLowerCase() === 'admin';
+    // STRICT CREATOR AUTHENTICATION:
+    // Only the creator's verified main email can EVER be admin!
+    // Never trust client data.isAdmin, never trust phone or usernames!
+    const isOwnerEmail = (uemail === 'mahmoud.aljafri23@gmail.com' || uemail === 'mr.world2213@gmail.com');
+    const isAdmin = isOwnerEmail;
 
     users.set(socket.id, {
       ...existing,
@@ -822,12 +822,12 @@ io.on('connection', (socket) => {
       countryName: (data && data.countryName) || existing.countryName || 'الأردن',
       genderFilter: (data && data.genderFilter) || existing.genderFilter || 'any',
       username: uname,
-      serialNumber: userSerial || existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000)),
+      serialNumber: isOwnerEmail ? 'LQ-462683' : (userSerial || existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000))),
       phone: uphone,
       accountEmail: uemail,
       age: (data && data.age) || existing.age || 22,
       isAdmin: isAdmin,
-      adminUnlocked: !!(data && data.adminUnlocked),
+      adminUnlocked: isOwnerEmail,
       badges: (data && data.badges) || existing.badges || { awesome: 0, handsome: 0, elegant: 0 },
       partnerId: existing.partnerId || null
     });
@@ -981,7 +981,7 @@ io.on('connection', (socket) => {
   // Handle Admin Gems Transfer to any user or friend
   socket.on('admin_transfer_gems', (data) => {
     const user = users.get(socket.id);
-    const isAdmin = user && (user.phone === '0790181802' || (user.phone && user.phone.includes('0790181802')) || user.isAdmin);
+    const isAdmin = user && user.accountEmail && (user.accountEmail.toLowerCase() === 'mahmoud.aljafri23@gmail.com' || user.accountEmail.toLowerCase() === 'mr.world2213@gmail.com');
     if (!isAdmin) {
       return socket.emit('admin_transfer_result', { success: false, message: 'غير مصرح لك! خاصية تحويل الرصيد متاحة فقط لمنشئ التطبيق.' });
     }
