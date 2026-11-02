@@ -2,7 +2,11 @@ package com.lokychat.app;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -17,6 +21,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
@@ -27,14 +33,66 @@ import java.util.Locale;
 
 public class MainActivity extends BridgeActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 101;
+    private static final String NOTIFICATION_CHANNEL_ID = "lokychat_channel_main";
     private LocationManager locationManager;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PlayBillingPlugin.class);
         super.onCreate(savedInstanceState);
+        createNotificationChannel();
         setupWebViewGeoAndBridge();
         requestAppPermissions();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "إشعارات لوكي شات";
+            String description = "تنبيهات الرسائل والاتصالات والمطابقات الفورية";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            channel.enableVibration(true);
+            channel.enableLights(true);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    public void triggerNativeNotification(String title, String message) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+            }
+
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                (int) (System.currentTimeMillis() % 10000),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+            );
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            notificationManager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -84,6 +142,28 @@ public class MainActivity extends BridgeActivity {
                     @JavascriptInterface
                     public void requestNativeLocation() {
                         runOnUiThread(() -> detectAndSendLocation());
+                    }
+
+                    @JavascriptInterface
+                    public void showNativeNotification(String title, String message) {
+                        runOnUiThread(() -> triggerNativeNotification(title, message));
+                    }
+
+                    @JavascriptInterface
+                    public boolean isNotificationPermissionGranted() {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+                        }
+                        return true;
+                    }
+
+                    @JavascriptInterface
+                    public void requestNotificationPermissionNative() {
+                        runOnUiThread(() -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, PERMISSIONS_REQUEST_CODE);
+                            }
+                        });
                     }
                 }, "AndroidBridge");
             }

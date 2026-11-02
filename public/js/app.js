@@ -829,16 +829,49 @@ function updateProfileUI() {
 let lastOnlineCount = 0;
 let lastOnlineUsersList = [];
 
+function isDummyUser(u) {
+  if (!u) return true;
+  const sid = String(u.socketId || u.id || '').toLowerCase();
+  const serial = String(u.serialNumber || '').toUpperCase();
+  const name = String(u.username || u.name || '').trim().toLowerCase();
+
+  // Socket ID filters
+  if (sid.startsWith('royal_vip_') || sid.includes('vip') || sid.startsWith('dummy_')) return true;
+
+  // Serial filters for the 6 dummy VIP accounts
+  if (serial.includes('VIP') ||
+      serial === 'LK-459201' ||
+      serial === 'LK-732014' ||
+      serial === 'LK-619420' ||
+      serial === 'LK-882194' ||
+      serial === 'LK-YOUSEF-VIP' ||
+      serial === 'LK-MALEK-VIP') {
+    return true;
+  }
+
+  // Name filters matching dummy personas
+  if (name === 'أحمد' && serial.startsWith('LK-459')) return true;
+  if (name === 'نور' && serial.startsWith('LK-732')) return true;
+  if (name === 'كريم' && serial.startsWith('LK-619')) return true;
+  if (name === 'سارة' && serial.startsWith('LK-882')) return true;
+  if (name === 'يوسف' && (serial.includes('VIP') || sid.includes('vip'))) return true;
+  if (name === 'malek' && (serial.includes('VIP') || sid.includes('vip'))) return true;
+
+  return false;
+}
+
 function updateOnlineDisplay(payload) {
   let count = 0;
   if (typeof payload === 'number') {
     count = payload;
   } else if (payload && typeof payload.count === 'number') {
     count = payload.count;
-    if (payload.usersList) lastOnlineUsersList = payload.usersList;
+    if (payload.usersList) {
+      lastOnlineUsersList = payload.usersList.filter(u => !isDummyUser(u));
+    }
   }
 
-  lastOnlineCount = count;
+  lastOnlineCount = lastOnlineUsersList ? lastOnlineUsersList.length : count;
 
   const royalLiveCount = $('#royal-live-count');
   if (royalLiveCount) {
@@ -890,10 +923,11 @@ function renderFriendsAndOnlineUsers() {
     if (tabFilterAllUsers) tabFilterAllUsers.style.display = '';
   }
 
-  // 1. Update counter badges
-  const onlineCount = (lastOnlineUsersList && lastOnlineUsersList.length > 0)
-    ? lastOnlineUsersList.filter(u => !socket || u.socketId !== socket.id).length
-    : 0;
+  // 1. Update counter badges (Exclude dummy accounts and self)
+  const realOnlineUsers = (lastOnlineUsersList && lastOnlineUsersList.length > 0)
+    ? lastOnlineUsersList.filter(u => (!socket || u.socketId !== socket.id) && !isDummyUser(u))
+    : [];
+  const onlineCount = realOnlineUsers.length;
   const friendsCount = (friendsList && friendsList.length > 0) ? friendsList.length : 0;
 
   const tabCountAll = $('#tab-count-all');
@@ -904,16 +938,15 @@ function renderFriendsAndOnlineUsers() {
 
   const onlineStatusHeader = $('#messenger-online-status');
   if (onlineStatusHeader) {
-    onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${lastOnlineUsersList ? lastOnlineUsersList.length : 1} مستخدم)`;
+    onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${onlineCount + 1} مستخدم)`;
   }
 
   // 2. Build list based on active tab
   const usersToRender = [];
 
   if (currentMessengerTab === 'all' && isAdmin) {
-    if (lastOnlineUsersList && lastOnlineUsersList.length > 0) {
-      lastOnlineUsersList.forEach(u => {
-        if (socket && u.socketId === socket.id) return;
+    if (realOnlineUsers.length > 0) {
+      realOnlineUsers.forEach(u => {
         const isSaved = isFriend(u);
         usersToRender.push({
           id: u.socketId,
@@ -1192,6 +1225,21 @@ function updateNotificationStatusUI() {
   const btn = document.getElementById('test-notif-btn');
   if (!statusEl) return;
 
+  // Check Native Android Bridge first
+  if (typeof window !== 'undefined' && window.AndroidBridge && typeof window.AndroidBridge.isNotificationPermissionGranted === 'function') {
+    const granted = window.AndroidBridge.isNotificationPermissionGranted();
+    if (granted) {
+      statusEl.textContent = '✅ مسموح ومفعل للإشعارات خارج التطبيق (Android)';
+      statusEl.style.color = '#4ade80';
+      if (btn) btn.textContent = '📲 تجربة إشعار فوري';
+    } else {
+      statusEl.textContent = '⚠️ إذن الإشعارات غير ممنوح للتطبيق';
+      statusEl.style.color = '#f87171';
+      if (btn) btn.textContent = '🔔 تفعيل الإذن الآن';
+    }
+    return;
+  }
+
   if (!('Notification' in window)) {
     statusEl.textContent = '❌ غير مدعوم على هذا الجهاز';
     statusEl.style.color = '#ef4444';
@@ -1199,7 +1247,7 @@ function updateNotificationStatusUI() {
   } else if (Notification.permission === 'granted') {
     statusEl.textContent = '✅ مسموح ومفعل للإشعارات خارج التطبيق';
     statusEl.style.color = '#4ade80';
-    if (btn) btn.textContent = '🔔 تجربة إشعار';
+    if (btn) btn.textContent = '📲 تجربة إشعار فوري';
   } else if (Notification.permission === 'denied') {
     statusEl.textContent = '🚫 محظور من إعدادات الهاتف';
     statusEl.style.color = '#f87171';
@@ -1213,6 +1261,26 @@ function updateNotificationStatusUI() {
 window.updateNotificationStatusUI = updateNotificationStatusUI;
 
 function requestAppNotificationPermission(silent = false) {
+  // 1. Native Android Bridge handling
+  if (typeof window !== 'undefined' && window.AndroidBridge) {
+    const isGranted = (typeof window.AndroidBridge.isNotificationPermissionGranted === 'function')
+      ? window.AndroidBridge.isNotificationPermissionGranted()
+      : false;
+
+    if (isGranted) {
+      if (!silent) {
+        showGemToast('🔔 الإشعارات مفعلة! تم إرسال إشعار فوري لهاتفك الآن.');
+        sendLocalPushNotification('Loky Chat - إشعار فوري خارج التطبيق 📲', 'نظام إشعارات لوكي شات يعمل بكامل طاقته ومثالي خارج التطبيق! 🚀');
+      }
+      updateNotificationStatusUI();
+      return;
+    } else if (typeof window.AndroidBridge.requestNotificationPermissionNative === 'function') {
+      window.AndroidBridge.requestNotificationPermissionNative();
+      return;
+    }
+  }
+
+  // 2. Standard Web Notification handling
   if (!('Notification' in window)) {
     if (!silent) showGemToast('⚠️ جهازك لا يدعم الإشعارات في هذا المتصفح');
     return;
@@ -1990,14 +2058,8 @@ function loadFriendsList() {
   }
 
   // Purge any legacy dummy / fake accounts completely
-  friendsList = friendsList.filter(f => {
-    if (isRemoved(f)) return false;
-    const s = (f.serialNumber || '').toUpperCase();
-    const id = (f.id || '').toUpperCase();
-    const n = (f.name || f.username || '').toLowerCase();
-    if (s.includes('VIP') || id.includes('VIP') || n.includes('يوسف') || n.includes('yousef') || n.includes('مالك') || n.includes('malek')) {
-      return false;
-    }
+  friendsList = (friendsList || []).filter(f => {
+    if (!f || isDummyUser(f) || isRemoved(f)) return false;
     return true;
   });
 
@@ -3527,6 +3589,16 @@ function connectSocket() {
 
 async function sendLocalPushNotification(title, body) {
   try {
+    // 1. Android Native Bridge (Guaranteed 100% to display in Android status bar & outside the app)
+    if (typeof window !== 'undefined' && window.AndroidBridge && typeof window.AndroidBridge.showNativeNotification === 'function') {
+      try {
+        window.AndroidBridge.showNativeNotification(title, body);
+        return;
+      } catch (bridgeErr) {
+        console.warn('[AndroidBridge notification error]', bridgeErr);
+      }
+    }
+
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
       return;
     }
@@ -3540,7 +3612,7 @@ async function sendLocalPushNotification(title, body) {
       renotify: true
     };
 
-    // 1. Android mobile / WebView requirement: Use ServiceWorker showNotification to pop up outside the app
+    // 2. Android mobile / WebView requirement: Use ServiceWorker showNotification to pop up outside the app
     if ('serviceWorker' in navigator) {
       try {
         const reg = await navigator.serviceWorker.ready;
@@ -3552,7 +3624,7 @@ async function sendLocalPushNotification(title, body) {
       }
     }
 
-    // 2. Desktop browser fallback
+    // 3. Desktop browser fallback
     try {
       new Notification(title, options);
     } catch (err) {}
