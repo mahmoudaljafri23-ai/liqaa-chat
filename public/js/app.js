@@ -1179,17 +1179,70 @@ function initPushNotifications() {
 
   if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     setTimeout(() => {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          showGemToast('🔔 تم تفعيل إشعارات لقاء بنجاح!');
-          checkAndClaimReferralReward();
-        }
-      });
-    }, 4000);
+      requestAppNotificationPermission(true);
+    }, 3000);
   } else if ('Notification' in window && Notification.permission === 'granted') {
     checkAndClaimReferralReward();
   }
+  updateNotificationStatusUI();
 }
+
+function updateNotificationStatusUI() {
+  const statusEl = document.getElementById('settings-notif-status');
+  const btn = document.getElementById('test-notif-btn');
+  if (!statusEl) return;
+
+  if (!('Notification' in window)) {
+    statusEl.textContent = '❌ غير مدعوم على هذا الجهاز';
+    statusEl.style.color = '#ef4444';
+    if (btn) btn.style.display = 'none';
+  } else if (Notification.permission === 'granted') {
+    statusEl.textContent = '✅ مسموح ومفعل للإشعارات خارج التطبيق';
+    statusEl.style.color = '#4ade80';
+    if (btn) btn.textContent = '🔔 تجربة إشعار';
+  } else if (Notification.permission === 'denied') {
+    statusEl.textContent = '🚫 محظور من إعدادات الهاتف';
+    statusEl.style.color = '#f87171';
+    if (btn) btn.textContent = 'تغيير الإذن ⚙️';
+  } else {
+    statusEl.textContent = '⚪ بانتظار السماح بالإذن';
+    statusEl.style.color = '#cbd5e1';
+    if (btn) btn.textContent = 'تفعيل الآن 🔔';
+  }
+}
+window.updateNotificationStatusUI = updateNotificationStatusUI;
+
+function requestAppNotificationPermission(silent = false) {
+  if (!('Notification' in window)) {
+    if (!silent) showGemToast('⚠️ جهازك لا يدعم الإشعارات في هذا المتصفح');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    if (!silent) {
+      showGemToast('🔔 الإشعارات مفعلة! تم إرسال إشعار تجريبي لهاتفك الآن.');
+      sendLocalPushNotification('Loky Chat - لوكي شات 🚀', 'إشعارات الهاتف تعمل بنجاح وبأعلى كفاءة! 🔔');
+    }
+    updateNotificationStatusUI();
+    return;
+  }
+
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      showGemToast('🔔 تم تفعيل إشعارات لوكي شات بنجاح!');
+      sendLocalPushNotification('Loky Chat - لوكي شات 🚀', 'أهلاً بك! تم تفعيل إشعارات الهاتف بنجاح 🔔');
+      checkAndClaimReferralReward();
+    } else if (permission === 'denied') {
+      if (!silent) {
+        showGemToast('⚠️ تم حظر الإذن. يرجى تفعيله من إعدادات التطبيق في هاتفك.');
+      }
+    }
+    updateNotificationStatusUI();
+  }).catch(e => {
+    console.warn('[Notification permission request error]', e);
+  });
+}
+window.requestAppNotificationPermission = requestAppNotificationPermission;
 
 let pendingReferrerCode = null;
 
@@ -2428,6 +2481,10 @@ function openSettingsModal() {
         fetchAdminReports();
       }
     }
+
+    if (typeof updateNotificationStatusUI === 'function') {
+      updateNotificationStatusUI();
+    }
   } catch (err) {
     console.error('[openSettingsModal Error]', err);
     const modal = $('#settings-modal');
@@ -3468,11 +3525,37 @@ function connectSocket() {
     showGemToast(`🎁 مبروك! انضم ${data.friendUsername || 'صديقك'} عبر رابطك وفعل الإشعارات! تم إضافة +50 مجوهرة لرصيدك 💎`);
   });
 
-function sendLocalPushNotification(title, body) {
+async function sendLocalPushNotification(title, body) {
   try {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      new Notification(title, { body: body, icon: 'icons/icon-192.png' });
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+      return;
     }
+
+    const options = {
+      body: body,
+      icon: '/logo.jpg',
+      badge: '/logo.jpg',
+      vibrate: [200, 100, 200],
+      tag: 'loky-chat-alert',
+      renotify: true
+    };
+
+    // 1. Android mobile / WebView requirement: Use ServiceWorker showNotification to pop up outside the app
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && reg.showNotification) {
+          return reg.showNotification(title, options);
+        }
+      } catch (swErr) {
+        console.warn('[SW Notification fallback]', swErr);
+      }
+    }
+
+    // 2. Desktop browser fallback
+    try {
+      new Notification(title, options);
+    } catch (err) {}
   } catch (e) {
     console.log('[Notification] Local notification suppressed:', e);
   }

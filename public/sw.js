@@ -7,13 +7,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : { title: 'LiQaa - لقاء', body: 'لديك إشعار جديد في تطبيق لقاء!' };
+  let title = 'Loky Chat - لوكي شات 🚀';
+  let body = 'لديك إشعار جديد في تطبيق لوكي شات!';
+  try {
+    if (event.data) {
+      const data = event.data.json();
+      title = data.title || title;
+      body = data.body || data.message || body;
+    }
+  } catch(e) {
+    if (event.data) body = event.data.text();
+  }
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/css/logo.png',
-      badge: '/css/logo.png',
-      vibrate: [200, 100, 200]
+    self.registration.showNotification(title, {
+      body: body,
+      icon: '/logo.jpg',
+      badge: '/logo.jpg',
+      vibrate: [200, 100, 200],
+      tag: 'loky-chat-alert',
+      renotify: true
     })
   );
 });
@@ -21,6 +34,11 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow('/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
   );
 });
