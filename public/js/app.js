@@ -730,10 +730,17 @@ function loadUserProfile() {
   userProfile.adminUnlocked = false;
   userProfile.isAdmin = false;
 
-  // Enforce mandatory email for ALL users (old and new)
-  if (!userProfile.isEmailAuthenticated) {
+  // Maintain authenticated session if accountEmail or guest mode is active
+  if (userProfile.accountEmail && userProfile.accountEmail.includes('@')) {
+    userProfile.isEmailAuthenticated = true;
+    userProfile.hasAccount = true;
+    userProfile.hasCompletedSetup = true;
+  } else if (userProfile.isGuest) {
+    userProfile.isEmailAuthenticated = true;
+    userProfile.hasCompletedSetup = true;
+  } else {
+    userProfile.isEmailAuthenticated = false;
     userProfile.hasCompletedSetup = false;
-    userProfile.isGuest = false;
   }
 
   // Zero out all gems for regular accounts as requested ("صفرلي كل الرصيد عن اي حساب كلو صفر")
@@ -1629,6 +1636,7 @@ function setupAuthSystem() {
     }
     userProfile.hasAccount = true;
     userProfile.isGuest = false;
+    userProfile.isEmailAuthenticated = true;
     userProfile.hasCompletedSetup = true;
 
     localStorage.setItem(`liqaa_gems_${email}`, userProfile.gems);
@@ -1652,6 +1660,20 @@ function setupAuthSystem() {
     if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
     if (authModal) authModal.classList.add('hidden');
   };
+
+  // Continue with already connected/saved account
+  const continueExistingBtn = $('#auth-continue-existing-btn');
+  if (continueExistingBtn) {
+    continueExistingBtn.onclick = () => {
+      userProfile.isEmailAuthenticated = true;
+      userProfile.hasCompletedSetup = true;
+      saveUserProfile();
+      updateProfileUI();
+      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
+      if (authModal) authModal.classList.add('hidden');
+      showGemToast(`✨ أهلاً بك يا ${userProfile.username}! جاهز للمطابقة.`);
+    };
+  }
 
   // 1. Email + Password Login Handler
   const loginSubmitBtn = $('#auth-login-submit-btn');
@@ -1773,6 +1795,7 @@ function setupAuthSystem() {
     guestBtn.onclick = () => {
       userProfile.isGuest = true;
       userProfile.hasAccount = false;
+      userProfile.isEmailAuthenticated = true;
       userProfile.hasCompletedSetup = true;
       if (!userProfile.username || userProfile.username.includes('@')) {
         userProfile.username = 'ضيف ' + Math.floor(100 + Math.random() * 900);
@@ -1780,7 +1803,7 @@ function setupAuthSystem() {
       saveUserProfile();
       updateProfileUI();
       if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
-    if (authModal) authModal.classList.add('hidden');
+      if (authModal) authModal.classList.add('hidden');
       showGemToast(`🚀 أهلاً بك كـ ${userProfile.username}! تم الدخول بنجاح كزائر.`);
     };
   }
@@ -1790,7 +1813,7 @@ function setupAuthSystem() {
   if (creatorPinBtn) {
     creatorPinBtn.onclick = () => {
       if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
-    if (authModal) authModal.classList.add('hidden');
+      if (authModal) authModal.classList.add('hidden');
       const adminPinModal = $('#admin-pin-modal');
       if (adminPinModal) {
         adminPinModal.classList.remove('hidden');
@@ -1815,12 +1838,15 @@ function setupAuthSystem() {
 
   if (closeAuthModalBtn) {
     closeAuthModalBtn.onclick = () => {
-      if (!userProfile || !userProfile.accountEmail) {
-        showGemToast('🔒 تسجيل الدخول بالبريد الإلكتروني إلزامي للجميع للمتابعة!');
+      const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+      if (!isAuthed) {
+        showGemToast('🔒 يرجى تسجيل الدخول أو المتابعة كزائر للمتابعة!');
         return;
       }
-      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
-    if (authModal) authModal.classList.add('hidden');
+      userProfile.isEmailAuthenticated = true;
+      userProfile.hasCompletedSetup = true;
+      saveUserProfile();
+      if (authModal) authModal.classList.add('hidden');
     };
   }
 
@@ -1906,15 +1932,19 @@ function setupAuthSystem() {
     setTimeout(initGoogleIdentityServices, 1000);
   });
 
-  // Enforce mandatory email login for ALL users (both old and new)
+  // Enforce authentication on launch
   const checkMandatoryEmailAuth = () => {
-    if (!userProfile || !userProfile.isEmailAuthenticated) {
+    const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+    if (!isAuthed) {
       if (authModal) {
         updateAuthModalView();
         authModal.classList.remove('hidden');
         if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'none';
       }
     } else {
+      userProfile.isEmailAuthenticated = true;
+      userProfile.hasCompletedSetup = true;
+      if (authModal) authModal.classList.add('hidden');
       if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
     }
   };
@@ -2730,47 +2760,15 @@ function openSettingsModal() {
     const modal = $('#settings-modal');
     if (modal) modal.classList.remove('hidden');
 
-    const settingsUsername = $('#settings-username');
-    const settingsPhone = $('#settings-phone');
-    const settingsAge = $('#settings-age');
-    const settingsAdminPin = $('#settings-admin-pin');
-    const settingsGenderMale = $('#settings-gender-male');
-    const settingsGenderFemale = $('#settings-gender-female');
-    const adminPinGroup = $('#settings-admin-pin-group');
+    const lockedSerial = $('#settings-locked-serial');
+    const lockedUser = $('#settings-locked-username');
+    const lockedGender = $('#settings-locked-gender');
+    const lockedEmail = $('#settings-locked-email');
 
-    if (settingsUsername) settingsUsername.value = userProfile.username || '';
-    if (settingsPhone) settingsPhone.value = userProfile.phone || '';
-    if (settingsAge) settingsAge.value = userProfile.age || 22;
-    if (settingsAdminPin) settingsAdminPin.value = userProfile.adminPin || '2026';
-
-    const phoneVal = settingsPhone ? settingsPhone.value.trim() : '';
-    if (adminPinGroup) {
-      if (phoneVal === '0790181802' || (userProfile && userProfile.isAdmin)) {
-        adminPinGroup.classList.remove('hidden');
-      } else {
-        adminPinGroup.classList.add('hidden');
-      }
-    }
-
-    const currentGen = userProfile.gender || 'male';
-    if (settingsGenderMale && settingsGenderFemale) {
-      if (currentGen === 'female') {
-        settingsGenderFemale.classList.add('selected');
-        settingsGenderMale.classList.remove('selected');
-      } else {
-        settingsGenderMale.classList.add('selected');
-        settingsGenderFemale.classList.remove('selected');
-      }
-
-      settingsGenderMale.onclick = () => {
-        settingsGenderMale.classList.add('selected');
-        settingsGenderFemale.classList.remove('selected');
-      };
-      settingsGenderFemale.onclick = () => {
-        settingsGenderFemale.classList.add('selected');
-        settingsGenderMale.classList.remove('selected');
-      };
-    }
+    if (lockedSerial) lockedSerial.textContent = userProfile.serialNumber || '--';
+    if (lockedUser) lockedUser.textContent = userProfile.username || 'مستخدم';
+    if (lockedGender) lockedGender.textContent = (userProfile.gender === 'female') ? 'أنثى 👩' : 'ذكر 👨';
+    if (lockedEmail) lockedEmail.textContent = userProfile.accountEmail || 'غير مسجل';
 
     const isUnlockedAdmin = !!(userProfile && userProfile.isAdmin && userProfile.adminUnlocked);
     const creatorAccessGate = $('#creator-access-gate');
@@ -3400,6 +3398,32 @@ function setupWelcomeUI() {
     btnRoyalStart.addEventListener('click', (e) => {
       e.stopPropagation();
       startChat();
+    });
+  }
+
+  // Secret 5-tap on serial badge to open Admin PIN prompt for creator
+  const serialBadgeCard = $('#royal-dash-serial-pill');
+  if (serialBadgeCard) {
+    let tapCount = 0;
+    let lastTap = 0;
+    serialBadgeCard.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const now = Date.now();
+      if (now - lastTap < 600) {
+        tapCount++;
+      } else {
+        tapCount = 1;
+      }
+      lastTap = now;
+      if (tapCount >= 5) {
+        tapCount = 0;
+        const adminPinModal = $('#admin-pin-modal');
+        if (adminPinModal) {
+          adminPinModal.classList.remove('hidden');
+          const pinInput = $('#admin-pin-input');
+          if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+        }
+      }
     });
   }
 
@@ -4109,9 +4133,10 @@ async function startChat() {
   if (checkBanStatus()) return;
   if (currentState === 'searching' || currentState === 'connected') return;
 
-  // Enforce mandatory email for ALL users
-  if (!userProfile || !userProfile.isEmailAuthenticated) {
-    showGemToast('🔒 تسجيل الدخول بالبريد الإلكتروني إلزامي للجميع لبدء المحادثة!');
+  // Enforce authentication (Email, Google, or Guest)
+  const isAuthed = !!(userProfile && (userProfile.isEmailAuthenticated || (userProfile.accountEmail && userProfile.accountEmail.includes('@')) || userProfile.isGuest));
+  if (!isAuthed) {
+    showGemToast('🔒 يرجى تسجيل الدخول أو المتابعة كزائر لبدء المحادثة!');
     const authModal = $('#auth-modal');
     if (authModal) {
       authModal.classList.remove('hidden');
@@ -4120,6 +4145,10 @@ async function startChat() {
     }
     return;
   }
+
+  userProfile.isEmailAuthenticated = true;
+  userProfile.hasCompletedSetup = true;
+  saveUserProfile();
 
   console.log('[App] startChat() triggered on royal single-screen interface!');
 

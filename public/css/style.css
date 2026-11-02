@@ -4128,7 +4128,7 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   align-items: center;
   gap: 14px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  cursor: pointer;
+  cursor: default;
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
@@ -4142,10 +4142,6 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   right: 0;
   height: 1.5px;
   background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.85), transparent);
-}
-
-.royal-profile-hero-card:active {
-  transform: scale(0.98);
 }
 
 .royal-profile-avatar-wrap {

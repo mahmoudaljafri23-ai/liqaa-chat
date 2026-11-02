@@ -93,8 +93,8 @@
       <!-- ============ Royal Palace Home Dashboard (Ultra-Luxury Idle Experience) ============ -->
       <div id="royal-home-dashboard" class="royal-home-dashboard">
         
-        <!-- Royal Profile & Serial Badge Card -->
-        <div class="royal-profile-hero-card" onclick="window.openSettingsModal && window.openSettingsModal()" title="إعدادات الحساب الملكي">
+        <!-- Royal Profile & Serial Badge Card (Clean Luxury Display - No Settings Inside per request) -->
+        <div class="royal-profile-hero-card" id="royal-profile-hero-card" style="cursor: default;">
           <div class="royal-profile-avatar-wrap">
             <span class="royal-avatar-crown">👑</span>
             <div class="royal-avatar-circle" id="royal-dash-avatar">👤</div>
@@ -105,13 +105,12 @@
               <span id="royal-dash-username" class="royal-dash-username">مستخدم</span>
               <span class="royal-vip-badge">VIP</span>
             </div>
-            <div class="royal-serial-pill" title="الرقم التسلسلي لحسابك الملكي">
+            <div class="royal-serial-pill" id="royal-dash-serial-pill" title="الرقم التسلسلي لحسابك الملكي">
               <span class="serial-tag">ID:</span>
               <span id="royal-dash-serial" class="serial-number">LQ-000000</span>
               <span class="serial-verified-icon">🛡️</span>
             </div>
           </div>
-          <button type="button" class="royal-profile-edit-btn" aria-label="الإعدادات">⚙️</button>
         </div>
 
         <!-- Live Palace Activity Bar -->
@@ -559,7 +558,10 @@
       <div id="google-linked-info-box" class="hidden" style="width: 100%; margin-bottom: 14px; background: rgba(16, 185, 129, 0.12); padding: 12px; border-radius: 14px; border: 1px solid rgba(16, 185, 129, 0.35); text-align: center;">
         <div style="font-size: 12px; color: #34d399; font-weight: bold;">✅ حسابك الملكي موثق ومسجل:</div>
         <div id="google-linked-email-display" style="font-size: 14px; color: #fff; font-weight: 800; margin: 3px 0;" dir="ltr">user@gmail.com</div>
-        <div style="font-size: 11px; color: #ffd700;">💎 رصيد الجواهر المحفوظ: <span id="google-linked-gems-display" style="font-weight:bold;">0</span></div>
+        <div style="font-size: 11px; color: #ffd700; margin-bottom: 8px;">💎 رصيد الجواهر المحفوظ: <span id="google-linked-gems-display" style="font-weight:bold;">0</span></div>
+        <button type="button" id="auth-continue-existing-btn" style="width: 100%; padding: 11px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 13.5px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🚀</span><span>المتابعة بهذا الحساب وبدء المحادثة فوراً</span>
+        </button>
       </div>
 
       <!-- Auth Mode Switcher Tabs (Login vs Register) -->
@@ -647,6 +649,14 @@
         <div id="google-gis-slot" style="margin-top: 8px; display: flex; justify-content: center;"></div>
       </div>
 
+      <!-- Quick Fast Action 2: Guest Login Button (No Password) -->
+      <div style="width: 100%; margin-bottom: 10px;">
+        <button id="guest-login-btn" type="button" style="width: 100%; padding: 12px; font-size: 13.5px; font-weight: 800; background: rgba(255, 255, 255, 0.08); color: #ffd700; border: 1.5px dashed rgba(255, 215, 0, 0.5); border-radius: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+          <span>⚡</span>
+          <span>الدخول السريع كزائر (بدون كلمة سر)</span>
+        </button>
+      </div>
+
       <!-- Quick Fast Action 3: Creator Gate Link -->
       <div style="margin-top: 10px;">
         <button id="auth-creator-pin-btn" type="button" style="background: none; border: none; color: #ffd700; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: underline;">
@@ -676,13 +686,29 @@
           </div>
       </div>
 
-      <!-- Google / Account Sign In Trigger -->
-      <div class="royal-auth-trigger-wrap">
-        <button id="open-auth-modal-btn" class="royal-google-signin-btn">
-          <span class="google-btn-icon">🔑</span>
-          <span>تسجيل الدخول بـ Google لحفظ رصيدك</span>
-          <span class="google-btn-badge">حماية 💎</span>
-        </button>
+      <!-- Verified User Profile Badge Card (Locked & Permanent to Initial Registration) -->
+      <div class="royal-profile-locked-card" style="width: 100%; margin-bottom: 14px; background: rgba(0,0,0,0.55); border: 1.5px solid rgba(255,215,0,0.35); padding: 14px 16px; border-radius: 16px; text-align: right;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 8px;">
+          <span style="font-size: 12px; color: #34d399; font-weight: bold;">✅ الحساب مثبت ببيانات التسجيل الأصلية</span>
+          <span id="settings-locked-serial" style="font-size: 11.5px; color: #ffd700; font-weight: bold; background: rgba(255,215,0,0.15); padding: 2px 8px; border-radius: 8px;">--</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12.5px; color: #94a3b8;">👤 اسم المستخدم:</span>
+            <strong id="settings-locked-username" style="font-size: 14px; color: #fff; font-weight: 800;">--</strong>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12.5px; color: #94a3b8;">👑 الجنس المسجل:</span>
+            <span id="settings-locked-gender" style="font-size: 13px; color: #ffd700; font-weight: bold;">--</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12.5px; color: #94a3b8;">📧 البريد الإلكتروني:</span>
+            <span id="settings-locked-email" style="font-size: 12px; color: #cbd5e1; direction: ltr;">--</span>
+          </div>
+        </div>
       </div>
 
       <!-- Creator Access Gate Button (PIN Protected) -->
@@ -780,49 +806,6 @@
         </div>
       </div>
 
-      <!-- Royal Input: Username -->
-      <div class="royal-input-group">
-        <label for="settings-username" class="royal-input-label">
-          <span>👤</span> الاسم / اسم المستخدم
-        </label>
-        <div class="royal-input-box">
-          <input type="text" id="settings-username" placeholder="أدخل اسمك الملكي..." dir="auto" autocomplete="off">
-          <span class="input-shine-glow"></span>
-        </div>
-      </div>
-
-      <!-- Royal Input: Phone -->
-      <div class="royal-input-group">
-        <label for="settings-phone" class="royal-input-label">
-          <span>📱</span> رقم الهاتف
-        </label>
-        <div class="royal-input-box">
-          <input type="tel" id="settings-phone" placeholder="07XXXXXXXX" dir="ltr" autocomplete="off">
-          <span class="input-shine-glow"></span>
-        </div>
-      </div>
-
-      <!-- Royal Input: Age -->
-      <div class="royal-input-group">
-        <label for="settings-age" class="royal-input-label">
-          <span>🎂</span> العمر (السن)
-        </label>
-        <div class="royal-input-box">
-          <input type="number" id="settings-age" placeholder="مثال: 22" min="18" max="99" value="22" dir="ltr" autocomplete="off">
-          <span class="input-shine-glow"></span>
-        </div>
-      </div>
-
-      <!-- Hidden by default, reveals ONLY when typing Admin Phone 0790181802 -->
-      <div class="royal-input-group hidden" id="settings-admin-pin-group">
-        <label for="settings-admin-pin" class="royal-input-label" style="color:#ffd700;">
-          <span>🔐</span> الرمز السري لمنشئ التطبيق (Admin PIN)
-        </label>
-        <div class="royal-input-box">
-          <input type="password" id="settings-admin-pin" placeholder="أدخل الرمز السري..." dir="ltr">
-        </div>
-      </div>
-
       <!-- Notifications Status & One-Tap Test Trigger -->
       <div class="royal-input-group" style="background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.35); padding: 12px 14px; border-radius: 14px; margin-bottom: 15px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -835,25 +818,6 @@
           <button type="button" id="test-notif-btn" onclick="window.requestAppNotificationPermission && window.requestAppNotificationPermission(false)" style="background: linear-gradient(135deg, #ffd700, #ff8e53); border:none; color:#000; font-weight:800; font-size:12px; padding:7px 14px; border-radius:10px; cursor:pointer; white-space:nowrap; box-shadow: 0 2px 8px rgba(255,215,0,0.3);">
             تفعيل وتجربة 📲
           </button>
-        </div>
-      </div>
-
-      <!-- Royal Gender Selection Cards -->
-      <div class="royal-settings-section">
-        <label class="royal-input-label">
-          <span>👑</span> الجنس في الدردشة:
-        </label>
-        <div class="royal-settings-gender-grid">
-          <div class="gender-card royal-settings-gender" data-settings-gender="male" id="settings-gender-male">
-            <div class="gender-icon">👨</div>
-            <span class="gender-name">ذكر</span>
-            <span class="gender-check-indicator">✓</span>
-          </div>
-          <div class="gender-card royal-settings-gender" data-settings-gender="female" id="settings-gender-female">
-            <div class="gender-icon">👩</div>
-            <span class="gender-name">أنثى</span>
-            <span class="gender-check-indicator">✓</span>
-          </div>
         </div>
       </div>
 
@@ -872,13 +836,10 @@
         </div>
       </div>
 
-      <!-- Royal Action Buttons -->
-      <div class="royal-modal-actions">
-        <button id="save-settings-btn" class="royal-btn-primary">
-          <span>💾</span> حفظ التغييرات
-        </button>
-        <button id="close-settings-btn" class="royal-btn-secondary">
-          إلغاء
+      <!-- Royal Action Button -->
+      <div style="width: 100%; margin-top: 10px;">
+        <button id="close-settings-btn" class="royal-btn-primary" style="width: 100%; justify-content: center; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.25);">
+          <span>✓</span> تم / إغلاق الإعدادات
         </button>
       </div>
       <div style="margin-top: 10px; width: 100%;">
