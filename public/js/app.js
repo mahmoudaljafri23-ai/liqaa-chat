@@ -1625,7 +1625,21 @@ function setupAuthSystem() {
   const tabBtnLogin = $('#auth-tab-btn-login');
   const tabBtnRegister = $('#auth-tab-btn-register');
   const formLogin = $('#auth-login-form');
-  const formRegister = $('#auth-register-form');
+  const regContainer = $('#auth-register-container');
+  const regStep1 = $('#auth-reg-step1');
+  const regStep2 = $('#auth-reg-step2');
+  const stepPill1 = $('#step-pill-1');
+  const stepPill2 = $('#step-pill-2');
+  const regNextBtn = $('#auth-reg-next-btn');
+  const regBackBtn = $('#auth-reg-back-btn');
+  const regSubmitBtn = $('#auth-reg-submit-btn');
+
+  const regEmailInput = $('#auth-reg-email');
+  const regPasswordInput = $('#auth-reg-password');
+  const regUsernameInput = $('#auth-reg-username');
+  const regAgeInput = $('#auth-reg-age');
+  const regAgeCheck = $('#auth-reg-age-check');
+  const regAgeWarning = $('#auth-age-warning');
 
   // Gender selection for register
   let regSelectedGender = 'male';
@@ -1635,22 +1649,43 @@ function setupAuthSystem() {
   if (regMaleBtn && regFemaleBtn) {
     regMaleBtn.onclick = () => {
       regSelectedGender = 'male';
-      regMaleBtn.style.border = '1.5px solid #3b82f6';
-      regMaleBtn.style.background = 'rgba(59,130,246,0.3)';
-      regMaleBtn.style.color = '#93c5fd';
-      regFemaleBtn.style.border = '1.5px solid rgba(236,72,153,0.4)';
-      regFemaleBtn.style.background = 'rgba(236,72,153,0.1)';
-      regFemaleBtn.style.color = '#f472b6';
+      regMaleBtn.classList.add('selected');
+      regFemaleBtn.classList.remove('selected');
     };
     regFemaleBtn.onclick = () => {
       regSelectedGender = 'female';
-      regFemaleBtn.style.border = '1.5px solid #ec4899';
-      regFemaleBtn.style.background = 'rgba(236,72,153,0.3)';
-      regFemaleBtn.style.color = '#fbcfe8';
-      regMaleBtn.style.border = '1.5px solid rgba(59,130,246,0.4)';
-      regMaleBtn.style.background = 'rgba(59,130,246,0.1)';
-      regMaleBtn.style.color = '#93c5fd';
+      regFemaleBtn.classList.add('selected');
+      regMaleBtn.classList.remove('selected');
     };
+  }
+
+  function showRegisterStep(step) {
+    if (step === 1) {
+      if (regStep1) regStep1.classList.remove('hidden');
+      if (regStep2) regStep2.classList.add('hidden');
+      if (stepPill1) {
+        stepPill1.className = 'step-pill active';
+        const num = stepPill1.querySelector('.step-num');
+        if (num) num.textContent = '1';
+      }
+      if (stepPill2) stepPill2.className = 'step-pill';
+    } else {
+      if (regStep1) regStep1.classList.add('hidden');
+      if (regStep2) regStep2.classList.remove('hidden');
+      if (stepPill1) {
+        stepPill1.className = 'step-pill completed';
+        const num = stepPill1.querySelector('.step-num');
+        if (num) num.textContent = '✓';
+      }
+      if (stepPill2) stepPill2.className = 'step-pill active';
+      if (regUsernameInput && !regUsernameInput.value) {
+        const emailVal = (regEmailInput ? regEmailInput.value : '').trim();
+        if (emailVal && emailVal.includes('@')) {
+          regUsernameInput.value = emailVal.split('@')[0];
+        }
+      }
+      if (regUsernameInput) regUsernameInput.focus();
+    }
   }
 
   // Switch to Login tab
@@ -1661,7 +1696,7 @@ function setupAuthSystem() {
       tabBtnRegister.style.background = 'transparent';
       tabBtnRegister.style.color = '#cbd5e1';
       if (formLogin) formLogin.classList.remove('hidden');
-      if (formRegister) formRegister.classList.add('hidden');
+      if (regContainer) regContainer.classList.add('hidden');
     };
 
     // Switch to Register tab
@@ -1670,9 +1705,55 @@ function setupAuthSystem() {
       tabBtnRegister.style.color = '#000';
       tabBtnLogin.style.background = 'transparent';
       tabBtnLogin.style.color = '#cbd5e1';
-      if (formRegister) formRegister.classList.remove('hidden');
       if (formLogin) formLogin.classList.add('hidden');
+      if (regContainer) regContainer.classList.remove('hidden');
+      showRegisterStep(1);
     };
+  }
+
+  // Step 1 Next button
+  if (regNextBtn) {
+    regNextBtn.onclick = () => {
+      const email = (regEmailInput ? regEmailInput.value : '').trim();
+      const password = (regPasswordInput ? regPasswordInput.value : '').trim();
+      if (!email || !email.includes('@')) {
+        showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
+        return;
+      }
+      if (!password) {
+        showGemToast('⚠️ يرجى إدخال أي رقم سري لحسابك');
+        return;
+      }
+      showRegisterStep(2);
+    };
+  }
+
+  // Step 2 Back button
+  if (regBackBtn) {
+    regBackBtn.onclick = () => {
+      showRegisterStep(1);
+    };
+  }
+
+  // Age & 18+ Verification check
+  function checkAgeEligibility() {
+    const ageVal = parseInt(regAgeInput ? regAgeInput.value : '0', 10);
+    const isChecked = regAgeCheck ? regAgeCheck.checked : false;
+    const isEligible = (!isNaN(ageVal) && ageVal >= 18 && isChecked);
+    if (!isEligible) {
+      if (regAgeWarning) regAgeWarning.style.display = 'block';
+    } else {
+      if (regAgeWarning) regAgeWarning.style.display = 'none';
+    }
+    return isEligible;
+  }
+
+  if (regAgeInput) {
+    regAgeInput.addEventListener('input', checkAgeEligibility);
+    regAgeInput.addEventListener('change', checkAgeEligibility);
+  }
+  if (regAgeCheck) {
+    regAgeCheck.addEventListener('change', checkAgeEligibility);
   }
 
   const updateAuthModalView = () => {
@@ -1694,6 +1775,7 @@ function setupAuthSystem() {
     if (accountData.username) userProfile.username = accountData.username;
     if (accountData.serialNumber) userProfile.serialNumber = accountData.serialNumber;
     if (accountData.gender) userProfile.gender = accountData.gender;
+    if (accountData.age) userProfile.age = accountData.age;
 
     // STRICT CREATOR CHECK: ONLY verified creator login gets creator privileges and 999k gems!
     const isOwner = (
@@ -1791,10 +1873,8 @@ function setupAuthSystem() {
         } else if (data.isNew) {
           showGemToast('ℹ️ هذا البريد غير مسجل، تم تحويلك لإنشاء حساب جديد');
           if (tabBtnRegister) tabBtnRegister.click();
-          const regEmail = $('#auth-reg-email');
-          if (regEmail) regEmail.value = email;
-          const regPass = $('#auth-reg-password');
-          if (regPass) regPass.value = password;
+          if (regEmailInput) regEmailInput.value = email;
+          if (regPasswordInput) regPasswordInput.value = password;
         } else {
           showGemToast(`❌ ${data.message || 'خطأ في تسجيل الدخول'}`);
         }
@@ -1805,7 +1885,8 @@ function setupAuthSystem() {
           email: email,
           username: email.split('@')[0],
           gems: cachedGems ? parseInt(cachedGems, 10) : 50,
-          gender: 'male'
+          gender: 'male',
+          age: 22
         });
         showGemToast(`🎉 تم الدخول بحسابك (${email}) بنجاح!`);
       } finally {
@@ -1815,28 +1896,37 @@ function setupAuthSystem() {
     };
   }
 
-  // 2. Email + Password Register Handler
-  const regSubmitBtn = $('#auth-reg-submit-btn');
+  // 2. Email + Password Register Handler (Multi-Step Completion)
   if (regSubmitBtn) {
     regSubmitBtn.onclick = async () => {
-      const email = ($('#auth-reg-email')?.value || '').trim();
-      const password = ($('#auth-reg-password')?.value || '').trim();
-      const username = ($('#auth-reg-username')?.value || '').trim();
+      const email = (regEmailInput ? regEmailInput.value : '').trim();
+      const password = (regPasswordInput ? regPasswordInput.value : '').trim();
+      const username = (regUsernameInput ? regUsernameInput.value : '').trim();
+      const ageVal = parseInt(regAgeInput ? regAgeInput.value : '0', 10);
+      const isChecked = regAgeCheck ? regAgeCheck.checked : false;
+
       if (!email || !email.includes('@')) {
         showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
+        showRegisterStep(1);
         return;
       }
-      if (!password || password.length < 3) {
-        showGemToast('⚠️ الرقم السري يجب أن لا يقل عن 3 خانات');
+      if (!password) {
+        showGemToast('⚠️ يرجى إدخال أي رقم سري لحسابك');
+        showRegisterStep(1);
         return;
       }
       if (!username) {
-        showGemToast('⚠️ يرجى كتابة اسمك المستعار');
+        showGemToast('⚠️ يرجى كتابة اسمك المستعار في المحادثات');
+        return;
+      }
+      if (isNaN(ageVal) || ageVal < 18 || !isChecked) {
+        if (regAgeWarning) regAgeWarning.style.display = 'block';
+        showGemToast('⛔ عذراً! ديوان Loky Chat مخصص للبالغين (+18) فقط. لا يُسمح بتسجيل من هم دون 18 عاماً.');
         return;
       }
 
       regSubmitBtn.disabled = true;
-      regSubmitBtn.textContent = '⏳ جاري إنشاء الحساب...';
+      regSubmitBtn.textContent = '⏳ جاري إنشاء الحساب الملكي...';
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -1847,13 +1937,16 @@ function setupAuthSystem() {
             password,
             username,
             gender: regSelectedGender,
+            age: ageVal,
             country: myHomeCountryCode || 'JO',
             countryName: selectedCountryName || 'الأردن'
           })
         });
         const data = await res.json();
         if (data.success && data.account) {
-          applyAccount(data.account);
+          applyAccount({ ...data.account, age: ageVal });
+          userProfile.age = ageVal;
+          saveUserProfile();
           showGemToast(`✨ مبروك يا ${userProfile.username}! تم إنشاء حسابك الملكي بنجاح 💎`);
         } else {
           showGemToast(`❌ ${data.message || 'خطأ في إنشاء الحساب'}`);
@@ -1864,12 +1957,15 @@ function setupAuthSystem() {
           email: email,
           username: username,
           gender: regSelectedGender,
+          age: ageVal,
           gems: 50
         });
+        userProfile.age = ageVal;
+        saveUserProfile();
         showGemToast(`✨ تم إنشاء حسابك بنجاح (${username})!`);
       } finally {
         regSubmitBtn.disabled = false;
-        regSubmitBtn.innerHTML = '<span>✨</span><span>إنشاء الحساب وبدء المحادثة</span>';
+        regSubmitBtn.innerHTML = '<span>✨</span><span>إتمام التسجيل وبدء المحادثة</span>';
       }
     };
   }

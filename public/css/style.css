@@ -4519,3 +4519,204 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   white-space: nowrap;
 }
 
+/* =============================================
+   Royal Multi-Step Authentication Styles
+   ============================================= */
+.royal-auth-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 6px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.step-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  transition: all 0.25s ease;
+}
+
+.step-pill.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 140, 0, 0.25));
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.step-pill.completed {
+  color: #34d399;
+}
+
+.step-pill .step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.step-pill.active .step-num {
+  background: #ffd700;
+  color: #000;
+  font-weight: 900;
+}
+
+.step-pill.completed .step-num {
+  background: #10b981;
+  color: #fff;
+  font-weight: 900;
+}
+
+.step-divider {
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 215, 0, 0.25);
+  border-radius: 2px;
+}
+
+.royal-primary-auth-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 14.5px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #ff6200 100%);
+  color: #120500;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.royal-primary-auth-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 24px rgba(255, 215, 0, 0.5);
+}
+
+.royal-primary-auth-btn:active {
+  transform: scale(0.98);
+}
+
+.royal-primary-auth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.royal-secondary-auth-btn {
+  width: 100%;
+  padding: 11px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1.2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.royal-secondary-auth-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.royal-age-agreement-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 215, 0, 0.07);
+  border: 1.2px solid rgba(255, 215, 0, 0.35);
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  text-align: right;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.royal-age-agreement-card:hover {
+  background: rgba(255, 215, 0, 0.12);
+  border-color: #ffd700;
+}
+
+.royal-age-agreement-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+
+.royal-age-agreement-card .age-check-text {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fef08a;
+  line-height: 1.4;
+}
+
+.royal-gender-card-btn {
+  flex: 1;
+  padding: 12px 10px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.royal-gender-card-btn.gender-male-btn {
+  border: 1.5px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+}
+
+.royal-gender-card-btn.gender-male-btn.selected {
+  border: 2px solid #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(29, 78, 216, 0.45));
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+}
+
+.royal-gender-card-btn.gender-female-btn {
+  border: 1.5px solid rgba(236, 72, 153, 0.4);
+  background: rgba(236, 72, 153, 0.1);
+  color: #f472b6;
+}
+
+.royal-gender-card-btn.gender-female-btn.selected {
+  border: 2px solid #ec4899;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(190, 24, 93, 0.45));
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.4);
+}
+

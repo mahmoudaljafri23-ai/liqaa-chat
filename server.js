@@ -525,12 +525,16 @@ app.post('/api/auth/login', (req, res) => {
 
 app.post('/api/auth/register', (req, res) => {
   try {
-    const { email, password, username, gender, country, countryName } = req.body;
+    const { email, password, username, gender, country, countryName, age } = req.body;
     if (!email || !email.includes('@')) {
       return res.status(400).json({ success: false, message: 'يرجى إدخال بريد إلكتروني صحيح' });
     }
-    if (!password || password.length < 3) {
-      return res.status(400).json({ success: false, message: 'يجب أن لا يقل الرقم السري عن 3 خانات' });
+    if (!password || !password.trim()) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال الرقم السري' });
+    }
+    const numAge = parseInt(age, 10);
+    if (!isNaN(numAge) && numAge < 18) {
+      return res.status(403).json({ success: false, message: 'عذراً! التطبيق مخصص للبالغين 18+ فقط، لا يُسمح بتسجيل من هم دون 18 عاماً' });
     }
     const cleanEmail = email.trim().toLowerCase();
     const cleanUsername = (username && username.trim()) ? username.trim() : cleanEmail.split('@')[0];
@@ -540,6 +544,7 @@ app.post('/api/auth/register', (req, res) => {
       account.password = password.trim();
       if (username) account.username = cleanUsername;
       if (gender) account.gender = gender;
+      if (numAge) account.age = numAge;
     } else {
       const isOwner = cleanEmail === 'mahmoud.aljafri23@gmail.com' || cleanEmail === 'mr.world2213@gmail.com';
       account = {
@@ -550,7 +555,8 @@ app.post('/api/auth/register', (req, res) => {
         gender: gender || 'male',
         country: country || 'JO',
         countryName: countryName || 'الأردن',
-        gems: isOwner ? 99999 : 50,
+        age: numAge || 22,
+        gems: isOwner ? 999999 : 50,
         isAdmin: isOwner,
         createdAt: Date.now()
       };

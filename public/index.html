@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261103_v1">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
@@ -583,54 +583,104 @@
       <form id="auth-login-form" onsubmit="return false;" style="text-align: right;">
         <div style="margin-bottom: 10px;">
           <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
-          <input type="email" id="auth-login-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+          <input type="email" id="auth-login-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
         </div>
 
         <div style="margin-bottom: 14px;">
           <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">الرقم السري / كلمة المرور 🔒:</label>
-          <input type="password" id="auth-login-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+          <input type="password" id="auth-login-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
         </div>
 
-        <button type="button" id="auth-login-submit-btn" style="width: 100%; padding: 13px; font-size: 14.5px; font-weight: 800; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <button type="button" id="auth-login-submit-btn" class="royal-primary-auth-btn">
           <span>🚪</span>
           <span>تسجيل الدخول إلى حسابي</span>
         </button>
       </form>
 
-      <!-- 2. Email & Password Register Form -->
-      <form id="auth-register-form" class="hidden" onsubmit="return false;" style="text-align: right;">
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
-          <input type="email" id="auth-reg-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
-        </div>
-
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اختر رقماً سرياً 🔒:</label>
-          <input type="password" id="auth-reg-password" placeholder="أدخل رقم سري لا يقل عن 4 خانات" dir="ltr" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
-        </div>
-
-        <div style="margin-bottom: 10px;">
-          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اسمك المستعار في المحادثات 👤:</label>
-          <input type="text" id="auth-reg-username" placeholder="مثال: الفارس الملكي" dir="auto" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
-        </div>
-
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">تحديد الجنس:</label>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" id="reg-gender-male" style="flex: 1; padding: 9px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border: 1.5px solid #3b82f6; background: rgba(59,130,246,0.3); color: #93c5fd;">
-              👨 ذكر
-            </button>
-            <button type="button" id="reg-gender-female" style="flex: 1; padding: 9px; border-radius: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border: 1.5px solid rgba(236,72,153,0.4); background: rgba(236,72,153,0.1); color: #f472b6;">
-              👩 أنثى
-            </button>
+      <!-- 2. Multi-Step Register Container -->
+      <div id="auth-register-container" class="hidden">
+        <!-- Stepper Progress Bar -->
+        <div class="royal-auth-stepper">
+          <div id="step-pill-1" class="step-pill active">
+            <span class="step-num">1</span>
+            <span>بيانات الحساب</span>
+          </div>
+          <div class="step-divider"></div>
+          <div id="step-pill-2" class="step-pill">
+            <span class="step-num">2</span>
+            <span>الهوية والسن (18+)</span>
           </div>
         </div>
 
-        <button type="button" id="auth-reg-submit-btn" style="width: 100%; padding: 13px; font-size: 14.5px; font-weight: 800; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span>✨</span>
-          <span>إنشاء الحساب وبدء المحادثة</span>
-        </button>
-      </form>
+        <!-- Step 1: Email & Any Password -->
+        <form id="auth-reg-step1" onsubmit="return false;" style="text-align: right;">
+          <div style="margin-bottom: 11px;">
+            <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
+            <input type="email" id="auth-reg-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اختر رقماً سرياً (أي رقم أو كلمة مرور تفضلها) 🔒:</label>
+            <input type="password" id="auth-reg-password" placeholder="أدخل أي رقم سري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+          </div>
+
+          <button type="button" id="auth-reg-next-btn" class="royal-primary-auth-btn">
+            <span>المتابعة للخطوة التالية</span>
+            <span>⬅️</span>
+          </button>
+        </form>
+
+        <!-- Step 2: Name, Gender & Age Verification (18+) -->
+        <form id="auth-reg-step2" class="hidden" onsubmit="return false;" style="text-align: right;">
+          <div style="margin-bottom: 11px;">
+            <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اسمك المستعار في المحادثات 👤:</label>
+            <input type="text" id="auth-reg-username" placeholder="مثال: الفارس الملكي" dir="auto" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 6px;">تحديد الجنس في الدردشة 👑:</label>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" id="reg-gender-male" class="royal-gender-card-btn gender-male-btn selected">
+                <span style="font-size: 18px;">👨</span>
+                <span>ذكر</span>
+              </button>
+              <button type="button" id="reg-gender-female" class="royal-gender-card-btn gender-female-btn">
+                <span style="font-size: 18px;">👩</span>
+                <span>أنثى</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">العمر / السن (شرط +18 عاماً) 🎂:</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="number" id="auth-reg-age" value="22" min="1" max="99" style="width: 90px; padding: 10px 12px; text-align: center; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 15px; font-weight: 800;">
+              <span style="color: #cbd5e1; font-size: 12.5px;">سنة (يجب أن يكون 18 فما فوق)</span>
+            </div>
+
+            <!-- Mandatory 18+ Agreement Card -->
+            <label id="auth-age-confirm-label" class="royal-age-agreement-card">
+              <input type="checkbox" id="auth-reg-age-check" checked>
+              <span class="age-check-text">🔞 أقر وأؤكد بأن عمري لا يقل عن 18 عاماً (18+)</span>
+            </label>
+
+            <!-- Warning Alert (shown if age < 18 or unchecked) -->
+            <div id="auth-age-warning" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; font-size: 11.5px; padding: 8px 12px; border-radius: 10px; margin-top: 8px; text-align: center; font-weight: bold;">
+              ⛔ عذراً! ديوان Loky Chat مخصص للبالغين (+18) فقط. يتم رفض أي عمر أقل من 18 سنة.
+            </div>
+          </div>
+
+          <button type="button" id="auth-reg-submit-btn" class="royal-primary-auth-btn">
+            <span>✨</span>
+            <span>إتمام التسجيل وبدء المحادثة</span>
+          </button>
+
+          <button type="button" id="auth-reg-back-btn" class="royal-secondary-auth-btn">
+            <span>↩️</span>
+            <span>رجوع لتعديل الحساب</span>
+          </button>
+        </form>
+      </div>
 
       <!-- Royal Divider -->
       <div style="margin: 16px 0 12px; display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11.5px;">
@@ -1082,6 +1132,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261103_v1"></script>
+  <script src="js/app.js?v=20261103_v2"></script>
 </body>
 </html>
