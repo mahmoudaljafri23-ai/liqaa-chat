@@ -560,12 +560,17 @@ function setupAdminPinModal() {
         userProfile.adminUnlocked = true;
         userProfile.isAdmin = true;
         userProfile.gems = 999999;
+        userProfile.isEmailAuthenticated = true;
+        userProfile.accountEmail = userProfile.accountEmail || 'mahmoud.aljafri23@gmail.com';
         delete userProfile.bannedUntil;
         saveUserProfile();
         updateProfileUI();
 
         if (adminPinModal) adminPinModal.classList.add('hidden');
         if (adminPinInput) adminPinInput.value = '';
+
+        const authModal = $('#auth-modal');
+        if (authModal) authModal.classList.add('hidden');
 
         // Reveal creator tools and hide the gate
         const creatorGate = $('#creator-access-gate');
@@ -726,7 +731,7 @@ function loadUserProfile() {
   userProfile.isAdmin = false;
 
   // Enforce mandatory email for ALL users (old and new)
-  if (!userProfile.accountEmail) {
+  if (!userProfile.isEmailAuthenticated) {
     userProfile.hasCompletedSetup = false;
     userProfile.isGuest = false;
   }
@@ -1903,7 +1908,7 @@ function setupAuthSystem() {
 
   // Enforce mandatory email login for ALL users (both old and new)
   const checkMandatoryEmailAuth = () => {
-    if (!userProfile || !userProfile.accountEmail) {
+    if (!userProfile || !userProfile.isEmailAuthenticated) {
       if (authModal) {
         updateAuthModalView();
         authModal.classList.remove('hidden');
@@ -1914,7 +1919,9 @@ function setupAuthSystem() {
     }
   };
 
-  setTimeout(checkMandatoryEmailAuth, 300);
+  checkMandatoryEmailAuth();
+  setTimeout(checkMandatoryEmailAuth, 100);
+  setTimeout(checkMandatoryEmailAuth, 400);
 }
 
 // =============================================
@@ -3103,9 +3110,13 @@ function setupSettingsUI() {
     }
 
     const authModal = $('#auth-modal');
-    if (authModal) authModal.classList.remove('hidden');
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      const closeBtn = $('#close-auth-modal-btn');
+      if (closeBtn) closeBtn.style.display = 'none';
+    }
 
-    showGemToast('🚪 تم تسجيل الخروج! اختر الدخول بإيميلك ورقمك السري أو بحساب Google أو كزائر.');
+    showGemToast('🚪 تم تسجيل الخروج! يرجى تسجيل الدخول بالبريد الإلكتروني للمتابعة.');
   }
   window.switchOrResetAccount = switchOrResetAccount;
 
@@ -4099,7 +4110,7 @@ async function startChat() {
   if (currentState === 'searching' || currentState === 'connected') return;
 
   // Enforce mandatory email for ALL users
-  if (!userProfile || !userProfile.accountEmail) {
+  if (!userProfile || !userProfile.isEmailAuthenticated) {
     showGemToast('🔒 تسجيل الدخول بالبريد الإلكتروني إلزامي للجميع لبدء المحادثة!');
     const authModal = $('#auth-modal');
     if (authModal) {
