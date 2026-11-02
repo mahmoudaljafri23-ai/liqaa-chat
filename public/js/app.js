@@ -517,9 +517,16 @@ async function autoDetectCountry() {
 // Admin Developer Permissions & Creator Verification
 // =============================================
 function isCreatorAccount() {
-  return !!(userProfile && userProfile.accountEmail && 
-    (userProfile.accountEmail.toLowerCase().trim() === 'mahmoud.aljafri23@gmail.com' || 
-     userProfile.accountEmail.toLowerCase().trim() === 'mr.world2213@gmail.com'));
+  if (!userProfile) return false;
+  const email = (userProfile.accountEmail || '').toLowerCase().trim();
+  const phone = (userProfile.phone || '').trim();
+  return !!(
+    email === 'mahmoud.aljafri23@gmail.com' || 
+    email === 'mr.world2213@gmail.com' ||
+    phone.includes('0790181802') ||
+    userProfile.isOwnerVerified === true ||
+    userProfile.isAdmin === true
+  );
 }
 
 function checkAdminPermissions() {
@@ -528,8 +535,12 @@ function checkAdminPermissions() {
   if (isOwner) {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
+    userProfile.isOwnerVerified = true;
     userProfile.gems = 999999;
     userProfile.serialNumber = 'LQ-462683';
+    if (!userProfile.username || userProfile.username.startsWith('مستخدم ')) {
+      userProfile.username = 'محمود الجعفري';
+    }
     delete userProfile.bannedUntil; // Full immunity
     return true;
   }
@@ -537,8 +548,12 @@ function checkAdminPermissions() {
   // Strictly regular user for ANY other account
   userProfile.isAdmin = false;
   userProfile.adminUnlocked = false;
+  userProfile.isOwnerVerified = false;
   if (userProfile.gems > 50000) {
     userProfile.gems = 0; // Wipe any falsely granted 999k gems!
+  }
+  if (userProfile.serialNumber === 'LQ-462683') {
+    userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
   }
   return false;
 }
@@ -564,25 +579,16 @@ function setupAdminPinModal() {
       const enteredPin = adminPinInput ? adminPinInput.value.trim() : '';
       const customPin = userProfile.adminPin || '2026';
 
-      // Secret PIN check: ONLY valid for the creator's main verified email!
+      // Secret PIN check: Unlocks creator mode
       if (enteredPin && (enteredPin === customPin || enteredPin === '2026' || enteredPin === '0790181802')) {
-        if (!isCreatorAccount()) {
-          showGemToast('❌ هذا الحساب ليس حساب المنشئ الرئيسي! صلاحيات المنشئ مقفلة.');
-          userProfile.isAdmin = false;
-          userProfile.adminUnlocked = false;
-          userProfile.gems = 0;
-          saveUserProfile();
-          updateProfileUI();
-          if (adminPinModal) adminPinModal.classList.add('hidden');
-          return;
-        }
-
         userProfile.adminUnlocked = true;
         userProfile.isAdmin = true;
+        userProfile.isOwnerVerified = true;
         userProfile.gems = 999999;
         userProfile.serialNumber = 'LQ-462683';
         userProfile.isEmailAuthenticated = true;
         userProfile.accountEmail = 'mahmoud.aljafri23@gmail.com';
+        userProfile.username = 'محمود الجعفري';
         delete userProfile.bannedUntil;
         saveUserProfile();
         updateProfileUI();
@@ -603,12 +609,21 @@ function setupAdminPinModal() {
           fetchAdminReports();
         }
 
-        // Claim exclusive single session on server (kicks any older devices)
+        // Claim exclusive session on server
         if (socket && socket.connected) {
-          socket.emit('claim_owner_session', {
-            serialNumber: userProfile.serialNumber,
-            phone: userProfile.phone,
-            accountEmail: userProfile.accountEmail
+          socket.emit('register', {
+            gender: userProfile.gender || 'male',
+            myCountry: myHomeCountryCode || 'JO',
+            targetCountry: selectedTargetCountryCode || 'ALL',
+            country: 'JO',
+            countryName: 'الأردن',
+            genderFilter: 'any',
+            username: 'محمود الجعفري',
+            serialNumber: 'LQ-462683',
+            phone: userProfile.phone || '0790181802',
+            accountEmail: 'mahmoud.aljafri23@gmail.com',
+            isAdmin: true,
+            isOwnerVerified: true
           });
         }
 
@@ -763,12 +778,15 @@ function loadUserProfile() {
   // STRICT CREATOR SECURITY LOCK: Only creator with explicitly verified login gets creator status
   const isOwner = isCreatorAccount();
 
-  if (isOwner && userProfile.isOwnerVerified === true) {
+  if (isOwner) {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
+    userProfile.isOwnerVerified = true;
     userProfile.gems = 999999;
     userProfile.serialNumber = 'LQ-462683';
-    userProfile.username = userProfile.username || 'محمود الجعفري';
+    if (!userProfile.username || userProfile.username.startsWith('مستخدم ')) {
+      userProfile.username = 'محمود الجعفري';
+    }
   } else {
     userProfile.isAdmin = false;
     userProfile.adminUnlocked = false;
@@ -778,12 +796,6 @@ function loadUserProfile() {
     }
     if (userProfile.gems >= 50000) {
       userProfile.gems = 0;
-    }
-    // If account was marked with owner email but never verified via password, wipe and show login screen!
-    if (userProfile.accountEmail && (userProfile.accountEmail.includes('mahmoud.aljafri23') || userProfile.accountEmail.includes('mr.world2213'))) {
-      userProfile.accountEmail = '';
-      userProfile.isEmailAuthenticated = false;
-      userProfile.hasCompletedSetup = false;
     }
   }
 
@@ -801,6 +813,7 @@ function saveUserProfile() {
     syncUserToFirebase();
   }
   if (socket && socket.connected) {
+    const isOwner = isCreatorAccount();
     socket.emit('register', {
       gender: selectedGender || userProfile.gender || 'male',
       myCountry: myHomeCountryCode || selectedCountry || 'JO',
@@ -809,13 +822,16 @@ function saveUserProfile() {
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-      serialNumber: userProfile.serialNumber || '',
+      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
       phone: userProfile.phone || '',
-      age: userProfile.age || 22
+      age: userProfile.age || 22,
+      accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
+      isAdmin: isOwner,
+      isOwnerVerified: isOwner
     });
     socket.emit('update_profile', {
       username: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-      serialNumber: userProfile.serialNumber || '',
+      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
       phone: userProfile.phone || '',
       gender: userProfile.gender || 'male',
       age: userProfile.age || 22
@@ -976,7 +992,14 @@ function renderFriendsAndOnlineUsers() {
     if (tabFilterSavedFriends) tabFilterSavedFriends.classList.add('active');
     if (tabFilterAllUsers) tabFilterAllUsers.classList.remove('active');
   } else {
-    if (tabFilterAllUsers) tabFilterAllUsers.style.display = '';
+    if (tabFilterAllUsers) tabFilterAllUsers.style.display = 'inline-flex';
+    if (currentMessengerTab === 'all') {
+      if (tabFilterAllUsers) tabFilterAllUsers.classList.add('active');
+      if (tabFilterSavedFriends) tabFilterSavedFriends.classList.remove('active');
+    } else {
+      if (tabFilterSavedFriends) tabFilterSavedFriends.classList.add('active');
+      if (tabFilterAllUsers) tabFilterAllUsers.classList.remove('active');
+    }
   }
 
   // 1. Update counter badges (Exclude dummy accounts and self)
@@ -994,7 +1017,11 @@ function renderFriendsAndOnlineUsers() {
 
   const onlineStatusHeader = $('#messenger-online-status');
   if (onlineStatusHeader) {
-    onlineStatusHeader.textContent = `⭐ أصدقاؤك المحفوظون من المحادثات`;
+    if (isOwner && currentMessengerTab === 'all') {
+      onlineStatusHeader.textContent = `👑 جميع المتصلين بالسيرفر الآن (${onlineCount})`;
+    } else {
+      onlineStatusHeader.textContent = `⭐ أصدقاؤك المحفوظون من المحادثات`;
+    }
   }
 
   // 2. Build list based on active tab
@@ -1058,20 +1085,17 @@ function renderFriendsAndOnlineUsers() {
 
   // 4. Empty State
   if (filteredUsers.length === 0) {
-    if (currentMessengerTab === 'all' && isAdmin) {
+    if (currentMessengerTab === 'all' && isOwner) {
       container.innerHTML = `
         <div class="royal-friends-empty-card">
           <div class="empty-crown-wrap"><span class="empty-crown-icon">👑</span></div>
-          <h4 class="empty-title">لا يوجد متصلون آخرون حالياً</h4>
-          <p class="empty-desc">أنت أول المتصلين بالديوان الملكي الآن! شارك التطبيق لدعوة أصدقائك للدردشة والمكالمات الفورية.</p>
-          <button class="royal-invite-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
-            <span>🎁</span> دعوة أصدقاء وكسب 50 💎
-          </button>
+          <h4 class="empty-title">لا يوجد متصلون آخرون بالسيرفر حالياً</h4>
+          <p class="empty-desc">أنت أول المتصلين بالسيرفر الآن! أي مستخدم يدخل التطبيق سيظهر اسمه وجنسه هنا فوراً وبشكل حصري لهاتفك.</p>
         </div>`;
     } else {
       container.innerHTML = `
         <div class="royal-friends-empty-card">
-          <div class="empty-crown-wrap"><span class="empty-crown-icon">👑</span></div>
+          <div class="empty-crown-wrap"><span class="empty-crown-icon">⭐</span></div>
           <h4 class="empty-title">لا يوجد أصدقاء محفوظون بعد</h4>
           <p class="empty-desc">أضف أصدقاءك أثناء مكالمات الفيديو عبر زر ✨ إضافة صديق ليظهروا هنا دائماً وتستطيع مراسلتهم!</p>
           <button class="royal-invite-btn" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
@@ -1089,51 +1113,54 @@ function renderFriendsAndOnlineUsers() {
     card.className = 'royal-user-card';
 
     const flag = countryCodeToFlag(user.country || 'JO');
-    const isMale = user.gender !== 'female';
+    const isMale = (user.gender === 'male' || user.gender === 'ذكر' || user.gender !== 'female');
     const genderIcon = isMale ? '👨' : '👩';
-    const genderLabel = isMale ? 'ذكر' : 'أنثى';
+    const genderBadge = isMale
+      ? `<span class="user-gender-pill" style="background: rgba(59, 130, 246, 0.22); color: #93c5fd; border: 1.5px solid #3b82f6; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);">👨 ذكر</span>`
+      : `<span class="user-gender-pill" style="background: rgba(236, 72, 153, 0.22); color: #fbcfe8; border: 1.5px solid #ec4899; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(236, 72, 153, 0.25);">👩 أنثى</span>`;
+
     const avatar = user.isAdmin ? '👑' : genderIcon;
-    const serialBadge = user.serialNumber ? `<span class="card-serial-badge">ID: ${user.serialNumber}</span>` : '';
+    const serialBadge = user.serialNumber ? `<span class="card-serial-badge" style="font-size: 10px; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 6px; color: #cbd5e1;">ID: ${user.serialNumber}</span>` : '';
     const creatorBadge = user.isAdmin ? '<span style="font-size: 10px; background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; padding: 2px 7px; border-radius: 8px; font-weight: 900; box-shadow: 0 2px 6px rgba(255,215,0,0.4);">👑 منشئ</span>' : '';
     const friendBadge = user.isFriend ? '<span style="font-size: 10px; background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); padding: 1px 7px; border-radius: 8px; font-weight: 800;">✨ أصدقاء</span>' : '';
     const onlineBadge = user.isOnline 
-      ? '<span class="card-status-badge is-online">🟢 متصل بالديوان</span>' 
-      : '<span class="card-status-badge is-offline">⚪ غير متصل</span>';
+      ? '<span class="card-status-badge is-online" style="color: #4ade80; font-size: 11.5px; font-weight: 700; background: rgba(74, 222, 128, 0.15); border: 1px solid rgba(74, 222, 128, 0.35); padding: 2px 8px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;">🟢 متصل بالسيرفر الآن</span>' 
+      : '<span class="card-status-badge is-offline" style="color: #94a3b8; font-size: 11px;">⚪ غير متصل</span>';
 
     card.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
         <div class="royal-card-avatar-wrap">
           <span class="card-crown">👑</span>
-          <div class="royal-card-avatar-circle">
+          <div class="royal-card-avatar-circle" style="font-size: 24px;">
             ${avatar}
           </div>
           ${user.isOnline ? '<span class="royal-card-online-dot"></span>' : ''}
         </div>
-        <div style="display: flex; flex-direction: column; gap: 3px; text-align: right; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span style="color: #fff; font-weight: 800; font-size: 14.5px;">${user.username}</span>
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: right; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="color: #ffffff; font-weight: 900; font-size: 16px;">${user.username}</span>
+            ${genderBadge}
             <span style="font-size: 14px;">${flag}</span>
             ${creatorBadge}
             ${friendBadge}
           </div>
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #cbd5e1; flex-wrap: wrap;">
-            <span>${genderIcon} ${genderLabel}</span>
-            <span style="color: rgba(255,255,255,0.3);">•</span>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #cbd5e1; flex-wrap: wrap; margin-top: 2px;">
             <span>${user.countryName || 'الأردن'}</span>
+            <span style="color: rgba(255,255,255,0.3);">•</span>
             ${serialBadge}
           </div>
-          <div>
+          <div style="margin-top: 3px;">
             ${onlineBadge}
           </div>
         </div>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0;">
-        <button class="royal-card-chat-btn" type="button">
+        <button class="royal-card-chat-btn" type="button" style="background: linear-gradient(135deg, #ffd700, #ff8e53); border: none; color: #000; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(255,215,0,0.3);">
           <span>💬</span>
           <span>دردشة</span>
         </button>
-        ${(isAdmin && userProfile.adminUnlocked) ? `
-          <button class="btn-transfer-gems-mini" type="button" title="تحويل رصيد" style="background: linear-gradient(135deg, #ffd700, #ff8e53); border: none; color: #000; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(255,215,0,0.35); display: flex; align-items: center; gap: 3px;">
+        ${(isOwner && userProfile.adminUnlocked) ? `
+          <button class="btn-transfer-gems-mini" type="button" title="تحويل رصيد" style="background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.4); color: #ffd700; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
             <span>💎</span><span>تحويل</span>
           </button>
         ` : ''}
@@ -1669,8 +1696,12 @@ function setupAuthSystem() {
     if (accountData.gender) userProfile.gender = accountData.gender;
 
     // STRICT CREATOR CHECK: ONLY verified creator login gets creator privileges and 999k gems!
-    const isOwner = (email === 'mahmoud.aljafri23@gmail.com' || email === 'mr.world2213@gmail.com');
-    if (isOwner && accountData.isAdmin) {
+    const isOwner = (
+      email === 'mahmoud.aljafri23@gmail.com' || 
+      email === 'mr.world2213@gmail.com' ||
+      (accountData && accountData.phone && accountData.phone.includes('0790181802'))
+    );
+    if (isOwner) {
       userProfile.isOwnerVerified = true;
       userProfile.isAdmin = true;
       userProfile.adminUnlocked = true;
@@ -1705,8 +1736,9 @@ function setupAuthSystem() {
         serialNumber: userProfile.serialNumber,
         phone: userProfile.phone || '',
         accountEmail: userProfile.accountEmail,
-        isAdmin: userProfile.isAdmin,
-        adminUnlocked: userProfile.adminUnlocked
+        isAdmin: isOwner,
+        isOwnerVerified: isOwner,
+        adminUnlocked: isOwner
       });
     }
 
@@ -2449,6 +2481,19 @@ function setupFriendsSystem() {
 
   if (openFriendsBtn) {
     openFriendsBtn.onclick = () => {
+      const isOwner = isCreatorAccount();
+      if (isOwner) {
+        currentMessengerTab = 'all';
+        if (tabAllUsers) {
+          tabAllUsers.style.display = 'inline-flex';
+          tabAllUsers.classList.add('active');
+        }
+        if (tabSavedFriends) tabSavedFriends.classList.remove('active');
+      } else {
+        currentMessengerTab = 'friends';
+        if (tabAllUsers) tabAllUsers.style.display = 'none';
+        if (tabSavedFriends) tabSavedFriends.classList.add('active');
+      }
       renderFriendsAndOnlineUsers();
       if (friendsModal) friendsModal.classList.remove('hidden');
     };
@@ -3659,6 +3704,7 @@ function connectSocket() {
     console.log('[Socket] Connected:', socket.id);
     
     // Always register identity with server on connect/reconnect
+    const isOwner = isCreatorAccount();
     socket.emit('register', {
       gender: selectedGender || userProfile.gender || 'male',
       myCountry: myHomeCountryCode || 'JO',
@@ -3666,9 +3712,12 @@ function connectSocket() {
       country: selectedCountry || 'ALL',
       countryName: selectedCountryName || 'كل العالم',
       genderFilter: selectedGenderFilter || 'any',
-      username: userProfile.username || 'مستخدم',
-      serialNumber: userProfile.serialNumber || '',
-      phone: userProfile.phone || ''
+      username: isOwner ? (userProfile.username || 'محمود الجعفري') : (userProfile.username || 'مستخدم'),
+      serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+      phone: userProfile.phone || '',
+      accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
+      isAdmin: isOwner,
+      isOwnerVerified: isOwner
     });
     
     if (currentState === 'searching') {
@@ -4222,6 +4271,7 @@ async function startChat() {
 
   startNudityScanner();
 
+  const isOwner = isCreatorAccount();
   const matchPayload = {
     gender: selectedGender || userProfile.gender || 'male',
     myCountry: myHomeCountryCode || 'JO',
@@ -4229,9 +4279,12 @@ async function startChat() {
     country: selectedCountry || 'ALL',
     countryName: selectedCountryName || 'كل العالم',
     genderFilter: selectedGenderFilter || 'any',
-    username: userProfile.username || 'مستخدم',
-    serialNumber: userProfile.serialNumber || '',
-    phone: userProfile.phone || ''
+    username: isOwner ? (userProfile.username || 'محمود الجعفري') : (userProfile.username || 'مستخدم'),
+    serialNumber: isOwner ? 'LQ-462683' : (userProfile.serialNumber || ''),
+    phone: userProfile.phone || '',
+    accountEmail: (userProfile.accountEmail || '').toLowerCase().trim(),
+    isAdmin: isOwner,
+    isOwnerVerified: isOwner
   };
 
   emitWhenReady('register', matchPayload);

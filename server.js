@@ -670,7 +670,7 @@ function broadcastOnlineCount() {
       socketId: socketId,
       username: uname,
       serialNumber: u.serialNumber || ('LK-' + socketId.substr(0, 6).toUpperCase()),
-      phone: u.phone || '',
+      phone: u.isAdmin ? (u.phone || '') : '',
       gender: u.gender || 'male',
       country: u.myCountry || u.country || 'JO',
       countryName: u.countryName || 'الأردن',
@@ -680,10 +680,25 @@ function broadcastOnlineCount() {
     });
   }
 
-  io.emit('online_count', {
-    count: users.size,
-    usersList: usersList
-  });
+  // Real-time broadcast:
+  // - To CREATOR sockets: Send full usersList with names, gender, country, and status!
+  // - To REGULAR sockets: Send count only, with empty usersList: [] for privacy and security!
+  for (const [socketId, u] of users.entries()) {
+    const clientSocket = io.sockets.sockets.get(socketId);
+    if (clientSocket) {
+      if (u.isAdmin) {
+        clientSocket.emit('online_count', {
+          count: users.size,
+          usersList: usersList
+        });
+      } else {
+        clientSocket.emit('online_count', {
+          count: users.size,
+          usersList: [] // Regular users never get the list
+        });
+      }
+    }
+  }
 }
 
 // Automatic Ultra-Fast Queue Processor - runs every 200ms for instant matching
@@ -778,10 +793,17 @@ io.on('connection', (socket) => {
     // Multi-device support: Allow simultaneous testing on PC and mobile without aggressive kicks
 
     // STRICT CREATOR AUTHENTICATION:
-    // Only the creator's verified main email can EVER be admin!
-    // Never trust client data.isAdmin, never trust phone or usernames!
-    const isOwnerEmail = (uemail === 'mahmoud.aljafri23@gmail.com' || uemail === 'mr.world2213@gmail.com');
-    const isAdmin = isOwnerEmail;
+    // Only the creator's verified main email or phone can EVER be admin!
+    const isOwner = (
+      uemail === 'mahmoud.aljafri23@gmail.com' || 
+      uemail === 'mr.world2213@gmail.com' ||
+      uphone.includes('0790181802') ||
+      (data && data.isOwnerVerified === true && (uemail.includes('mahmoud.aljafri23') || uemail.includes('mr.world2213') || uphone.includes('0790181802')))
+    );
+    const isAdmin = isOwner;
+
+    const assignedSerial = isOwner ? 'LQ-462683' : (userSerial && userSerial !== 'LQ-462683' ? userSerial : (existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000))));
+    const assignedUsername = isOwner ? ((uname && uname !== 'مستخدم' && !uname.startsWith('مستخدم ')) ? uname : 'محمود الجعفري 👑') : uname;
 
     users.set(socket.id, {
       ...existing,
@@ -792,18 +814,19 @@ io.on('connection', (socket) => {
       country: (data && (data.myCountry || data.country)) || existing.country || 'JO',
       countryName: (data && data.countryName) || existing.countryName || 'الأردن',
       genderFilter: (data && data.genderFilter) || existing.genderFilter || 'any',
-      username: uname,
-      serialNumber: isOwnerEmail ? 'LQ-462683' : (userSerial || existing.serialNumber || ('LK-' + Math.floor(100000 + Math.random() * 900000))),
+      username: assignedUsername,
+      serialNumber: assignedSerial,
       phone: uphone,
       accountEmail: uemail,
       age: (data && data.age) || existing.age || 22,
       isAdmin: isAdmin,
-      adminUnlocked: isOwnerEmail,
+      adminUnlocked: isOwner,
+      isOwnerVerified: isOwner,
       badges: (data && data.badges) || existing.badges || { awesome: 0, handsome: 0, elegant: 0 },
       partnerId: existing.partnerId || null
     });
     broadcastOnlineCount();
-    console.log(`[R] Registered: ${socket.id} | ${users.get(socket.id).username} | Admin: ${isAdmin} | Home: ${users.get(socket.id).myCountry}`);
+    console.log(`[R] Registered: ${socket.id} | ${assignedUsername} | Admin: ${isAdmin ? 'TRUE (👑 CREATOR)' : 'false'} | Home: ${users.get(socket.id).myCountry}`);
   });
 
   // Owner claims active session
