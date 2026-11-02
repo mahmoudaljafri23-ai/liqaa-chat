@@ -760,16 +760,31 @@ function loadUserProfile() {
     userProfile.hasCompletedSetup = false;
   }
 
-  // STRICT CREATOR SECURITY LOCK: Only creator main email can have isAdmin and 999k gems
-  if (isCreatorAccount()) {
+  // STRICT CREATOR SECURITY LOCK: Only creator with explicitly verified login gets creator status
+  const isOwner = isCreatorAccount();
+
+  if (isOwner && userProfile.isOwnerVerified === true) {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
     userProfile.gems = 999999;
     userProfile.serialNumber = 'LQ-462683';
+    userProfile.username = userProfile.username || 'محمود الجعفري';
   } else {
     userProfile.isAdmin = false;
     userProfile.adminUnlocked = false;
-    userProfile.gems = 0; // Strip any falsely cached 999k gems!
+    userProfile.isOwnerVerified = false;
+    if (userProfile.serialNumber === 'LQ-462683') {
+      userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
+    }
+    if (userProfile.gems >= 50000) {
+      userProfile.gems = 0;
+    }
+    // If account was marked with owner email but never verified via password, wipe and show login screen!
+    if (userProfile.accountEmail && (userProfile.accountEmail.includes('mahmoud.aljafri23') || userProfile.accountEmail.includes('mr.world2213'))) {
+      userProfile.accountEmail = '';
+      userProfile.isEmailAuthenticated = false;
+      userProfile.hasCompletedSetup = false;
+    }
   }
 
   selectedGender = userProfile.gender;
@@ -979,11 +994,7 @@ function renderFriendsAndOnlineUsers() {
 
   const onlineStatusHeader = $('#messenger-online-status');
   if (onlineStatusHeader) {
-    if (isOwner) {
-      onlineStatusHeader.textContent = `🟢 متصلون الآن بالديوان الملكي (${onlineCount + 1} مستخدم)`;
-    } else {
-      onlineStatusHeader.textContent = `⭐ أصدقاؤك المحفوظون من المحادثات (${friendsCount})`;
-    }
+    onlineStatusHeader.textContent = `⭐ أصدقاؤك المحفوظون من المحادثات`;
   }
 
   // 2. Build list based on active tab
@@ -1657,17 +1668,23 @@ function setupAuthSystem() {
     if (accountData.serialNumber) userProfile.serialNumber = accountData.serialNumber;
     if (accountData.gender) userProfile.gender = accountData.gender;
 
-    // STRICT CREATOR CHECK: ONLY creator main email gets creator privileges and 999k gems!
+    // STRICT CREATOR CHECK: ONLY verified creator login gets creator privileges and 999k gems!
     const isOwner = (email === 'mahmoud.aljafri23@gmail.com' || email === 'mr.world2213@gmail.com');
-    if (isOwner) {
+    if (isOwner && accountData.isAdmin) {
+      userProfile.isOwnerVerified = true;
       userProfile.isAdmin = true;
       userProfile.adminUnlocked = true;
       userProfile.gems = 999999;
       userProfile.serialNumber = 'LQ-462683';
+      userProfile.username = 'محمود الجعفري';
     } else {
+      userProfile.isOwnerVerified = false;
       userProfile.isAdmin = false;
       userProfile.adminUnlocked = false;
       userProfile.gems = (typeof accountData.gems === 'number' && accountData.gems <= 50000) ? accountData.gems : 0;
+      if (userProfile.serialNumber === 'LQ-462683') {
+        userProfile.serialNumber = 'LQ-' + Math.floor(100000 + Math.random() * 900000);
+      }
     }
 
     userProfile.hasAccount = true;
@@ -2438,9 +2455,16 @@ function setupFriendsSystem() {
   }
 
   if (closeFriendsBtn) {
-    closeFriendsBtn.onclick = () => {
+    const handleCloseFriends = (e) => {
+      if (e) {
+        e.stopPropagation();
+        if (e.cancelable) e.preventDefault();
+      }
       if (friendsModal) friendsModal.classList.add('hidden');
     };
+    closeFriendsBtn.onclick = handleCloseFriends;
+    closeFriendsBtn.addEventListener('click', handleCloseFriends);
+    closeFriendsBtn.addEventListener('touchend', handleCloseFriends);
   }
 
   if (addFriendBtn) {
@@ -4215,6 +4239,33 @@ async function startChat() {
   setState('searching');
 }
 window.startChat = startChat;
+
+function logoutAccount() {
+  localStorage.removeItem('liqaa_user_profile');
+  userProfile = {
+    username: 'مستخدم ' + Math.floor(100 + Math.random() * 900),
+    serialNumber: 'LQ-' + Math.floor(100000 + Math.random() * 900000),
+    gender: 'male',
+    country: 'ALL',
+    gems: 0,
+    hasCompletedSetup: false,
+    isEmailAuthenticated: false,
+    isAdmin: false,
+    adminUnlocked: false,
+    isOwnerVerified: false,
+    accountEmail: ''
+  };
+  saveUserProfile();
+  updateProfileUI();
+  const authModal = $('#auth-modal');
+  if (authModal) {
+    authModal.classList.remove('hidden');
+    const closeBtn = $('#close-auth-modal-btn');
+    if (closeBtn) closeBtn.style.display = 'none';
+  }
+  showGemToast('🚪 تم تسجيل الخروج! يرجى تسجيل الدخول أو إنشاء حساب.');
+}
+window.logoutAccount = logoutAccount;
 
 // =============================================
 // Control Buttons

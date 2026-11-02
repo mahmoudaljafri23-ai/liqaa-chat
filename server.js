@@ -775,36 +775,7 @@ io.on('connection', (socket) => {
     const uemail = (data && data.accountEmail && data.accountEmail.trim().toLowerCase()) || '';
     const userSerial = (data && data.serialNumber) || '';
 
-    // Single active device session enforcement for Owner account
-    const isOwnerAccount = uphone === '0790181802' || uphone.includes('0790181802') ||
-      uemail === 'mahmoud.aljafri23@gmail.com' || uemail === 'mr.world2213@gmail.com' ||
-      userSerial === 'LQ-462683' ||
-      (data && data.isAdmin && data.adminUnlocked);
-
-    if (isOwnerAccount) {
-      for (const [otherSocketId, otherUser] of users.entries()) {
-        if (otherSocketId !== socket.id) {
-          const isOtherSameOwner = 
-            (otherUser.phone && (otherUser.phone === '0790181802' || otherUser.phone.includes('0790181802'))) ||
-            (otherUser.accountEmail && (otherUser.accountEmail.toLowerCase() === 'mahmoud.aljafri23@gmail.com' || otherUser.accountEmail.toLowerCase() === 'mr.world2213@gmail.com')) ||
-            (otherUser.serialNumber && otherUser.serialNumber === 'LQ-462683') ||
-            (otherUser.isAdmin && otherUser.adminUnlocked);
-
-          if (isOtherSameOwner) {
-            console.log(`[🔒 Security Kick] Owner logged in on new socket ${socket.id}. Forcing logout on old socket ${otherSocketId}...`);
-            io.to(otherSocketId).emit('force_logout', {
-              reason: 'another_device_login',
-              message: '⚠️ تم تسجيل الدخول إلى حسابك من جهاز آخر. تم تسجيل الخروج من هذا الجهاز لحماية خصوصيتك 🔒'
-            });
-            users.delete(otherSocketId);
-            const oldSocket = io.sockets.sockets.get(otherSocketId);
-            if (oldSocket) {
-              try { oldSocket.disconnect(true); } catch(e) {}
-            }
-          }
-        }
-      }
-    }
+    // Multi-device support: Allow simultaneous testing on PC and mobile without aggressive kicks
 
     // STRICT CREATOR AUTHENTICATION:
     // Only the creator's verified main email can EVER be admin!
@@ -835,24 +806,9 @@ io.on('connection', (socket) => {
     console.log(`[R] Registered: ${socket.id} | ${users.get(socket.id).username} | Admin: ${isAdmin} | Home: ${users.get(socket.id).myCountry}`);
   });
 
-  // Owner claims active session when entering secret PIN
+  // Owner claims active session
   socket.on('claim_owner_session', (data) => {
-    console.log(`[🔒 Security] PIN unlocked on socket ${socket.id}. Kicking any other active sessions for owner...`);
-    for (const [otherSocketId, otherUser] of users.entries()) {
-      if (otherSocketId !== socket.id) {
-        if (otherUser.isAdmin || (otherUser.phone && otherUser.phone.includes('0790181802')) || (otherUser.serialNumber === 'LQ-462683') || (otherUser.accountEmail && otherUser.accountEmail.includes('mahmoud'))) {
-          io.to(otherSocketId).emit('force_logout', {
-            reason: 'another_device_login',
-            message: '⚠️ تم فتح وتفعيل حساب المنشئ من جهاز آخر. تم إنهاء الجلسة هنا لحماية أمان حسابك 🔒'
-          });
-          users.delete(otherSocketId);
-          const oldSock = io.sockets.sockets.get(otherSocketId);
-          if (oldSock) {
-            try { oldSock.disconnect(true); } catch(e) {}
-          }
-        }
-      }
-    }
+    console.log(`[Session] Owner active on socket ${socket.id}`);
   });
 
   // Handle giving badges between chat partners

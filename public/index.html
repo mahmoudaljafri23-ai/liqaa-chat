@@ -111,6 +111,11 @@
               <span class="serial-verified-icon">🛡️</span>
             </div>
           </div>
+          <!-- Royal Logout / Switch Account Button -->
+          <button type="button" id="royal-dash-logout-btn" onclick="window.logoutAccount && window.logoutAccount()" style="margin-right: auto; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-size: 11.5px; font-weight: bold; padding: 6px 10px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease;" title="تسجيل الخروج أو تبديل الحساب">
+            <span>🚪</span>
+            <span>خروج</span>
+          </button>
         </div>
 
         <!-- Live Palace Activity Bar -->
@@ -899,7 +904,7 @@
   </div>
 
   <!-- Royal WhatsApp Style Friends & Online Messenger Modal -->
-  <div id="friends-modal" class="modal hidden" style="z-index: 9999; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+  <div id="friends-modal" class="modal hidden" onclick="if (event.target === this) this.classList.add('hidden');" style="z-index: 10005; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
     <div class="modal-content royal-messenger-content">
       
       <!-- Messenger Royal Header Bar -->
@@ -914,7 +919,7 @@
             <span class="messenger-subtitle" id="messenger-online-status">⭐ أصدقاؤك المحفوظون من المحادثات</span>
           </div>
         </div>
-        <button id="close-friends-btn" class="royal-close-round-btn" title="إغلاق">✕</button>
+        <button id="close-friends-btn" class="royal-close-round-btn" type="button" onclick="document.getElementById('friends-modal').classList.add('hidden')" style="cursor: pointer; z-index: 100;" title="إغلاق">✕</button>
       </div>
 
       <!-- Main Body: Split View / Single Screen -->
