@@ -725,6 +725,12 @@ function loadUserProfile() {
   userProfile.adminUnlocked = false;
   userProfile.isAdmin = false;
 
+  // Enforce mandatory email for ALL users (old and new)
+  if (!userProfile.accountEmail) {
+    userProfile.hasCompletedSetup = false;
+    userProfile.isGuest = false;
+  }
+
   // Zero out all gems for regular accounts as requested ("صفرلي كل الرصيد عن اي حساب كلو صفر")
   userProfile.gems = 0;
 
@@ -1638,6 +1644,7 @@ function setupAuthSystem() {
       });
     }
 
+    if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
     if (authModal) authModal.classList.add('hidden');
   };
 
@@ -1767,7 +1774,8 @@ function setupAuthSystem() {
       }
       saveUserProfile();
       updateProfileUI();
-      if (authModal) authModal.classList.add('hidden');
+      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
+    if (authModal) authModal.classList.add('hidden');
       showGemToast(`🚀 أهلاً بك كـ ${userProfile.username}! تم الدخول بنجاح كزائر.`);
     };
   }
@@ -1776,7 +1784,8 @@ function setupAuthSystem() {
   const creatorPinBtn = $('#auth-creator-pin-btn');
   if (creatorPinBtn) {
     creatorPinBtn.onclick = () => {
-      if (authModal) authModal.classList.add('hidden');
+      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
+    if (authModal) authModal.classList.add('hidden');
       const adminPinModal = $('#admin-pin-modal');
       if (adminPinModal) {
         adminPinModal.classList.remove('hidden');
@@ -1801,7 +1810,12 @@ function setupAuthSystem() {
 
   if (closeAuthModalBtn) {
     closeAuthModalBtn.onclick = () => {
-      if (authModal) authModal.classList.add('hidden');
+      if (!userProfile || !userProfile.accountEmail) {
+        showGemToast('🔒 تسجيل الدخول بالبريد الإلكتروني إلزامي للجميع للمتابعة!');
+        return;
+      }
+      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
+    if (authModal) authModal.classList.add('hidden');
     };
   }
 
@@ -1887,15 +1901,20 @@ function setupAuthSystem() {
     setTimeout(initGoogleIdentityServices, 1000);
   });
 
-  // Prompt auth screen on initial app launch if user has not yet registered or chosen guest
-  setTimeout(() => {
-    if (!userProfile.accountEmail && !userProfile.isGuest && !userProfile.hasCompletedSetup) {
+  // Enforce mandatory email login for ALL users (both old and new)
+  const checkMandatoryEmailAuth = () => {
+    if (!userProfile || !userProfile.accountEmail) {
       if (authModal) {
         updateAuthModalView();
         authModal.classList.remove('hidden');
+        if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'none';
       }
+    } else {
+      if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
     }
-  }, 350);
+  };
+
+  setTimeout(checkMandatoryEmailAuth, 300);
 }
 
 // =============================================
@@ -4078,6 +4097,18 @@ function showPermissionError(title, message, showSteps) {
 async function startChat() {
   if (checkBanStatus()) return;
   if (currentState === 'searching' || currentState === 'connected') return;
+
+  // Enforce mandatory email for ALL users
+  if (!userProfile || !userProfile.accountEmail) {
+    showGemToast('🔒 تسجيل الدخول بالبريد الإلكتروني إلزامي للجميع لبدء المحادثة!');
+    const authModal = $('#auth-modal');
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      const closeBtn = $('#close-auth-modal-btn');
+      if (closeBtn) closeBtn.style.display = 'none';
+    }
+    return;
+  }
 
   console.log('[App] startChat() triggered on royal single-screen interface!');
 
