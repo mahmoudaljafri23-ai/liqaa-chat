@@ -4909,12 +4909,15 @@ async function createPeerConnection(forceFresh = false) {
       syncMicAudioState();
     }
 
-    // Ensure bidirectional transceivers exist for both audio and video
+    // Ensure bidirectional transceivers exist for both audio and video without duplicating
     try {
-      if (!peerConnection.getTransceivers().some(t => t.receiver.track && t.receiver.track.kind === 'audio')) {
+      const transceivers = peerConnection.getTransceivers();
+      const hasAudio = transceivers.some(t => (t.sender && t.sender.track && t.sender.track.kind === 'audio') || (t.receiver && t.receiver.track && t.receiver.track.kind === 'audio'));
+      const hasVideo = transceivers.some(t => (t.sender && t.sender.track && t.sender.track.kind === 'video') || (t.receiver && t.receiver.track && t.receiver.track.kind === 'video'));
+      if (!hasAudio) {
         peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
       }
-      if (!peerConnection.getTransceivers().some(t => t.receiver.track && t.receiver.track.kind === 'video')) {
+      if (!hasVideo) {
         peerConnection.addTransceiver('video', { direction: 'sendrecv' });
       }
     } catch (eTrans) {
@@ -4949,18 +4952,29 @@ async function createPeerConnection(forceFresh = false) {
         remoteVid.autoplay = true;
 
         const checkAndReveal = () => {
-          if (remoteVid) {
+          if (!remoteVid) return;
+          const hasFrames = (remoteVid.videoWidth > 0 && remoteVid.videoHeight > 0) || remoteVid.currentTime > 0;
+          const hasLiveVideoTrack = stream && stream.getVideoTracks().some(t => t.readyState === 'live');
+
+          if (hasFrames || hasLiveVideoTrack) {
             remoteVid.classList.remove('hidden');
             if (fallbackBg) {
               fallbackBg.classList.add('hidden');
               fallbackBg.style.setProperty('display', 'none', 'important');
             }
+          }
+          if (remoteVid.paused) {
             remoteVid.play().catch(() => {});
           }
         };
 
-        // Instantly trigger reveal
-        checkAndReveal();
+        // Try to start playing immediately
+        remoteVid.play().then(checkAndReveal).catch(() => {});
+
+        remoteVid.onloadedmetadata = () => {
+          remoteVid.play().catch(() => {});
+          checkAndReveal();
+        };
 
         remoteVid.onloadeddata = () => {
           remoteVid.play().catch(() => {});
@@ -4975,19 +4989,23 @@ async function createPeerConnection(forceFresh = false) {
           checkAndReveal();
         };
 
-        remoteVid.play().then(checkAndReveal).catch(err => {
-          console.warn('[WebRTC] Remote video play error:', err);
-        });
-
-        // Fast watchdog: poll every 80ms to guarantee instant reveal
+        // Active watchdog: poll every 100ms to guarantee instant reveal as soon as first frame decodes
         let pollCount = 0;
         const revealInterval = setInterval(() => {
           pollCount++;
           checkAndReveal();
-          if (pollCount > 25) {
+          if (pollCount > 30) {
             clearInterval(revealInterval);
+            if (remoteVid) {
+              remoteVid.classList.remove('hidden');
+              if (fallbackBg) {
+                fallbackBg.classList.add('hidden');
+                fallbackBg.style.setProperty('display', 'none', 'important');
+              }
+              remoteVid.play().catch(() => {});
+            }
           }
-        }, 80);
+        }, 100);
       }
 
       // 2. Dedicated Remote Audio Element (prevents video pause/mute from silencing voice)
