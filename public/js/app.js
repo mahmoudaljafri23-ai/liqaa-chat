@@ -19,6 +19,10 @@ const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
     { urls: 'stun:global.stun.twilio.com:3478' },
     {
       urls: [
@@ -29,7 +33,7 @@ const ICE_SERVERS = {
       credential: 'openrelay'
     }
   ],
-  iceCandidatePoolSize: 2,
+  iceCandidatePoolSize: 4,
   bundlePolicy: 'max-bundle',
   rtcpMuxPolicy: 'require'
 };
@@ -1526,6 +1530,13 @@ function init() {
   setState('idle');
   if (IS_NATIVE_APP) {
     initPlayBilling();
+  }
+
+  // Pre-warm camera hardware in background for instant 0-second matching without lag
+  if (userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@')) {
+    setTimeout(() => {
+      requestMediaPermission().catch(() => {});
+    }, 500);
   }
 }
 
@@ -4966,8 +4977,27 @@ function optimizeSdp(sdp) {
   if (!sdp) return sdp;
   let newSdp = sdp;
   try {
-    // Enable Opus in-band FEC and low packet time for crystal clear zero-delay voice
-    // Safely target ONLY the Opus audio codec payload - NEVER corrupt video codecs
+    // 1. Hardware Video Acceleration: Prioritize H.264 / VP8 for dedicated chip encoding (zero CPU heat, zero lag, smooth 30fps)
+    const videoMlineMatch = newSdp.match(/m=video \d+ [A-Z\/]+ ([\d ]+)/);
+    if (videoMlineMatch) {
+      const payloads = videoMlineMatch[1].trim().split(/\s+/);
+      const preferredPayloads = [];
+      const otherPayloads = [];
+      for (const pt of payloads) {
+        const rtpmap = new RegExp(`a=rtpmap:${pt}\\s+(H264|VP8)\\/90000`, 'i');
+        if (rtpmap.test(newSdp)) {
+          preferredPayloads.push(pt);
+        } else {
+          otherPayloads.push(pt);
+        }
+      }
+      if (preferredPayloads.length > 0) {
+        const reordered = [...preferredPayloads, ...otherPayloads].join(' ');
+        newSdp = newSdp.replace(/m=video (\d+ [A-Z\/]+ )[\d ]+/, `m=video $1${reordered}`);
+      }
+    }
+
+    // 2. Opus In-Band FEC & Low Jitter: Crystal clear zero-delay voice
     const opusMatch = newSdp.match(/a=rtpmap:(\d+)\s+opus\/48000/i);
     if (opusMatch && opusMatch[1]) {
       const pt = opusMatch[1];
@@ -5000,14 +5030,15 @@ async function applySenderParameters() {
       if (sender.track && sender.track.kind === 'video') {
         const params = sender.getParameters();
         if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-        params.encodings[0].maxBitrate = 550000; // 550 kbps for smooth 30fps
+        params.encodings[0].maxBitrate = 750000; // 750 kbps crisp fluid HD
         params.encodings[0].maxFramerate = 30;
+        params.degradationPreference = 'maintain-framerate'; // NEVER FREEZE: Prioritize smooth framerate over dropped frames
         await sender.setParameters(params).catch(() => {});
       }
       if (sender.track && sender.track.kind === 'audio') {
         const params = sender.getParameters();
         if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-        params.encodings[0].maxBitrate = 32000; // 32 kbps HD audio
+        params.encodings[0].maxBitrate = 40000; // 40 kbps crystal clear audio
         await sender.setParameters(params).catch(() => {});
       }
     }

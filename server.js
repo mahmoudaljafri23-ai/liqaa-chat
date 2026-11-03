@@ -707,7 +707,7 @@ function broadcastOnlineCount() {
   }
 }
 
-// Automatic Ultra-Fast Queue Processor - runs every 200ms for instant matching
+// Automatic Ultra-Fast Queue Processor - runs every 50ms for instant matching
 setInterval(() => {
   if (waitingQueue.length < 2) return;
 
@@ -757,12 +757,12 @@ setInterval(() => {
           isInitiator: false
         });
 
-        console.log(`[Auto-Match] ${socketId} (${user.myCountry}->${user.targetCountry}) <-> ${matchId} (${matchUser.myCountry}->${matchUser.targetCountry})`);
-        break; // Match one pair per tick
+        console.log(`[Instant-Match] ${socketId} <-> ${matchId}`);
+        // Continue loop to match any other waiting pairs immediately
       }
     }
   }
-}, 200);
+}, 50);
 
 // =============================================
 // Socket.IO Events
