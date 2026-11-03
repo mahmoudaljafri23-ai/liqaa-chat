@@ -1995,16 +1995,82 @@ function setupAuthSystem() {
     };
   }
 
+  let pendingGoogleData = null;
+  let googleSelectedGender = 'male';
+
+  const setGoogleModalGender = (g) => {
+    googleSelectedGender = g;
+    const maleBtn = $('#google-gender-male-btn');
+    const femaleBtn = $('#google-gender-female-btn');
+    if (g === 'female') {
+      if (femaleBtn) femaleBtn.classList.add('selected');
+      if (maleBtn) maleBtn.classList.remove('selected');
+    } else {
+      if (maleBtn) maleBtn.classList.add('selected');
+      if (femaleBtn) femaleBtn.classList.remove('selected');
+    }
+  };
+
   const applyGoogleAccount = (email, name, picture) => {
     if (!email || !email.includes('@')) return;
     const cleanUsername = name || email.split('@')[0];
-    applyAccount({
+
+    pendingGoogleData = {
       email: email,
       username: cleanUsername,
       photoUrl: picture
-    });
-    showGemToast(`🎉 تم الدخول بحساب Google (${email}) بنجاح!`);
+    };
+
+    const nameInput = $('#google-confirm-username');
+    if (nameInput) nameInput.value = cleanUsername;
+
+    const initialGender = (userProfile && userProfile.gender) || 'male';
+    setGoogleModalGender(initialGender);
+
+    const genderModal = $('#google-gender-modal');
+    if (genderModal) {
+      genderModal.classList.remove('hidden');
+    } else {
+      applyAccount({
+        email: email,
+        username: cleanUsername,
+        gender: initialGender,
+        photoUrl: picture
+      });
+      showGemToast(`🎉 تم الدخول بحساب Google (${email}) بنجاح!`);
+    }
   };
+
+  const googleMaleBtn = $('#google-gender-male-btn');
+  const googleFemaleBtn = $('#google-gender-female-btn');
+  if (googleMaleBtn) googleMaleBtn.onclick = () => setGoogleModalGender('male');
+  if (googleFemaleBtn) googleFemaleBtn.onclick = () => setGoogleModalGender('female');
+
+  const googleCompleteBtn = $('#google-confirm-complete-btn');
+  if (googleCompleteBtn) {
+    googleCompleteBtn.onclick = () => {
+      if (!pendingGoogleData) return;
+      const customNameInput = $('#google-confirm-username');
+      const customName = (customNameInput ? customNameInput.value.trim() : '') || pendingGoogleData.username;
+
+      applyAccount({
+        email: pendingGoogleData.email,
+        username: customName,
+        gender: googleSelectedGender,
+        photoUrl: pendingGoogleData.photoUrl
+      });
+      userProfile.gender = googleSelectedGender;
+      saveUserProfile();
+      updateProfileUI();
+      syncUserToFirebase({ gender: googleSelectedGender, username: customName });
+
+      const genderModal = $('#google-gender-modal');
+      if (genderModal) genderModal.classList.add('hidden');
+      if (authModal) authModal.classList.add('hidden');
+
+      showGemToast(`🎉 تم تأكيد هويتك (${googleSelectedGender === 'female' ? 'أنثى 👩' : 'ذكر 👨'}) والدخول بنجاح! ✨`);
+    };
+  }
 
   const decodeJwtResponse = (token) => {
     try {
@@ -2970,11 +3036,20 @@ function openSettingsModal() {
     const lockedUser = $('#settings-locked-username');
     const lockedGender = $('#settings-locked-gender');
     const lockedEmail = $('#settings-locked-email');
+    const usernameInput = $('#settings-username-input');
 
     if (lockedSerial) lockedSerial.textContent = userProfile.serialNumber || '--';
     if (lockedUser) lockedUser.textContent = userProfile.username || 'مستخدم';
     if (lockedGender) lockedGender.textContent = (userProfile.gender === 'female') ? 'أنثى 👩' : 'ذكر 👨';
     if (lockedEmail) lockedEmail.textContent = userProfile.accountEmail || 'غير مسجل';
+    if (usernameInput) usernameInput.value = userProfile.username || '';
+
+    // Update gender buttons in settings
+    const isFemale = (userProfile.gender === 'female');
+    const maleBtn = $('#settings-gender-male-btn');
+    const femaleBtn = $('#settings-gender-female-btn');
+    if (maleBtn) maleBtn.classList.toggle('selected', !isFemale);
+    if (femaleBtn) femaleBtn.classList.toggle('selected', isFemale);
 
     const isUnlockedAdmin = isCreatorAccount();
     const adminBroadcastSection = $('#admin-broadcast-section');
@@ -2997,6 +3072,59 @@ function openSettingsModal() {
   }
 }
 window.openSettingsModal = openSettingsModal;
+
+// Setup Settings Modal Interactive Buttons (Name & Gender Change)
+function setupSettingsModalListeners() {
+  const saveNameBtn = $('#settings-save-username-btn');
+  if (saveNameBtn) {
+    saveNameBtn.onclick = () => {
+      const input = $('#settings-username-input');
+      const newName = input ? input.value.trim() : '';
+      if (!newName) {
+        showGemToast('⚠️ يرجى إدخال اسم مستعار صالح!');
+        return;
+      }
+      userProfile.username = newName;
+      saveUserProfile();
+      updateProfileUI();
+      syncUserToFirebase({ username: newName });
+      if (socket && socket.connected) {
+        socket.emit('update_profile', { username: newName });
+      }
+      showGemToast(`✅ تم حفظ اسمك الجديد: ${newName} ✨`);
+    };
+  }
+
+  const maleBtn = $('#settings-gender-male-btn');
+  const femaleBtn = $('#settings-gender-female-btn');
+
+  const setSettingsGender = (g) => {
+    userProfile.gender = g;
+    selectedGender = g;
+    if (maleBtn) maleBtn.classList.toggle('selected', g === 'male');
+    if (femaleBtn) femaleBtn.classList.toggle('selected', g === 'female');
+    const lockedGender = $('#settings-locked-gender');
+    if (lockedGender) lockedGender.textContent = (g === 'female') ? 'أنثى 👩' : 'ذكر 👨';
+    saveUserProfile();
+    updateProfileUI();
+    syncUserToFirebase({ gender: g });
+    if (socket && socket.connected) {
+      socket.emit('update_profile', { gender: g });
+    }
+    showGemToast(`✅ تم تحديث جنسك في الدردشة: ${g === 'female' ? 'أنثى 👩' : 'ذكر 👨'}`);
+  };
+
+  if (maleBtn) maleBtn.onclick = () => setSettingsGender('male');
+  if (femaleBtn) femaleBtn.onclick = () => setSettingsGender('female');
+
+  const closeSettingsBtn = $('#close-settings-btn');
+  if (closeSettingsBtn) {
+    closeSettingsBtn.onclick = () => {
+      const modal = $('#settings-modal');
+      if (modal) modal.classList.add('hidden');
+    };
+  }
+}
 
 // Admin Gems Transfer to any user or friend
 async function handleAdminTransferGems() {
@@ -3098,12 +3226,14 @@ function setupSettingsUI() {
     adminTransferBtn.onclick = handleAdminTransferGems;
   }
 
-  $$('#open-settings-modal-btn, [id="open-settings-modal-btn"], #tab-open-settings, [id="tab-open-settings"]').forEach(btn => {
+  $$('#open-settings-modal-btn, [id="open-settings-modal-btn"], #royal-dash-settings-btn, [id="royal-dash-settings-btn"], #tab-open-settings, [id="tab-open-settings"]').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       openSettingsModal();
     };
   });
+
+  setupSettingsModalListeners();
 
   window.adminBanUser = async (username, socketId, hours, reason, reportId) => {
     try {
@@ -4464,13 +4594,17 @@ function logoutAccount() {
   };
   saveUserProfile();
   updateProfileUI();
+
+  const settingsModal = $('#settings-modal');
+  if (settingsModal) settingsModal.classList.add('hidden');
+
   const authModal = $('#auth-modal');
   if (authModal) {
     authModal.classList.remove('hidden');
     const closeBtn = $('#close-auth-modal-btn');
     if (closeBtn) closeBtn.style.display = 'none';
   }
-  showGemToast('🚪 تم تسجيل الخروج! يرجى تسجيل الدخول أو إنشاء حساب.');
+  showGemToast('🚪 تم تسجيل الخروج بنجاح!');
 }
 window.logoutAccount = logoutAccount;
 

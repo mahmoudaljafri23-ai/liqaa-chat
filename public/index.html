@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261103_v5">
+  <link rel="stylesheet" href="css/style.css?v=20261103_v6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
@@ -111,10 +111,10 @@
               <span class="serial-verified-icon">🛡️</span>
             </div>
           </div>
-          <!-- Royal Logout / Switch Account Button -->
-          <button type="button" id="royal-dash-logout-btn" onclick="window.logoutAccount && window.logoutAccount()" style="margin-right: auto; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-size: 11.5px; font-weight: bold; padding: 6px 10px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s ease;" title="تسجيل الخروج أو تبديل الحساب">
-            <span>🚪</span>
-            <span>خروج</span>
+          <!-- Royal Settings Button (Opens Profile & Settings Modal) -->
+          <button type="button" id="royal-dash-settings-btn" onclick="window.openSettingsModal && window.openSettingsModal()" style="margin-right: auto; background: rgba(255, 215, 0, 0.12); border: 1.5px solid rgba(255, 215, 0, 0.4); color: #ffd700; font-size: 12px; font-weight: 800; padding: 7px 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.35);" title="إعدادات الحساب والملف الشخصي والخصوصية">
+            <span style="font-size: 15px;">⚙️</span>
+            <span>الإعدادات</span>
           </button>
         </div>
 
@@ -713,43 +713,95 @@
     </div>
   </div>
 
+  <!-- Google Sign-In Gender & Profile Confirmation Modal -->
+  <div id="google-gender-modal" class="modal hidden" style="z-index: 10005; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+    <div class="modal-content" style="max-width: 410px; width: 92%; padding: 24px 20px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 10px; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #fff;">
+        👑
+      </div>
+      <h3 style="font-size: 19px; color: #fff; font-weight: 900; margin-bottom: 4px;">مرحباً بك في <span style="color:#ffd700;">ديوان Loky</span>!</h3>
+      <p style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 18px;">يرجى تحديد جنسك واسمك لإتمام الدخول عبر Google 💎</p>
+
+      <div style="text-align: right; margin-bottom: 14px;">
+        <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 6px;">اسمك المستعار في المحادثات 👤:</label>
+        <input type="text" id="google-confirm-username" placeholder="اسمك المستعار" style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 14px; font-weight: 700;" dir="auto">
+      </div>
+
+      <div style="text-align: right; margin-bottom: 18px;">
+        <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 8px;">تحديد الجنس في الدردشة (إلزامي) 👑:</label>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" id="google-gender-male-btn" class="royal-gender-card-btn gender-male-btn selected" style="flex: 1; padding: 14px 10px; border-radius: 14px; font-size: 14px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+            <span style="font-size: 26px;">👨</span>
+            <span>ذكر (شاب)</span>
+          </button>
+          <button type="button" id="google-gender-female-btn" class="royal-gender-card-btn gender-female-btn" style="flex: 1; padding: 14px 10px; border-radius: 14px; font-size: 14px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+            <span style="font-size: 26px;">👩</span>
+            <span>أنثى (فتاة)</span>
+          </button>
+        </div>
+      </div>
+
+      <button type="button" id="google-confirm-complete-btn" class="royal-primary-auth-btn" style="width: 100%; padding: 13px; font-size: 14px;">
+        <span>✨</span>
+        <span>تأكيد الهوية وبدء المحادثة</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Account Settings Modal (Royal Luxury Redesign) -->
   <div id="settings-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);">
-    <div class="modal-content royal-settings-content">
+    <div class="modal-content royal-settings-content" style="position: relative;">
+      <button id="close-settings-x-btn" class="royal-close-round-btn" onclick="document.getElementById('settings-modal').classList.add('hidden')" style="position: absolute; left: 16px; top: 16px;" title="إغلاق">✕</button>
+      
       <!-- Royal Header -->
       <div class="royal-settings-header">
         <div class="royal-settings-icon-wrap">
           <span class="royal-settings-icon">⚙️</span>
           <span class="royal-icon-glow"></span>
         </div>
-        <h2 class="royal-settings-title">إعدادات الملف الشخصي</h2>
-        <p class="royal-settings-sub">تخصيص الهوية الملكية وبيانات الحساب</p>
-          <div style="margin-top: 8px; text-align: center; font-size: 11px; color: #aaa; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; display: inline-block;">
-            الرقم التسلسلي للحساب: <span id="settings-serial-number" style="color: #4ade80; font-weight: bold; user-select: text;">--</span>
-          </div>
+        <h2 class="royal-settings-title">الإعدادات والملف الشخصي</h2>
+        <p class="royal-settings-sub">تخصيص الهوية والخصوصية والحماية وبيانات الحساب</p>
+        <div style="margin-top: 8px; text-align: center; font-size: 11px; color: #aaa; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; display: inline-block;">
+          الرقم التسلسلي للحساب: <span id="settings-serial-number" style="color: #4ade80; font-weight: bold; user-select: text;">--</span>
+        </div>
       </div>
 
-      <!-- Verified User Profile Badge Card (Locked & Permanent to Initial Registration) -->
+      <!-- Identity & Profile Settings Card -->
       <div class="royal-profile-locked-card" style="width: 100%; margin-bottom: 14px; background: rgba(0,0,0,0.55); border: 1.5px solid rgba(255,215,0,0.35); padding: 14px 16px; border-radius: 16px; text-align: right;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 8px;">
-          <span style="font-size: 12px; color: #34d399; font-weight: bold;">✅ الحساب مثبت ببيانات التسجيل الأصلية</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 8px;">
+          <span style="font-size: 13px; color: #ffd700; font-weight: 800;">👑 هويتي وبيانات حسابي</span>
           <span id="settings-locked-serial" style="font-size: 11.5px; color: #ffd700; font-weight: bold; background: rgba(255,215,0,0.15); padding: 2px 8px; border-radius: 8px;">--</span>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12.5px; color: #94a3b8;">👤 اسم المستخدم:</span>
-            <strong id="settings-locked-username" style="font-size: 14px; color: #fff; font-weight: 800;">--</strong>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- 1. Username edit/display -->
+          <div>
+            <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 4px; font-weight: bold;">👤 اسمي في المحادثات:</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="settings-username-input" placeholder="اسمك المستعار" style="flex: 1; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px; font-weight: bold;" dir="auto">
+              <button type="button" id="settings-save-username-btn" style="padding: 10px 14px; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; font-weight: 800; border: none; border-radius: 10px; font-size: 12px; cursor: pointer; white-space: nowrap;">حفظ 💾</button>
+            </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12.5px; color: #94a3b8;">👑 الجنس المسجل:</span>
-            <span id="settings-locked-gender" style="font-size: 13px; color: #ffd700; font-weight: bold;">--</span>
+          <!-- 2. Gender Selection -->
+          <div>
+            <label style="font-size: 12px; color: #cbd5e1; display: block; margin-bottom: 6px; font-weight: bold;">👑 الجنس تاعي:</label>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" id="settings-gender-male-btn" class="royal-gender-card-btn gender-male-btn" style="flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s ease;">
+                <span style="font-size: 18px;">👨</span>
+                <span>ذكر (شاب)</span>
+              </button>
+              <button type="button" id="settings-gender-female-btn" class="royal-gender-card-btn gender-female-btn" style="flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s ease;">
+                <span style="font-size: 18px;">👩</span>
+                <span>أنثى (فتاة)</span>
+              </button>
+            </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12.5px; color: #94a3b8;">📧 البريد الإلكتروني:</span>
-            <span id="settings-locked-email" style="font-size: 12px; color: #cbd5e1; direction: ltr;">--</span>
+          <!-- 3. Account Email -->
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 10px;">
+            <span style="font-size: 12px; color: #94a3b8;">📧 البريد الإلكتروني:</span>
+            <span id="settings-locked-email" style="font-size: 12px; color: #cbd5e1; direction: ltr; font-weight: 600;">--</span>
           </div>
         </div>
       </div>
@@ -855,30 +907,40 @@
         </div>
       </div>
 
-      <!-- Royal Policy & Safety Badges Box -->
-      <div class="royal-policy-box">
-        <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/child-safety.html" target="_blank" class="policy-pill-item policy-csae">
-          <span>🛡️</span> معايير سلامة الأطفال ومكافحة الاستغلال (CSAE)
-        </a>
-        <div class="policy-sub-row">
-          <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/privacy.html" target="_blank" class="policy-pill-item">
-            <span>🔒</span> سياسة الخصوصية
+      <!-- Royal Policy & Safety Badges Box (الخصوصيات والحماية) -->
+      <div style="width: 100%; margin-bottom: 12px; background: rgba(0,0,0,0.45); border: 1.5px solid rgba(255,215,0,0.3); border-radius: 16px; padding: 12px 14px; text-align: right;">
+        <div style="font-size: 13px; color: #ffd700; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🛡️</span>
+          <span>الخصوصيات والحماية والأمان الملكي</span>
+        </div>
+        <p style="font-size: 11.5px; color: #cbd5e1; line-height: 1.5; margin: 0 0 10px 0;">
+          🔒 جميع اتصالات الفيديو مشفرة بتقنية P2P المباشرة، ولا يتم تخزين أو تسجيل أي مكالمات لضمان خصوصيتك التامة.
+        </p>
+        <div class="royal-policy-box" style="margin: 0;">
+          <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/child-safety.html" target="_blank" class="policy-pill-item policy-csae">
+            <span>🛡️</span> معايير سلامة المستخدمين والأطفال (CSAE)
           </a>
-          <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/delete-account.html" target="_blank" class="policy-pill-item policy-danger">
-            <span>🗑️</span> حذف الحساب
-          </a>
+          <div class="policy-sub-row">
+            <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/privacy.html" target="_blank" class="policy-pill-item">
+              <span>🔒</span> سياسة الخصوصية
+            </a>
+            <a href="https://mahmoudaljafri23-ai.github.io/liqaa-chat/delete-account.html" target="_blank" class="policy-pill-item policy-danger">
+              <span>🗑️</span> حذف الحساب
+            </a>
+          </div>
         </div>
       </div>
 
-      <!-- Royal Action Button -->
+      <!-- Royal Action Button (Close) -->
       <div style="width: 100%; margin-top: 10px;">
         <button id="close-settings-btn" class="royal-btn-primary" style="width: 100%; justify-content: center; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13.5px; background: linear-gradient(135deg, #ffd700, #ff8e53); color: #000; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.25);">
           <span>✓</span> تم / إغلاق الإعدادات
         </button>
       </div>
+      <!-- Logout Button Inside Settings -->
       <div style="margin-top: 10px; width: 100%;">
-        <button type="button" id="settings-switch-account-btn" style="width: 100%; justify-content: center; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-          <span>🚪</span> تسجيل الخروج والدخول باسم أو حساب آخر
+        <button type="button" id="settings-switch-account-btn" onclick="window.logoutAccount && window.logoutAccount()" style="width: 100%; justify-content: center; background: rgba(239,68,68,0.18); border: 1.5px solid rgba(239,68,68,0.5); color: #fca5a5; font-size: 13.5px; font-weight: 800; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+          <span>🚪</span> تسجيل الخروج من الحساب
         </button>
       </div>
     </div>
@@ -1125,6 +1187,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261103_v5"></script>
+  <script src="js/app.js?v=20261103_v6"></script>
 </body>
 </html>
