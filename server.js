@@ -889,12 +889,25 @@ io.on('connection', (socket) => {
         partnerId: socket.id,
         partnerUsername: partnerName,
         partnerSerialNumber: (data && data.partnerSerialNumber) || (user && user.serialNumber) || '',
-        partnerGender: (user && user.gender) || 'male',
-        partnerAge: (user && user.age) || 22,
+        partnerGender: (data && data.partnerGender) || (user && user.gender) || 'male',
+        partnerAge: (data && data.partnerAge) || (user && user.age) || 22,
         partnerCountry: (user && user.country) || 'JO',
         partnerCountryName: (user && user.countryName) || 'الأردن'
       });
       console.log(`[Friend Accepted] Relayed from ${socket.id} (${partnerName}) to ${targetId}`);
+    }
+  });
+
+  socket.on('reject_friend_request', (data) => {
+    const user = users.get(socket.id);
+    const targetId = (data && data.targetPartnerId) || (user && user.partnerId);
+    if (targetId) {
+      const rejecterName = (data && data.rejecterUsername && data.rejecterUsername.trim()) ? data.rejecterUsername.trim() : (user && user.username ? user.username : 'مستخدم');
+      io.to(targetId).emit('friend_request_rejected', {
+        rejecterId: socket.id,
+        rejecterUsername: rejecterName
+      });
+      console.log(`[Friend Rejected] Relayed from ${socket.id} (${rejecterName}) to ${targetId}`);
     }
   });
 

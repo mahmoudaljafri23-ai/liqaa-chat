@@ -2600,7 +2600,12 @@ function setupFriendsSystem() {
           const friendObj = findFriendInList(currentPartner) || currentPartner;
           removeFriend(friendObj.id || currentPartner.id, true);
         }
-      } else {
+        return;
+      }
+
+      // Check if this is an incoming request we need to ACCEPT
+      if (addFriendBtn.dataset.pendingAccept === 'true') {
+        // ACCEPT incoming friend request - add friend now
         removeFromRemovedFriends(currentPartner);
 
         const newFriend = {
@@ -2634,19 +2639,55 @@ function setupFriendsSystem() {
             partnerGender: userProfile.gender || 'male',
             partnerAge: userProfile.age || 22
           });
-          socket.emit('send_friend_request', {
-            targetPartnerId: currentPartner.id,
-            senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
-            senderSerialNumber: userProfile.serialNumber || '',
-            senderGender: userProfile.gender || 'male',
-            senderAge: userProfile.age || 22
-          });
         }
 
         addFriendBtn.textContent = '✨ أصدقاء';
         addFriendBtn.className = 'hud-btn-friend btn-friends-active';
-        showGemToast(`🎉 تم إضافة ${friendName} كصديق بنجاح! ✨`);
+        addFriendBtn.dataset.pendingAccept = '';
+        showGemToast(`🎉 تم قبول طلب صداقة ${friendName}! ✨`);
+
+        // Hide reject button
+        const rejectBtn = $('#reject-friend-btn');
+        if (rejectBtn) rejectBtn.classList.add('hidden');
+        return;
       }
+
+      // SEND friend request (do NOT add locally yet - wait for acceptance)
+      if (socket && socket.connected) {
+        socket.emit('send_friend_request', {
+          targetPartnerId: currentPartner.id,
+          senderUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+          senderSerialNumber: userProfile.serialNumber || '',
+          senderGender: userProfile.gender || 'male',
+          senderAge: userProfile.age || 22
+        });
+      }
+
+      addFriendBtn.textContent = '⏳ بانتظار الموافقة';
+      addFriendBtn.className = 'hud-btn-friend btn-pending-friend';
+      addFriendBtn.dataset.pendingSent = 'true';
+      showGemToast(`📤 تم إرسال طلب صداقة لـ ${friendName}، بانتظار الموافقة...`);
+    };
+  }
+
+  const rejectFriendBtn = $('#reject-friend-btn');
+  if (rejectFriendBtn) {
+    rejectFriendBtn.onclick = () => {
+      if (!currentPartner || !currentPartner.id) return;
+      if (socket && socket.connected) {
+        socket.emit('reject_friend_request', {
+          targetPartnerId: currentPartner.id,
+          rejecterUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم'
+        });
+      }
+      rejectFriendBtn.classList.add('hidden');
+      if (addFriendBtn) {
+        addFriendBtn.textContent = '➕ صديق';
+        addFriendBtn.className = 'hud-btn-friend';
+        addFriendBtn.dataset.pendingAccept = '';
+        addFriendBtn.dataset.pendingSent = '';
+      }
+      showGemToast('❌ تم رفض طلب الصداقة');
     };
   }
 
@@ -3914,24 +3955,43 @@ function connectSocket() {
       if (addBtn) {
         addBtn.textContent = '✨ أصدقاء';
         addBtn.className = 'hud-btn-friend btn-friends-active';
+        addBtn.dataset.pendingAccept = '';
+      }
+      // Auto-accept since already friends
+      if (socket && socket.connected) {
+        socket.emit('accept_friend_request', {
+          targetPartnerId: data.senderId,
+          partnerUsername: (userProfile.username && userProfile.username.trim()) ? userProfile.username.trim() : 'مستخدم',
+          partnerSerialNumber: userProfile.serialNumber || '',
+          partnerGender: userProfile.gender || 'male',
+          partnerAge: userProfile.age || 22
+        });
       }
       return;
     }
 
+    // Show accept/reject buttons
     const addBtn = $('#add-friend-btn');
     if (addBtn) {
-      addBtn.textContent = '✅ وافق على طلب الصداقة';
+      addBtn.textContent = '✅ قبول الصداقة';
       addBtn.className = 'hud-btn-friend btn-accept-friend';
+      addBtn.dataset.pendingAccept = 'true';
+    }
+    // Show reject button
+    const rejectBtn = $('#reject-friend-btn');
+    if (rejectBtn) {
+      rejectBtn.classList.remove('hidden');
     }
     const senderName = (data && data.senderUsername && data.senderUsername !== 'مستخدم') ? data.senderUsername : (currentPartner && currentPartner.username ? currentPartner.username : 'الشريك');
     if (data && currentPartner) {
       currentPartner.username = senderName;
       if (data.senderGender) currentPartner.gender = data.senderGender;
       if (data.senderAge) currentPartner.age = data.senderAge;
+      if (data.senderSerialNumber) currentPartner.serialNumber = data.senderSerialNumber;
       const nameEl = $('#partner-username');
       if (nameEl) nameEl.textContent = senderName;
     }
-    showInCallAlert(`🤝 أرسل لك ${senderName} طلب صداقة! انقر للموافقة ✅`);
+    showInCallAlert(`🤝 أرسل لك ${senderName} طلب صداقة! اضغط قبول أو رفض ✅❌`);
   });
 
   socket.on('friend_request_accepted', (data) => {
@@ -3959,6 +4019,7 @@ function connectSocket() {
       }
       saveFriendsList();
       renderFriendsAndOnlineUsers();
+      addFriendToFirebase(newFriend);
 
       currentPartner.username = friendName;
       const nameEl = $('#partner-username');
@@ -3968,8 +4029,25 @@ function connectSocket() {
     if (addBtn) {
       addBtn.textContent = '✨ أصدقاء';
       addBtn.className = 'hud-btn-friend btn-friends-active';
+      addBtn.dataset.pendingAccept = '';
+      addBtn.dataset.pendingSent = '';
     }
+    const rejectBtn = $('#reject-friend-btn');
+    if (rejectBtn) rejectBtn.classList.add('hidden');
     showInCallAlert(`🎉 أصبحتم أصدقاء الآن مع ${friendName}! ✨`);
+  });
+
+  socket.on('friend_request_rejected', (data) => {
+    console.log('[Socket] Friend request rejected:', data);
+    const addBtn = $('#add-friend-btn');
+    if (addBtn) {
+      addBtn.textContent = '➕ صديق';
+      addBtn.className = 'hud-btn-friend';
+      addBtn.dataset.pendingSent = '';
+      addBtn.dataset.pendingAccept = '';
+    }
+    const rejecterName = (data && data.rejecterUsername) || 'الشريك';
+    showInCallAlert(`❌ لم يتم قبول طلب الصداقة من قبل ${rejecterName}`);
   });
 
   socket.on('friend_removed_by_partner', (data) => {
@@ -5220,7 +5298,7 @@ function showPartnerInfo(data) {
   if (partnerFlag) partnerFlag.textContent = countryCodeToFlag(data.partnerCountry);
   const nameEl = $('#partner-username');
   if (nameEl) {
-    nameEl.textContent = (data.partnerUsername || 'مستخدم') + (data.partnerSerialNumber ? ` ${data.partnerSerialNumber}` : '');
+    nameEl.textContent = data.partnerUsername || 'مستخدم';
   }
 
   const isFemale = (data.partnerGender === 'female' || (currentPartner && currentPartner.gender === 'female'));
@@ -5249,7 +5327,11 @@ function showPartnerInfo(data) {
   }
 
   const addBtn = $('#add-friend-btn');
+  const rejectBtn = $('#reject-friend-btn');
+  if (rejectBtn) rejectBtn.classList.add('hidden');
   if (addBtn) {
+    addBtn.dataset.pendingAccept = '';
+    addBtn.dataset.pendingSent = '';
     const existingFriend = findFriendInList(data) || findFriendInList(currentPartner);
     if (existingFriend) {
       existingFriend.id = data.partnerId;
