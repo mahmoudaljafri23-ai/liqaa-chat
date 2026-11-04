@@ -149,6 +149,10 @@ public class MainActivity extends BridgeActivity {
                 settings.setMediaPlaybackRequiresUserGesture(false);
                 settings.setAllowFileAccess(true);
                 settings.setAllowContentAccess(true);
+                settings.setSaveFormData(true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    webView.setImportantForAutofill(android.view.View.IMPORTANT_FOR_AUTOFILL_YES);
+                }
 
                 webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
                     @Override

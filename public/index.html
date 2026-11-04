@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261104_v2">
+  <link rel="stylesheet" href="css/style.css?v=20261104_v3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
@@ -581,15 +581,15 @@
       </div>
 
       <!-- 1. Email & Password Login Form -->
-      <form id="auth-login-form" onsubmit="return false;" style="text-align: right;">
+      <form id="auth-login-form" autocomplete="on" onsubmit="return false;" style="text-align: right;">
         <div style="margin-bottom: 10px;">
           <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
-          <input type="email" id="auth-login-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+          <input type="email" id="auth-login-email" name="email" autocomplete="username email" inputmode="email" list="saved-emails-list" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
         </div>
 
         <div style="margin-bottom: 14px;">
           <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">الرقم السري / كلمة المرور 🔒:</label>
-          <input type="password" id="auth-login-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+          <input type="password" id="auth-login-password" name="password" autocomplete="current-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
         </div>
 
         <button type="button" id="auth-login-submit-btn" class="royal-primary-auth-btn">
@@ -614,15 +614,15 @@
         </div>
 
         <!-- Step 1: Email & Any Password -->
-        <form id="auth-reg-step1" onsubmit="return false;" style="text-align: right;">
+        <form id="auth-reg-step1" autocomplete="on" onsubmit="return false;" style="text-align: right;">
           <div style="margin-bottom: 11px;">
             <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني 📧:</label>
-            <input type="email" id="auth-reg-email" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+            <input type="email" id="auth-reg-email" name="email" autocomplete="username email" inputmode="email" list="saved-emails-list" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
           </div>
 
           <div style="margin-bottom: 16px;">
             <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اختر رقماً سرياً (أي رقم أو كلمة مرور تفضلها) 🔒:</label>
-            <input type="password" id="auth-reg-password" placeholder="أدخل أي رقم سري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+            <input type="password" id="auth-reg-password" name="password" autocomplete="new-password" placeholder="أدخل أي رقم سري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
           </div>
 
           <button type="button" id="auth-reg-next-btn" class="royal-primary-auth-btn">
@@ -690,19 +690,22 @@
         <span style="flex: 1; height: 1px; background: rgba(255,215,0,0.2);"></span>
       </div>
 
-      <!-- Quick Fast Action 1: Google One-Tap Sign In -->
-      <div id="google-auth-box" style="width: 100%; margin-bottom: 10px;">
-        <button id="google-login-btn" class="action-button" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 800; background: #ffffff; color: #202124; border: 1.5px solid #dadce0; border-radius: 50px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); margin:0; transition: all 0.2s ease;">
+      <!-- Datalist for Saved Email Suggestions -->
+      <datalist id="saved-emails-list"></datalist>
+
+      <!-- Quick Fast Action: Google One-Tap / Sign In (Single Unified Button) -->
+      <div id="google-auth-box" style="width: 100%; margin-bottom: 10px; display: flex; justify-content: center;">
+        <button id="google-login-btn" class="action-button" style="display: none; width: 100%; max-width: 320px; padding: 12px; font-size: 14px; font-weight: 800; background: #ffffff; color: #202124; border: 1.5px solid #dadce0; border-radius: 50px; cursor: pointer; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.2); margin:0; transition: all 0.2s ease;">
           <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
             <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
             <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
             <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
           </svg>
-          <span id="google-login-btn-text">متابعة بحساب Google المحفوظ على الهاتف</span>
+          <span id="google-login-btn-text">المواصلة باستخدام Google</span>
         </button>
 
-        <div id="google-gis-slot" style="margin-top: 8px; display: flex; justify-content: center;"></div>
+        <div id="google-gis-slot" style="width: 100%; display: flex; justify-content: center;"></div>
       </div>
 
 
@@ -1187,6 +1190,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261104_v2"></script>
+  <script src="js/app.js?v=20261104_v3"></script>
 </body>
 </html>

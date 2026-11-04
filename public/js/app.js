@@ -1532,9 +1532,67 @@ function setupInviteModal() {
   }
 }
 
+function initEmailSuggestions() {
+  const datalist = $('#saved-emails-list');
+  const loginEmail = $('#auth-login-email');
+  const regEmail = $('#auth-reg-email');
+
+  let savedEmails = [];
+  try {
+    const raw = localStorage.getItem('liqaa_saved_emails');
+    if (raw) savedEmails = JSON.parse(raw);
+  } catch(e) {}
+  if (!Array.isArray(savedEmails)) savedEmails = [];
+
+  if (userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@') && !savedEmails.includes(userProfile.accountEmail)) {
+    savedEmails.unshift(userProfile.accountEmail);
+  }
+
+  const renderDatalist = () => {
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    savedEmails.forEach(em => {
+      if (em && em.includes('@')) {
+        const opt = document.createElement('option');
+        opt.value = em;
+        datalist.appendChild(opt);
+      }
+    });
+  };
+  renderDatalist();
+
+  const recordEmail = (val) => {
+    if (!val || !val.includes('@')) return;
+    const clean = val.trim().toLowerCase();
+    if (!savedEmails.includes(clean)) {
+      savedEmails.unshift(clean);
+      if (savedEmails.length > 8) savedEmails = savedEmails.slice(0, 8);
+      localStorage.setItem('liqaa_saved_emails', JSON.stringify(savedEmails));
+      renderDatalist();
+    }
+  };
+
+  if (loginEmail) {
+    loginEmail.addEventListener('change', () => recordEmail(loginEmail.value));
+    loginEmail.addEventListener('blur', () => recordEmail(loginEmail.value));
+    loginEmail.addEventListener('input', () => {
+      if (regEmail && !regEmail.value) regEmail.value = loginEmail.value;
+    });
+  }
+
+  if (regEmail) {
+    regEmail.addEventListener('change', () => recordEmail(regEmail.value));
+    regEmail.addEventListener('blur', () => recordEmail(regEmail.value));
+    regEmail.addEventListener('input', () => {
+      if (loginEmail && !loginEmail.value) loginEmail.value = regEmail.value;
+    });
+  }
+}
+
 function init() {
   checkReferralQuery();
   loadUserProfile();
+  initEmailSuggestions();
   checkPaymentSuccessQuery();
   updateOnlineDisplay();
   initPushNotifications();
@@ -2139,19 +2197,29 @@ function setupAuthSystem() {
         });
 
         const slot = $('#google-gis-slot');
-        if (slot && slot.children.length === 0) {
-          google.accounts.id.renderButton(slot, {
-            theme: 'outline',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'pill',
-            width: 280,
-            locale: 'ar'
-          });
+        const customBtn = $('#google-login-btn');
+        if (slot) {
+          if (slot.children.length === 0) {
+            google.accounts.id.renderButton(slot, {
+              theme: 'outline',
+              size: 'large',
+              text: 'continue_with',
+              shape: 'pill',
+              width: 300,
+              locale: 'ar'
+            });
+          }
+          // Hide redundant button so ONLY one Google button is displayed
+          if (customBtn) customBtn.style.display = 'none';
         }
       } catch (err) {
         console.warn('Google Identity error:', err);
+        const customBtn = $('#google-login-btn');
+        if (customBtn) customBtn.style.display = 'flex';
       }
+    } else {
+      const customBtn = $('#google-login-btn');
+      if (customBtn) customBtn.style.display = 'flex';
     }
   };
 

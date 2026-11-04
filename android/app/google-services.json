@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "962362893467",
+    "project_id": "loky-chat-a84a6",
+    "storage_bucket": "loky-chat-a84a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:962362893467:android:5f696a4b8ae280a807123e",
+        "android_client_info": {
+          "package_name": "com.lokychat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz_qgSnCstli59ekKRpfJ8hg1fgBLaKdU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
