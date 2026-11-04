@@ -41,8 +41,21 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PlayBillingPlugin.class);
         super.onCreate(savedInstanceState);
         createNotificationChannel();
+        initFirebaseMessaging();
         setupWebViewGeoAndBridge();
         requestAppPermissions();
+    }
+
+    private void initFirebaseMessaging() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                .addOnCompleteListener(task -> {
+                    android.util.Log.d("LokyFCM", "Subscribed to all_users: " + task.isSuccessful());
+                });
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("broadcast");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void createNotificationChannel() {
