@@ -539,6 +539,11 @@ function isCreatorAccount() {
 function checkAdminPermissions() {
   const isOwner = isCreatorAccount();
 
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
+
   if (isOwner) {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
@@ -783,6 +788,11 @@ function loadUserProfile() {
   // STRICT CREATOR SECURITY LOCK: Only creator with explicitly verified login gets creator status
   const isOwner = isCreatorAccount();
 
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
+
   if (isOwner) {
     userProfile.isAdmin = true;
     userProfile.adminUnlocked = true;
@@ -817,6 +827,11 @@ function saveUserProfile() {
   }
   if (socket && socket.connected) {
     const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
     socket.emit('register', {
       gender: selectedGender || userProfile.gender || 'male',
       myCountry: myHomeCountryCode || selectedCountry || 'JO',
@@ -863,6 +878,11 @@ function updateProfileUI() {
   }
   
   const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
 
   if (userDisplayName) {
     if (isOwner) {
@@ -988,6 +1008,11 @@ function renderFriendsAndOnlineUsers() {
   const tabFilterAllUsers = $('#tab-filter-all-users');
   const tabFilterSavedFriends = $('#tab-filter-saved-friends');
   const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
 
   if (!isOwner) {
     if (tabFilterAllUsers) tabFilterAllUsers.style.display = 'none';
@@ -2634,6 +2659,11 @@ function setupFriendsSystem() {
   if (openFriendsBtn) {
     openFriendsBtn.onclick = () => {
       const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
       if (isOwner) {
         currentMessengerTab = 'all';
         if (tabAllUsers) {
@@ -3072,7 +3102,13 @@ function openSettingsModal() {
       }
     }
 
-    if (typeof updateNotificationStatusUI === 'function') {
+    // Notifications settings box: ONLY visible to Creator/Admin on his phone
+    const notifBox = $('#settings-notifications-box');
+    if (notifBox) {
+      notifBox.style.display = isUnlockedAdmin ? 'block' : 'none';
+    }
+
+    if (isUnlockedAdmin && typeof updateNotificationStatusUI === 'function') {
       updateNotificationStatusUI();
     }
   } catch (err) {
@@ -3962,6 +3998,11 @@ function connectSocket() {
     
     // Always register identity with server on connect/reconnect
     const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
     socket.emit('register', {
       gender: selectedGender || userProfile.gender || 'male',
       myCountry: myHomeCountryCode || 'JO',
@@ -4577,6 +4618,11 @@ async function startChat() {
   startNudityScanner();
 
   const isOwner = isCreatorAccount();
+
+  const notifBox = $('#settings-notifications-box');
+  if (notifBox) {
+    notifBox.style.display = isOwner ? 'block' : 'none';
+  }
   const matchPayload = {
     gender: selectedGender || userProfile.gender || 'male',
     myCountry: myHomeCountryCode || 'JO',
@@ -4600,6 +4646,9 @@ window.startChat = startChat;
 
 function logoutAccount() {
   localStorage.removeItem('liqaa_user_profile');
+  localStorage.removeItem('liqaa_active_account');
+  sessionStorage.clear();
+
   userProfile = {
     username: 'مستخدم ' + Math.floor(100 + Math.random() * 900),
     serialNumber: 'LQ-' + Math.floor(100000 + Math.random() * 900000),
@@ -4616,16 +4665,48 @@ function logoutAccount() {
   saveUserProfile();
   updateProfileUI();
 
-  const settingsModal = $('#settings-modal');
-  if (settingsModal) settingsModal.classList.add('hidden');
+  try {
+    cleanupPeerConnection();
+    if (socket && socket.connected) {
+      socket.emit('stop_search');
+    }
+    if (chatScreen) chatScreen.classList.remove('active');
+    if (welcomeScreen) welcomeScreen.classList.add('active');
+    setState('idle');
+  } catch (e) {}
 
+  // Close all open modals completely
+  document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+
+  // Open the auth modal directly "بره بره" (Registration & Sign In)
   const authModal = $('#auth-modal');
   if (authModal) {
     authModal.classList.remove('hidden');
     const closeBtn = $('#close-auth-modal-btn');
     if (closeBtn) closeBtn.style.display = 'none';
+
+    // Clear input values
+    const loginEmail = $('#auth-login-email');
+    const loginPass = $('#auth-login-password');
+    const regEmail = $('#auth-reg-email');
+    const regPass = $('#auth-reg-password');
+    const regUser = $('#auth-reg-username');
+    if (loginEmail) loginEmail.value = '';
+    if (loginPass) loginPass.value = '';
+    if (regEmail) regEmail.value = '';
+    if (regPass) regPass.value = '';
+    if (regUser) regUser.value = '';
+
+    // Switch to register tab so the registration screen is shown
+    const regTabBtn = $('#auth-tab-btn-register');
+    if (regTabBtn) regTabBtn.click();
+
+    if (typeof updateAuthModalView === 'function') {
+      updateAuthModalView();
+    }
   }
-  showGemToast('🚪 تم تسجيل الخروج بنجاح!');
+
+  showGemToast('🚪 تم تسجيل الخروج بنجاح! سجّل دخولك أو أنشئ حساباً جديداً.');
 }
 window.logoutAccount = logoutAccount;
 
@@ -5646,6 +5727,79 @@ function setupDraggableLocalVideo() {
     document.removeEventListener('touchmove', onDrag);
     document.removeEventListener('touchend', stopDrag);
   }
+}
+
+// =============================================
+// Smart Android Back Button Navigation
+// =============================================
+window.handleAppBackButton = function() {
+  // 1. Check if any dismissible modal is open
+  const openModals = [
+    '#settings-modal',
+    '#gems-modal',
+    '#friends-modal',
+    '#report-modal',
+    '#google-gender-modal',
+    '#security-kick-modal'
+  ];
+
+  for (const selector of openModals) {
+    const el = document.querySelector(selector);
+    if (el && !el.classList.contains('hidden') && el.style.display !== 'none') {
+      el.classList.add('hidden');
+      return true; // Modal closed successfully
+    }
+  }
+
+  // Auth modal can only be closed if user is already authenticated
+  const authModal = document.querySelector('#auth-modal');
+  if (authModal && !authModal.classList.contains('hidden') && authModal.style.display !== 'none') {
+    const isAuthed = !!(userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@'));
+    if (isAuthed) {
+      authModal.classList.add('hidden');
+      return true;
+    }
+  }
+
+  // 2. If user is searching or in a live video call, back exits the call to home screen
+  if (currentState === 'searching') {
+    const stopBtn = document.querySelector('#stop-search-btn');
+    if (stopBtn) {
+      stopBtn.click();
+    } else {
+      cleanupPeerConnection();
+      if (socket && socket.connected) socket.emit('stop_search');
+      setState('idle');
+    }
+    return true;
+  }
+
+  if (currentState === 'connected') {
+    const endBtn = document.querySelector('#royal-call-end') || document.querySelector('#end-call-btn');
+    if (endBtn) {
+      endBtn.click();
+    } else {
+      cleanupPeerConnection();
+      if (socket && socket.connected) socket.emit('next_partner');
+      setState('idle');
+    }
+    return true;
+  }
+
+  // 3. On home/welcome screen, return false to let Android safely minimize the app instead of killing it
+  return false;
+};
+
+// Capacitor App Back Button listener
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+  try {
+    window.Capacitor.Plugins.App.addListener('backButton', () => {
+      const handled = (typeof window.handleAppBackButton === 'function') ? window.handleAppBackButton() : false;
+      if (!handled && window.AndroidBridge && typeof window.AndroidBridge.minimizeApp === 'function') {
+        window.AndroidBridge.minimizeApp();
+      }
+    });
+  } catch (e) {}
 }
 
 // =============================================

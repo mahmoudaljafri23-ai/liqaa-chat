@@ -109,6 +109,23 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().evaluateJavascript(
+                "(function() { return (typeof window.handleAppBackButton === 'function') ? window.handleAppBackButton() : false; })();",
+                result -> {
+                    if ("true".equals(result)) {
+                        return;
+                    }
+                    runOnUiThread(() -> moveTaskToBack(true));
+                }
+            );
+        } else {
+            moveTaskToBack(true);
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         setupWebViewGeoAndBridge();
@@ -168,6 +185,11 @@ public class MainActivity extends BridgeActivity {
                             return ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
                         }
                         return true;
+                    }
+
+                    @JavascriptInterface
+                    public void minimizeApp() {
+                        runOnUiThread(() -> moveTaskToBack(true));
                     }
 
                     @JavascriptInterface
