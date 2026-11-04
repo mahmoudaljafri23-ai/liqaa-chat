@@ -1384,7 +1384,6 @@ function requestAppNotificationPermission(silent = false) {
   Notification.requestPermission().then(permission => {
     if (permission === 'granted') {
       showGemToast('🔔 تم تفعيل إشعارات لوكي شات بنجاح!');
-      sendLocalPushNotification('Loky Chat - لوكي شات 🚀', 'أهلاً بك! تم تفعيل إشعارات الهاتف بنجاح 🔔');
       checkAndClaimReferralReward();
     } else if (permission === 'denied') {
       if (!silent) {
@@ -4005,7 +4004,17 @@ function connectSocket() {
   });
 
   socket.on('global_notification', (data) => {
+    if (!data) return;
+    if (data.id) localStorage.setItem('last_seen_global_notif_id', data.id);
     showGemToast(`📢 ${data.title}: ${data.message}`);
+    sendLocalPushNotification(data.title || 'Loky Chat - لوكي شات 🚀', data.message);
+  });
+
+  socket.on('latest_global_broadcast', (data) => {
+    if (!data || !data.message) return;
+    const lastSeenId = localStorage.getItem('last_seen_global_notif_id');
+    if (data.id && lastSeenId === data.id) return;
+    if (data.id) localStorage.setItem('last_seen_global_notif_id', data.id);
     sendLocalPushNotification(data.title || 'Loky Chat - لوكي شات 🚀', data.message);
   });
 
@@ -4303,7 +4312,8 @@ async function sendLocalPushNotification(title, body) {
         badges: data.partnerBadges || { awesome: 0, handsome: 0, elegant: 0 }
       };
 
-      sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
+      // Removed automatic match notification to keep notification bar clean for admin broadcasts only
+      // sendLocalPushNotification('Loky Chat - مطابقة فيديو جديدة 🎥', `تم ربطك مع ${data.partnerUsername || 'شريك'} الآن!`);
 
       let totalCost = 0;
       if (selectedGenderFilter !== 'any') totalCost += FILTER_COST;

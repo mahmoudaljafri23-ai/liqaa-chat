@@ -764,11 +764,19 @@ setInterval(() => {
   }
 }, 50);
 
+// Latest Global Broadcast state (cached so offline/guest users receive it when opening the app)
+let latestGlobalNotification = null;
+
 // =============================================
 // Socket.IO Events
 // =============================================
 io.on('connection', (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
+
+  // Deliver latest admin announcement if available to any connected user (even if not logged in)
+  if (latestGlobalNotification) {
+    socket.emit('latest_global_broadcast', latestGlobalNotification);
+  }
 
   // Immediately initialize user entry so online count and list are never empty
   if (!users.has(socket.id)) {
@@ -970,12 +978,15 @@ io.on('connection', (socket) => {
   // Handle global notification broadcast by Admin Creator
   socket.on('send_global_notification', (data) => {
     const user = users.get(socket.id);
-    if (user && (user.phone === '0790181802' || user.username === 'mahmoud')) {
-      io.emit('global_notification', {
+    const isAdmin = user && (user.phone === '0790181802' || user.username === 'mahmoud' || user.isAdmin || (user.accountEmail && (user.accountEmail.toLowerCase() === 'mahmoud.aljafri23@gmail.com' || user.accountEmail.toLowerCase() === 'mr.world2213@gmail.com')));
+    if (isAdmin) {
+      latestGlobalNotification = {
+        id: 'notif_' + Date.now(),
         title: data.title || 'Loky Chat - لوكي شات 🚀',
         message: data.message || 'لديك إشعار جديد في تطبيق لوكي شات!',
         timestamp: Date.now()
-      });
+      };
+      io.emit('global_notification', latestGlobalNotification);
       console.log(`[📢 Global Broadcast Sent by Admin]: ${data.message}`);
     }
   });
