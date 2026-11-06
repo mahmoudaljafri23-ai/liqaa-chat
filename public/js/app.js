@@ -2634,47 +2634,8 @@ function setupAuthSystem() {
   const GOOGLE_APP_CLIENT_ID = window.GOOGLE_CLIENT_ID || '962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com';
 
   const initGoogleIdentityServices = () => {
-    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-      try {
-        google.accounts.id.initialize({
-          client_id: GOOGLE_APP_CLIENT_ID,
-          callback: (res) => {
-            if (res && res.credential) {
-              const payload = decodeJwtResponse(res.credential);
-              if (payload && payload.email) {
-                applyGoogleAccount(payload.email, payload.name, payload.picture);
-              }
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true
-        });
-
-        const slot = $('#google-gis-slot');
-        const customBtn = $('#google-login-btn');
-        if (slot) {
-          if (slot.children.length === 0) {
-            google.accounts.id.renderButton(slot, {
-              theme: 'outline',
-              size: 'large',
-              text: 'continue_with',
-              shape: 'pill',
-              width: 300,
-              locale: 'ar'
-            });
-          }
-          // Hide redundant button so ONLY one Google button is displayed
-          if (customBtn) customBtn.style.display = 'none';
-        }
-      } catch (err) {
-        console.warn('Google Identity error:', err);
-        const customBtn = $('#google-login-btn');
-        if (customBtn) customBtn.style.display = 'flex';
-      }
-    } else {
-      const customBtn = $('#google-login-btn');
-      if (customBtn) customBtn.style.display = 'flex';
-    }
+    const customBtn = $('#google-login-btn');
+    if (customBtn) customBtn.style.display = 'flex';
   };
 
   const executeFirebaseAuthGoogle = () => {
@@ -2682,10 +2643,11 @@ function setupAuthSystem() {
       showGemToast('🔍 جاري تهيئة خدمة Google، يرجى المحاولة بعد قليل...');
       return;
     }
-    showGemToast('🔍 جاري تسجيل الدخول بحساب Google...');
+    showGemToast('🔍 جاري تحويلك لحساب Google...');
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope('profile');
     provider.addScope('email');
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     // On mobile devices, always use signInWithRedirect so it operates inside the SAME tab without a blank popup tab hanging!
     const isMobileDevice = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 800);
@@ -2716,19 +2678,6 @@ function setupAuthSystem() {
 
   if (googleLoginBtn) {
     googleLoginBtn.onclick = () => {
-      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-        try {
-          google.accounts.id.prompt((notification) => {
-            if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.log('Google One-Tap not displayed, executing Firebase Google Auth');
-              executeFirebaseAuthGoogle();
-            }
-          });
-          return;
-        } catch (e) {
-          console.warn('One-tap prompt error:', e);
-        }
-      }
       executeFirebaseAuthGoogle();
     };
   }
