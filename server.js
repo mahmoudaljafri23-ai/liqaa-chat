@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
@@ -731,9 +732,70 @@ let appVersionConfig = {
   updatedAt: new Date().toISOString()
 };
 
+// 🔄 Real-time Cloud Sync with Firestore /app_settings/version_control
+let lastFirestoreSync = 0;
+function syncVersionFromFirestore() {
+  // Cache for 5 seconds to provide instant reactivity while avoiding spamming
+  if (Date.now() - lastFirestoreSync < 5000) {
+    return Promise.resolve(appVersionConfig);
+  }
+  return new Promise((resolve) => {
+    const firestoreUrl = 'https://firestore.googleapis.com/v1/projects/loky-chat-a84a6/databases/(default)/documents/app_settings/version_control';
+    const req = https.get(firestoreUrl, { timeout: 3500 }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          if (res.statusCode === 200) {
+            const json = JSON.parse(data);
+            if (json && json.fields) {
+              const f = json.fields;
+              const rawMin = f.min_version_code?.doubleValue ?? f.min_version_code?.integerValue ?? f.min_version_code?.stringValue;
+              const minCode = Number(rawMin);
+              if (minCode > 0) {
+                appVersionConfig.minRequiredVersionCode = minCode;
+                if (minCode > appVersionConfig.latestVersionCode) {
+                  appVersionConfig.latestVersionCode = minCode;
+                }
+              }
+              const rawName = f.latest_version_name?.stringValue;
+              if (rawName) {
+                appVersionConfig.latestVersion = rawName;
+              }
+              const rawForce = f.force_update?.booleanValue ?? f.force_update?.stringValue;
+              if (rawForce !== undefined) {
+                appVersionConfig.forceUpdate = (rawForce === true || rawForce === 'true');
+              }
+              lastFirestoreSync = Date.now();
+              console.log('[🔥 Firestore Version Control Synced]:', {
+                minRequiredVersionCode: appVersionConfig.minRequiredVersionCode,
+                latestVersionCode: appVersionConfig.latestVersionCode,
+                latestVersion: appVersionConfig.latestVersion,
+                forceUpdate: appVersionConfig.forceUpdate
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[Firestore Sync Parse Error]:', e.message);
+        }
+        resolve(appVersionConfig);
+      });
+    });
+    req.on('error', (err) => {
+      console.warn('[Firestore Sync Error]:', err.message);
+      resolve(appVersionConfig);
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(appVersionConfig);
+    });
+  });
+}
+
 // Route to get app version details for all mobile clients
-app.get('/api/app-version', (req, res) => {
+app.get('/api/app-version', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  await syncVersionFromFirestore();
   res.json({
     success: true,
     ...appVersionConfig
