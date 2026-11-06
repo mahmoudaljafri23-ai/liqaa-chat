@@ -1756,6 +1756,7 @@ function setupAuthSystem() {
   const tabBtnRegister = $('#auth-tab-btn-register');
   const formLogin = $('#auth-login-form');
   const regContainer = $('#auth-register-container');
+  const forgotContainer = $('#auth-forgot-container');
   const regStep1 = $('#auth-reg-step1');
   const regStep2 = $('#auth-reg-step2');
   const stepPill1 = $('#step-pill-1');
@@ -1827,6 +1828,7 @@ function setupAuthSystem() {
       tabBtnRegister.style.color = '#cbd5e1';
       if (formLogin) formLogin.classList.remove('hidden');
       if (regContainer) regContainer.classList.add('hidden');
+      if (forgotContainer) forgotContainer.classList.add('hidden');
     };
 
     // Switch to Register tab
@@ -1837,6 +1839,7 @@ function setupAuthSystem() {
       tabBtnLogin.style.color = '#cbd5e1';
       if (formLogin) formLogin.classList.add('hidden');
       if (regContainer) regContainer.classList.remove('hidden');
+      if (forgotContainer) forgotContainer.classList.add('hidden');
       showRegisterStep(1);
     };
   }
@@ -2164,6 +2167,148 @@ function setupAuthSystem() {
       } finally {
         regSubmitBtn.disabled = false;
         regSubmitBtn.innerHTML = '<span>✨</span><span>إتمام التسجيل وبدء المحادثة</span>';
+      }
+    };
+  }
+
+  // 3. Forgot / Reset Password Handler
+  const forgotPassBtn = $('#auth-forgot-pass-btn');
+  const forgotBackBtn = $('#auth-forgot-back-btn');
+  const forgotEmailInput = $('#auth-forgot-email');
+  const forgotVerifyStep2 = $('#auth-forgot-verify-step2');
+  const forgotUsernameInput = $('#auth-forgot-username');
+  const forgotNewPassInput = $('#auth-forgot-newpass');
+  const forgotSubmitBtn = $('#auth-forgot-submit-btn');
+  const forgotSubmitText = $('#auth-forgot-submit-text');
+
+  let forgotIsStep2 = false;
+  let forgotVerifiedEmail = '';
+
+  if (forgotPassBtn && forgotContainer) {
+    forgotPassBtn.onclick = () => {
+      if (formLogin) formLogin.classList.add('hidden');
+      if (regContainer) regContainer.classList.add('hidden');
+      forgotContainer.classList.remove('hidden');
+      forgotIsStep2 = false;
+      if (forgotVerifyStep2) forgotVerifyStep2.classList.add('hidden');
+      if (forgotSubmitText) forgotSubmitText.textContent = 'التحقق من البريد ومتابعة التعيين';
+      const loginEmailVal = ($('#auth-login-email')?.value || '').trim();
+      if (forgotEmailInput && loginEmailVal) forgotEmailInput.value = loginEmailVal;
+      if (forgotEmailInput) forgotEmailInput.focus();
+    };
+  }
+
+  if (forgotBackBtn && forgotContainer) {
+    forgotBackBtn.onclick = () => {
+      forgotContainer.classList.add('hidden');
+      if (formLogin) formLogin.classList.remove('hidden');
+    };
+  }
+
+  if (forgotSubmitBtn) {
+    forgotSubmitBtn.onclick = async () => {
+      const email = (forgotEmailInput ? forgotEmailInput.value : '').trim().toLowerCase();
+      if (!email || !email.includes('@')) {
+        showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
+        return;
+      }
+
+      if (!forgotIsStep2) {
+        // Step 1: Verify that this email is actually registered
+        forgotSubmitBtn.disabled = true;
+        if (forgotSubmitText) forgotSubmitText.textContent = '⏳ جاري التحقق من وجود الحساب...';
+
+        const localMap = getSavedAccountsMap();
+        const localAcc = localMap[email];
+
+        let exists = !!localAcc;
+
+        if (!exists) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password: '__CHECK_ONLY_EXISTS__' }),
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+            if (data && !data.isNew) {
+              exists = true;
+            }
+          } catch(e) {}
+        }
+
+        forgotSubmitBtn.disabled = false;
+        if (!exists) {
+          showGemToast('⚠️ هذا البريد غير مسجل مسبقاً! يرجى إنشاء حساب جديد.');
+          if (forgotSubmitText) forgotSubmitText.textContent = 'التحقق من البريد ومتابعة التعيين';
+          return;
+        }
+
+        // Account exists! Move to Step 2 to enter new password
+        forgotIsStep2 = true;
+        forgotVerifiedEmail = email;
+        if (forgotVerifyStep2) forgotVerifyStep2.classList.remove('hidden');
+        if (forgotSubmitText) forgotSubmitText.textContent = '💾 حفظ الرقم السري الجديد وتسجيل الدخول';
+        showGemToast('✅ تم العثور على حسابك! أدخل اسمك ورقمك السري الجديد الآن.');
+        if (forgotUsernameInput && localAcc && localAcc.username) {
+          forgotUsernameInput.value = localAcc.username;
+        }
+        if (forgotNewPassInput) forgotNewPassInput.focus();
+      } else {
+        // Step 2: Set New Password
+        const newPass = (forgotNewPassInput ? forgotNewPassInput.value : '').trim();
+        const usernameVer = (forgotUsernameInput ? forgotUsernameInput.value : '').trim();
+        if (!newPass) {
+          showGemToast('⚠️ يرجى إدخال الرقم السري الجديد لحسابك');
+          return;
+        }
+
+        forgotSubmitBtn.disabled = true;
+        if (forgotSubmitText) forgotSubmitText.textContent = '⏳ جاري حفظ الرقم السري الجديد...';
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: forgotVerifiedEmail || email,
+              newPassword: newPass,
+              usernameVerification: usernameVer
+            })
+          });
+          const data = await res.json();
+          if (data && data.success && data.account) {
+            saveAccountLocally({ ...data.account, password: newPass });
+            applyAccount(data.account);
+            if (forgotContainer) forgotContainer.classList.add('hidden');
+            if (formLogin) formLogin.classList.remove('hidden');
+            showGemToast('🎉 تم تعيين الرقم السري الجديد بنجاح وتسجيل الدخول!');
+            return;
+          } else {
+            showGemToast(`❌ ${data.message || 'فشل إعادة تعيين الرقم السري'}`);
+          }
+        } catch(e) {
+          // Local fallback
+          const localMap = getSavedAccountsMap();
+          const localAcc = localMap[forgotVerifiedEmail || email];
+          if (localAcc) {
+            localAcc.password = newPass;
+            saveAccountLocally(localAcc);
+            applyAccount(localAcc);
+            if (forgotContainer) forgotContainer.classList.add('hidden');
+            if (formLogin) formLogin.classList.remove('hidden');
+            showGemToast('🎉 تم حفظ الرقم السري الجديد بنجاح على جهازك وتسجيل الدخول!');
+            return;
+          }
+          showGemToast('⚠️ تعذر الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
+        } finally {
+          forgotSubmitBtn.disabled = false;
+          if (forgotSubmitText) forgotSubmitText.textContent = '💾 حفظ الرقم السري الجديد وتسجيل الدخول';
+        }
       }
     };
   }

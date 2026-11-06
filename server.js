@@ -627,6 +627,60 @@ app.post('/api/auth/register', (req, res) => {
   }
 });
 
+app.post('/api/auth/reset-password', (req, res) => {
+  try {
+    const { email, newPassword, usernameVerification, isGoogleVerified } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال بريد إلكتروني صحيح' });
+    }
+    if (!newPassword || !newPassword.trim()) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال الرقم السري الجديد' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanNewPass = newPassword.trim();
+    let account = userAccounts.get(cleanEmail);
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'هذا البريد غير مسجل مسبقاً في التطبيق' });
+    }
+
+    // Security check: if not verified via Google 1-Tap, check username verification
+    if (!isGoogleVerified && usernameVerification) {
+      const cleanUserVer = usernameVerification.trim().toLowerCase();
+      const accountUser = (account.username || '').trim().toLowerCase();
+      if (cleanUserVer !== accountUser && !accountUser.includes(cleanUserVer)) {
+        return res.status(403).json({ success: false, message: 'الاسم المستعار غير مطابق لبيانات هذا الحساب' });
+      }
+    }
+
+    // Update password
+    account.password = cleanNewPass;
+    account.updatedAt = Date.now();
+    userAccounts.set(cleanEmail, account);
+    savePersistedAccounts();
+
+    const isOwner = cleanEmail === 'mahmoud.aljafri23@gmail.com' || cleanEmail === 'mr.world2213@gmail.com';
+
+    res.json({
+      success: true,
+      message: 'تم إعادة تعيين الرقم السري بنجاح',
+      account: {
+        email: account.email,
+        username: isOwner ? (account.username || 'محمود الجعفري 👑') : account.username,
+        serialNumber: isOwner ? (account.serialNumber || 'LQ-244400') : account.serialNumber,
+        gender: account.gender,
+        country: account.country,
+        countryName: account.countryName,
+        gems: account.gems !== undefined ? account.gems : (isOwner ? 1000 : 50),
+        isAdmin: isOwner
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.post('/api/profile/update', (req, res) => {
   try {
     const { userId, username, phone, gender, age, country, adminPin } = req.body;

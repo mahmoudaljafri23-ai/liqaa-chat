@@ -45,14 +45,15 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261106_v1">
+  <link rel="stylesheet" href="css/style.css?v=20261106_v2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- Firebase App & Cloud Firestore SDKs -->
+  <!-- Firebase App & Cloud Firestore & Auth SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     .native-app .download-pill { display: none !important; }
   </style>
@@ -587,9 +588,13 @@
           <input type="email" id="auth-login-email" name="email" autocomplete="username email" inputmode="email" list="saved-emails-list" placeholder="example@gmail.com" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
         </div>
 
-        <div style="margin-bottom: 14px;">
+        <div style="margin-bottom: 8px;">
           <label style="font-size: 12px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">الرقم السري / كلمة المرور 🔒:</label>
           <input type="password" id="auth-login-password" name="password" autocomplete="current-password" placeholder="أدخل الرقم السري لحسابك" dir="ltr" required style="width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13.5px;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 12px;">
+          <a href="javascript:void(0)" id="auth-forgot-pass-btn" style="color: #ffd700; font-size: 12px; font-weight: bold; text-decoration: underline; cursor: pointer;">نسيت الرقم السري؟ 🔑</a>
         </div>
 
         <button type="button" id="auth-login-submit-btn" class="royal-primary-auth-btn">
@@ -597,6 +602,39 @@
           <span>تسجيل الدخول إلى حسابي</span>
         </button>
       </form>
+
+      <!-- 3. Forgot / Reset Password Container -->
+      <div id="auth-forgot-container" class="hidden" style="text-align: right; background: rgba(0,0,0,0.45); padding: 16px 14px; border-radius: 16px; border: 1.5px solid rgba(255,215,0,0.3); margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <h3 style="font-size: 14.5px; color: #ffd700; margin: 0; font-weight: 800;">🔑 إعادة تعيين الرقم السري</h3>
+          <button type="button" id="auth-forgot-back-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; cursor: pointer;">✕ إلغاء ورجوع</button>
+        </div>
+        <p style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">أدخل بريدك الإلكتروني المسجل للتحقق وتعيين رقم سري جديد لحسابك الملكي:</p>
+
+        <form id="auth-forgot-form" onsubmit="return false;">
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 11.5px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">البريد الإلكتروني المسجل 📧:</label>
+            <input type="email" id="auth-forgot-email" placeholder="example@gmail.com" dir="ltr" list="saved-emails-list" required style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+          </div>
+
+          <div id="auth-forgot-verify-step2" class="hidden">
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 11.5px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اسمك المستعار المسجل في المحادثات (للأمان) 👤:</label>
+              <input type="text" id="auth-forgot-username" placeholder="أدخل اسمك المسجل بالتطبيق" dir="auto" style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              <label style="font-size: 11.5px; color: #ffd700; font-weight: bold; display: block; margin-bottom: 4px;">اختر الرقم السري الجديد 🔒:</label>
+              <input type="password" id="auth-forgot-newpass" placeholder="أدخل الرقم السري الجديد" dir="ltr" style="width: 100%; padding: 11px 13px; border-radius: 12px; background: rgba(0,0,0,0.6); border: 1.5px solid rgba(255,215,0,0.35); color: #fff; font-size: 13px;">
+            </div>
+          </div>
+
+          <button type="button" id="auth-forgot-submit-btn" class="royal-primary-auth-btn" style="width: 100%; margin-top: 4px;">
+            <span>🔍</span>
+            <span id="auth-forgot-submit-text">التحقق من البريد ومتابعة التعيين</span>
+          </button>
+        </form>
+      </div>
 
       <!-- 2. Multi-Step Register Container -->
       <div id="auth-register-container" class="hidden">
@@ -1190,6 +1228,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261106_v1"></script>
+  <script src="js/app.js?v=20261106_v2"></script>
 </body>
 </html>
