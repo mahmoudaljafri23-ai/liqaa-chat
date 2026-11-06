@@ -1532,6 +1532,35 @@ function setupInviteModal() {
   }
 }
 
+function getSavedAccountsMap() {
+  try {
+    const raw = localStorage.getItem('liqaa_saved_accounts');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch(e) {}
+  return {};
+}
+
+function saveAccountLocally(acc) {
+  if (!acc || !acc.email) return;
+  const cleanEmail = acc.email.toLowerCase().trim();
+  const map = getSavedAccountsMap();
+  map[cleanEmail] = {
+    ...(map[cleanEmail] || {}),
+    ...acc,
+    email: cleanEmail,
+    updatedAt: Date.now()
+  };
+  try {
+    localStorage.setItem('liqaa_saved_accounts', JSON.stringify(map));
+  } catch(e) {}
+  if (typeof window.recordEmailSuggestion === 'function') {
+    window.recordEmailSuggestion(cleanEmail);
+  }
+}
+
 function initEmailSuggestions() {
   const datalist = $('#saved-emails-list');
   const loginEmail = $('#auth-login-email');
@@ -1543,6 +1572,14 @@ function initEmailSuggestions() {
     if (raw) savedEmails = JSON.parse(raw);
   } catch(e) {}
   if (!Array.isArray(savedEmails)) savedEmails = [];
+
+  // Also include all accounts saved on this device
+  const accountsMap = getSavedAccountsMap();
+  Object.keys(accountsMap).forEach(em => {
+    if (em && em.includes('@') && !savedEmails.includes(em)) {
+      savedEmails.push(em);
+    }
+  });
 
   if (userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@') && !savedEmails.includes(userProfile.accountEmail)) {
     savedEmails.unshift(userProfile.accountEmail);
@@ -1571,6 +1608,7 @@ function initEmailSuggestions() {
       renderDatalist();
     }
   };
+  window.recordEmailSuggestion = recordEmail;
 
   if (loginEmail) {
     loginEmail.addEventListener('change', () => recordEmail(loginEmail.value));
@@ -1940,7 +1978,7 @@ function setupAuthSystem() {
   const loginSubmitBtn = $('#auth-login-submit-btn');
   if (loginSubmitBtn) {
     loginSubmitBtn.onclick = async () => {
-      const email = ($('#auth-login-email')?.value || '').trim();
+      const email = ($('#auth-login-email')?.value || '').trim().toLowerCase();
       const password = ($('#auth-login-password')?.value || '').trim();
       if (!email || !email.includes('@')) {
         showGemToast('⚠️ يرجى إدخال بريد إلكتروني صحيح');
@@ -1952,37 +1990,86 @@ function setupAuthSystem() {
       }
 
       loginSubmitBtn.disabled = true;
-      loginSubmitBtn.textContent = '⏳ جاري التحقق...';
+      loginSubmitBtn.textContent = '⏳ جاري التحقق من الحساب...';
+
+      const localMap = getSavedAccountsMap();
+      const localAcc = localMap[email];
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+
         const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const data = await res.json();
         if (data.success && data.account) {
+          saveAccountLocally({ ...data.account, password });
           applyAccount(data.account);
           showGemToast(`🎉 أهلاً بك مجدداً يا ${userProfile.username}! تم تسجيل الدخول بنجاح.`);
+          return;
         } else if (data.isNew) {
-          showGemToast('ℹ️ هذا البريد غير مسجل، تم تحويلك لإنشاء حساب جديد');
+          // If server restarted or account is not in server DB, check local account
+          if (localAcc) {
+            if (localAcc.password && localAcc.password !== password) {
+              showGemToast('❌ الرقم السري غير صحيح!');
+              return;
+            }
+            applyAccount(localAcc);
+            showGemToast(`🎉 تم تسجيل الدخول بحسابك المحفوظ (${localAcc.username}) بنجاح!`);
+            // Resync to server in background
+            fetch(`${API_BASE_URL}/api/auth/register`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: localAcc.email,
+                password: localAcc.password || password,
+                username: localAcc.username,
+                gender: localAcc.gender || 'male',
+                age: localAcc.age || 22,
+                country: localAcc.country || myHomeCountryCode || 'JO',
+                countryName: localAcc.countryName || 'الأردن'
+              })
+            }).catch(() => {});
+            return;
+          }
+
+          // STRICT CHECK: Unregistered account MUST register first! Never let random emails in!
+          showGemToast('⚠️ هذا البريد غير مسجل! تم تحويلك لإنشاء حساب جديد أولاً.');
           if (tabBtnRegister) tabBtnRegister.click();
           if (regEmailInput) regEmailInput.value = email;
           if (regPasswordInput) regPasswordInput.value = password;
+          showRegisterStep(1);
+          return;
         } else {
-          showGemToast(`❌ ${data.message || 'خطأ في تسجيل الدخول'}`);
+          // Invalid credentials / wrong password
+          showGemToast(`❌ ${data.message || 'الرقم السري غير صحيح'}`);
+          return;
         }
       } catch (err) {
-        console.warn('[Auth API fallback]', err);
-        const cachedGems = localStorage.getItem(`liqaa_gems_${email}`);
-        applyAccount({
-          email: email,
-          username: email.split('@')[0],
-          gems: cachedGems ? parseInt(cachedGems, 10) : 50,
-          gender: 'male',
-          age: 22
-        });
-        showGemToast(`🎉 تم الدخول بحسابك (${email}) بنجاح!`);
+        console.warn('[Auth API login offline/timeout]', err);
+        // Server offline or timed out: check local saved accounts
+        if (localAcc) {
+          if (localAcc.password && localAcc.password !== password) {
+            showGemToast('❌ الرقم السري غير صحيح!');
+            return;
+          }
+          applyAccount(localAcc);
+          showGemToast(`🎉 تم الدخول بحسابك المحفوظ على جهازك (${localAcc.username}) بنجاح!`);
+          return;
+        }
+
+        // STRICT REJECTION: NEVER let in an unregistered/random email!
+        showGemToast('⚠️ هذا البريد غير مسجل! يرجى إنشاء حساب جديد أولاً لتسجيل بياناتك.');
+        if (tabBtnRegister) tabBtnRegister.click();
+        if (regEmailInput) regEmailInput.value = email;
+        if (regPasswordInput) regPasswordInput.value = password;
+        showRegisterStep(1);
       } finally {
         loginSubmitBtn.disabled = false;
         loginSubmitBtn.innerHTML = '<span>🚪</span><span>تسجيل الدخول إلى حسابي</span>';
@@ -1993,7 +2080,7 @@ function setupAuthSystem() {
   // 2. Email + Password Register Handler (Multi-Step Completion)
   if (regSubmitBtn) {
     regSubmitBtn.onclick = async () => {
-      const email = (regEmailInput ? regEmailInput.value : '').trim();
+      const email = (regEmailInput ? regEmailInput.value : '').trim().toLowerCase();
       const password = (regPasswordInput ? regPasswordInput.value : '').trim();
       const username = (regUsernameInput ? regUsernameInput.value : '').trim();
       const ageVal = parseInt(regAgeInput ? regAgeInput.value : '0', 10);
@@ -2020,9 +2107,26 @@ function setupAuthSystem() {
       }
 
       regSubmitBtn.disabled = true;
-      regSubmitBtn.textContent = '⏳ جاري إنشاء الحساب الملكي...';
+      regSubmitBtn.textContent = '⏳ جاري إنشاء وحفظ الحساب الملكي...';
+
+      const isOwner = (email === 'mahmoud.aljafri23@gmail.com' || email === 'mr.world2213@gmail.com');
+      const newAccountData = {
+        email,
+        password,
+        username,
+        gender: regSelectedGender,
+        age: ageVal,
+        serialNumber: isOwner ? 'LQ-244400' : ('LQ-' + Math.floor(100000 + Math.random() * 900000)),
+        country: myHomeCountryCode || 'JO',
+        countryName: selectedCountryName || 'الأردن',
+        gems: isOwner ? 1000 : 50,
+        isAdmin: isOwner
+      };
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+
         const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2034,29 +2138,29 @@ function setupAuthSystem() {
             age: ageVal,
             country: myHomeCountryCode || 'JO',
             countryName: selectedCountryName || 'الأردن'
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const data = await res.json();
         if (data.success && data.account) {
-          applyAccount({ ...data.account, age: ageVal });
+          const accToSave = { ...data.account, password, age: ageVal };
+          saveAccountLocally(accToSave);
+          applyAccount(accToSave);
           userProfile.age = ageVal;
           saveUserProfile();
-          showGemToast(`✨ مبروك يا ${userProfile.username}! تم إنشاء حسابك الملكي بنجاح 💎`);
+          showGemToast(`✨ مبروك يا ${userProfile.username}! تم إنشاء وحفظ حسابك الملكي بنجاح 💎`);
         } else {
           showGemToast(`❌ ${data.message || 'خطأ في إنشاء الحساب'}`);
         }
       } catch (err) {
-        console.warn('[Register API fallback]', err);
-        applyAccount({
-          email: email,
-          username: username,
-          gender: regSelectedGender,
-          age: ageVal,
-          gems: 50
-        });
+        console.warn('[Register API offline/fallback]', err);
+        saveAccountLocally(newAccountData);
+        applyAccount(newAccountData);
         userProfile.age = ageVal;
         saveUserProfile();
-        showGemToast(`✨ تم إنشاء حسابك بنجاح (${username})!`);
+        showGemToast(`✨ مبروك يا ${username}! تم إنشاء حسابك وحفظه على جهازك بنجاح 💎`);
       } finally {
         regSubmitBtn.disabled = false;
         regSubmitBtn.innerHTML = '<span>✨</span><span>إتمام التسجيل وبدء المحادثة</span>';
@@ -2124,12 +2228,27 @@ function setupAuthSystem() {
     if (genderModal) {
       genderModal.classList.remove('hidden');
     } else {
-      applyAccount({
+      const gAcc = {
         email: email,
         username: cleanUsername,
         gender: initialGender,
         photoUrl: picture
-      });
+      };
+      saveAccountLocally(gAcc);
+      applyAccount(gAcc);
+      fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          password: 'google_oauth_verified',
+          username: cleanUsername,
+          gender: initialGender,
+          age: 22,
+          country: myHomeCountryCode || 'JO',
+          countryName: selectedCountryName || 'الأردن'
+        })
+      }).catch(() => {});
       showGemToast(`🎉 تم الدخول بحساب Google (${email}) بنجاح!`);
     }
   };
@@ -2146,16 +2265,32 @@ function setupAuthSystem() {
       const customNameInput = $('#google-confirm-username');
       const customName = (customNameInput ? customNameInput.value.trim() : '') || pendingGoogleData.username;
 
-      applyAccount({
+      const gAcc = {
         email: pendingGoogleData.email,
         username: customName,
         gender: googleSelectedGender,
         photoUrl: pendingGoogleData.photoUrl
-      });
+      };
+      saveAccountLocally(gAcc);
+      applyAccount(gAcc);
       userProfile.gender = googleSelectedGender;
       saveUserProfile();
       updateProfileUI();
       syncUserToFirebase({ gender: googleSelectedGender, username: customName });
+
+      fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: pendingGoogleData.email,
+          password: 'google_oauth_verified',
+          username: customName,
+          gender: googleSelectedGender,
+          age: 22,
+          country: myHomeCountryCode || 'JO',
+          countryName: selectedCountryName || 'الأردن'
+        })
+      }).catch(() => {});
 
       const genderModal = $('#google-gender-modal');
       if (genderModal) genderModal.classList.add('hidden');

@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -483,6 +484,49 @@ app.post('/api/admin/dismiss-report', (req, res) => {
 // Server persistent profiles storage
 const persistentProfiles = new Map();
 const userAccounts = new Map(); // email.toLowerCase() -> { email, password, username, serialNumber, gender, country, countryName, gems, isAdmin, createdAt }
+const ACCOUNTS_FILE = path.join(__dirname, 'data', 'user_accounts.json');
+
+function loadPersistedAccounts() {
+  try {
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    if (fs.existsSync(ACCOUNTS_FILE)) {
+      const raw = fs.readFileSync(ACCOUNTS_FILE, 'utf8');
+      const accounts = JSON.parse(raw);
+      if (accounts && typeof accounts === 'object') {
+        for (const [email, acc] of Object.entries(accounts)) {
+          if (email && acc) {
+            userAccounts.set(email.toLowerCase().trim(), acc);
+          }
+        }
+        console.log(`[Auth Persistence] Loaded ${userAccounts.size} user accounts from disk`);
+      }
+    }
+  } catch (err) {
+    console.warn('[Auth Persistence] Failed to load accounts:', err.message);
+  }
+}
+
+function savePersistedAccounts() {
+  try {
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    const accountsObj = {};
+    for (const [email, acc] of userAccounts.entries()) {
+      accountsObj[email] = acc;
+    }
+    fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accountsObj, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[Auth Persistence] Failed to save accounts:', err.message);
+  }
+}
+
+// Pre-load accounts on startup
+loadPersistedAccounts();
 
 app.post('/api/auth/login', (req, res) => {
   try {
@@ -495,11 +539,11 @@ app.post('/api/auth/login', (req, res) => {
 
     const account = userAccounts.get(cleanEmail);
     if (!account) {
-      return res.status(404).json({ success: false, isNew: true, message: 'هذا البريد غير مسجل مسبقاً، يرجى إنشاء حساب جديد' });
+      return res.status(404).json({ success: false, isNew: true, message: 'هذا البريد غير مسجل مسبقاً، يرجى إنشاء حساب جديد أولاً' });
     }
 
     if (account.password && account.password !== cleanPassword) {
-      return res.status(401).json({ success: false, message: 'الرقم السري غير صحيح' });
+      return res.status(401).json({ success: false, message: 'الرقم السري غير صحيح، يرجى التأكد وإعادة المحاولة' });
     }
 
     const isOwner = cleanEmail === 'mahmoud.aljafri23@gmail.com' || cleanEmail === 'mr.world2213@gmail.com';
@@ -562,6 +606,7 @@ app.post('/api/auth/register', (req, res) => {
       };
       userAccounts.set(cleanEmail, account);
     }
+    savePersistedAccounts();
 
     res.json({
       success: true,
