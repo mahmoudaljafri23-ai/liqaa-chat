@@ -1649,8 +1649,8 @@ function initEmailSuggestions() {
 // =============================================
 // 🚀 App Version & In-App Force Update System
 // =============================================
-const CURRENT_APP_VERSION = '1.2.2';
-const CURRENT_VERSION_CODE = 23; // Version code of this build
+const CURRENT_APP_VERSION = '1.2.3';
+const CURRENT_VERSION_CODE = 24; // Version code of this build
 
 async function checkAppUpdate(isManualCheck = false) {
   try {
