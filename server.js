@@ -715,8 +715,8 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.2.4",
-  latestVersionCode: 25,
+  latestVersion: "1.2.6",
+  latestVersionCode: 27,
   minRequiredVersionCode: 25, // Any installed version < 25 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث ملكي جديد متوفر! 🚀👑",
