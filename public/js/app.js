@@ -78,6 +78,25 @@ function initFirebase() {
     console.log('[Firebase] Cloud Firestore connected successfully! 🔥');
     syncUserToFirebase();
     initFirebaseFriendsListener();
+
+    // 🚀 Listen for Firebase Google Auth changes & Redirect Results
+    if (firebase.auth) {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user && user.email) {
+          console.log('[Firebase Auth] User authenticated via Google:', user.email);
+          applyGoogleAccount(user.email, user.displayName, user.photoURL);
+        }
+      });
+
+      firebase.auth().getRedirectResult().then((result) => {
+        if (result && result.user && result.user.email) {
+          console.log('[Firebase Auth] Redirect sign-in success:', result.user.email);
+          applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+        }
+      }).catch((err) => {
+        console.warn('[Firebase Auth] getRedirectResult check:', err);
+      });
+    }
   } catch (err) {
     console.warn('[Firebase] Init error:', err);
   }
@@ -2658,25 +2677,51 @@ function setupAuthSystem() {
     }
   };
 
+  const executeFirebaseAuthGoogle = () => {
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      showGemToast('🔍 جاري تهيئة خدمة Google، يرجى المحاولة بعد قليل...');
+      return;
+    }
+    showGemToast('🔍 جاري تسجيل الدخول بحساب Google...');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+
+    // On mobile devices, always use signInWithRedirect so it operates inside the SAME tab without a blank popup tab hanging!
+    const isMobileDevice = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 800);
+
+    if (isMobileDevice) {
+      firebase.auth().signInWithRedirect(provider).catch((err) => {
+        console.warn('Firebase signInWithRedirect error, trying popup:', err);
+        firebase.auth().signInWithPopup(provider).then((result) => {
+          if (result && result.user) {
+            applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+          }
+        }).catch((pErr) => {
+          console.warn('Firebase popup error:', pErr);
+        });
+      });
+    } else {
+      // Desktop browser
+      firebase.auth().signInWithPopup(provider).then((result) => {
+        if (result && result.user) {
+          applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+        }
+      }).catch((err) => {
+        console.warn('Desktop popup failed, falling back to redirect:', err);
+        firebase.auth().signInWithRedirect(provider).catch(() => {});
+      });
+    }
+  };
+
   if (googleLoginBtn) {
     googleLoginBtn.onclick = () => {
       if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
         try {
           google.accounts.id.prompt((notification) => {
             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.log('Google prompt not displayed, checking Firebase Auth fallback');
-              if (typeof firebase !== 'undefined' && firebase.auth) {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                firebase.auth().signInWithPopup(provider)
-                  .then((result) => {
-                    if (result && result.user) {
-                      applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
-                    }
-                  })
-                  .catch((err) => {
-                    console.warn('Firebase Google Auth fallback error:', err);
-                  });
-              }
+              console.log('Google One-Tap not displayed, executing Firebase Google Auth');
+              executeFirebaseAuthGoogle();
             }
           });
           return;
@@ -2684,23 +2729,7 @@ function setupAuthSystem() {
           console.warn('One-tap prompt error:', e);
         }
       }
-
-      if (typeof firebase !== 'undefined' && firebase.auth) {
-        showGemToast('🔍 جاري تسجيل الدخول بحساب Google...');
-        const provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider)
-          .then((result) => {
-            if (result && result.user) {
-              applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
-            }
-          })
-          .catch((err) => {
-            console.warn('Firebase Google Auth error:', err);
-            showGemToast('❌ تعذر إتمام تسجيل الدخول بـ Google، يرجى المحاولة أو استخدام البريد والرقم السري');
-          });
-        return;
-      }
-      showGemToast('🔍 جاري تهيئة وتسجيل الدخول بحساب Google...');
+      executeFirebaseAuthGoogle();
     };
   }
 
