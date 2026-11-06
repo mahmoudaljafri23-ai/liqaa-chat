@@ -714,9 +714,9 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.2.1",
-  latestVersionCode: 22,
-  minRequiredVersionCode: 22, // Any installed version < 22 will be asked/forced to update
+  latestVersion: "1.2.2",
+  latestVersionCode: 23,
+  minRequiredVersionCode: 23, // Any installed version < 22 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث ملكي جديد متوفر! 🚀👑",
   message: "يتوفر إصدار جديد من Loky Chat (v1.2.1) يتضمن إصلاحات هامة لتسجيل الدخول بحساب Google وسرعة فائقة في الاتصال المباشر. يرجى التحديث الآن للمتابعة.",
