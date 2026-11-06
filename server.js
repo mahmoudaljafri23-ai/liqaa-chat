@@ -711,6 +711,71 @@ app.get('/api/profile', (req, res) => {
 });
 
 // =============================================
+// 🚀 App Version & In-App Force Update Management
+// =============================================
+let appVersionConfig = {
+  latestVersion: "1.2.1",
+  latestVersionCode: 22,
+  minRequiredVersionCode: 22, // Any installed version < 22 will be asked/forced to update
+  forceUpdate: true,
+  title: "تحديث ملكي جديد متوفر! 🚀👑",
+  message: "يتوفر إصدار جديد من Loky Chat (v1.2.1) يتضمن إصلاحات هامة لتسجيل الدخول بحساب Google وسرعة فائقة في الاتصال المباشر. يرجى التحديث الآن للمتابعة.",
+  playStoreUrl: "https://play.google.com/store/apps/details?id=com.lokychat.app",
+  directApkUrl: "https://liqaa-chat.onrender.com/LokyChat-Latest.apk",
+  releaseNotes: [
+    "✅ إصلاح شاشة تسجيل الدخول بحساب Google بشكل نهائي",
+    "⚡ تحسين جودة وسرعة مكالمات الفيديو الملكية",
+    "🛡️ حفظ الحسابات وكلمات المرور في السيرفر مع ميزة استعادة الرمز السري",
+    "💎 حماية وتوثيق شارة VIP والرصيد الملكي"
+  ],
+  updatedAt: new Date().toISOString()
+};
+
+// Route to get app version details for all mobile clients
+app.get('/api/app-version', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.json({
+    success: true,
+    ...appVersionConfig
+  });
+});
+
+// Admin Route to update app version config dynamically without redeploying
+app.post('/api/admin/set-app-version', (req, res) => {
+  const { secretKey, latestVersion, latestVersionCode, minRequiredVersionCode, forceUpdate, message } = req.body;
+  if (secretKey !== 'lokychat2026' && secretKey !== '0790181802') {
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+  if (latestVersion) appVersionConfig.latestVersion = latestVersion;
+  if (latestVersionCode) appVersionConfig.latestVersionCode = Number(latestVersionCode);
+  if (minRequiredVersionCode !== undefined) appVersionConfig.minRequiredVersionCode = Number(minRequiredVersionCode);
+  if (forceUpdate !== undefined) appVersionConfig.forceUpdate = Boolean(forceUpdate);
+  if (message) appVersionConfig.message = message;
+  appVersionConfig.updatedAt = new Date().toISOString();
+  console.log('[🚀 App Version Updated via Admin API]:', appVersionConfig);
+  res.json({ success: true, appVersionConfig });
+});
+
+// Route to download latest APK directly if available
+app.get(['/LokyChat-Latest.apk', '/download-apk'], (req, res) => {
+  const candidates = [
+    path.join(__dirname, 'LokyChat-Latest.apk'),
+    path.join(__dirname, 'LokyChat-Royal.apk'),
+    path.join(__dirname, 'android/app/build/outputs/apk/release/app-release.apk')
+  ];
+  for (const f of candidates) {
+    if (fs.existsSync(f)) {
+      const stat = fs.statSync(f);
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Content-Disposition', 'attachment; filename="LokyChat-Latest.apk"');
+      return fs.createReadStream(f).pipe(res);
+    }
+  }
+  res.status(404).send('APK file not found on server.');
+});
+
+// =============================================
 // State Management
 // =============================================
 const users = new Map();       // socketId -> { gender, country, countryName, partnerId, genderFilter }

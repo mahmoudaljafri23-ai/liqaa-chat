@@ -791,6 +791,68 @@
     </div>
   </div>
 
+  <!-- ============ Force / In-App Update Modal (Royal Luxury) ============ -->
+  <div id="update-modal" class="modal hidden" style="z-index: 10006; background: rgba(13, 8, 20, 0.96);">
+    <div class="modal-content" style="max-width: 420px; width: 92%; padding: 26px 20px; text-align: center; border: 2px solid #ffd700; background: linear-gradient(165deg, #25091a 0%, #17091f 50%, #0d0814 100%); border-radius: 26px; position: relative; box-shadow: 0 25px 65px rgba(0,0,0,0.95), 0 0 40px rgba(255,215,0,0.3);">
+      
+      <!-- Optional Close Button (Only visible if update is optional) -->
+      <button id="close-update-modal-btn" class="royal-close-round-btn hidden" onclick="document.getElementById('update-modal').classList.add('hidden')" style="position: absolute; left: 16px; top: 16px;" title="إغلاق">✕</button>
+
+      <!-- Rocket & Crown Icon -->
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 12px; box-shadow: 0 0 25px rgba(255,215,0,0.6); border: 2px solid #fff;">
+        🚀
+      </div>
+
+      <h2 id="update-modal-title" style="font-size: 20px; color: #fff; font-weight: 900; margin-bottom: 6px;">
+        تحديث جديد متوفر لـ <span style="color:#ffd700;">Loky Chat</span>!
+      </h2>
+
+      <!-- Version Badges -->
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); padding: 5px 14px; border-radius: 20px; margin-bottom: 14px;">
+        <span style="font-size: 11.5px; color: #94a3b8;">إصدارك: <strong id="update-current-version" style="color:#f87171;">v1.2.0</strong></span>
+        <span style="color: #ffd700; font-size: 12px;">➔</span>
+        <span style="font-size: 11.5px; color: #4ade80; font-weight: 800;">الجديد: <strong id="update-latest-version" style="color:#4ade80;">v1.2.1</strong></span>
+      </div>
+
+      <!-- Update Message -->
+      <p id="update-modal-desc" style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 14px; text-align: center;">
+        يرجى تحديث التطبيق الآن للاستمتاع بأحدث المزايا وإصلاحات الدخول والسرعة الفائقة في الاتصال.
+      </p>
+
+      <!-- Changelog / Highlights Box -->
+      <div id="update-highlights-box" style="width: 100%; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,215,0,0.2); border-radius: 14px; padding: 12px 14px; text-align: right; margin-bottom: 18px; font-size: 12px; color: #e2e8f0; line-height: 1.7;">
+        <div style="font-weight: 800; color: #ffd700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>✨ أهم مميزات التحديث:</span>
+        </div>
+        <ul id="update-notes-list" style="margin: 0; padding-right: 18px; list-style: disc;">
+          <li>إصلاح تسجيل الدخول بحساب Google نهائياً.</li>
+          <li>تسريع المطابقة الملكية وتحسين الصوت والفيديو.</li>
+          <li>حماية وتوثيق الحسابات مع خاصية استعادة الرمز السري.</li>
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+        <!-- Primary Button: Google Play -->
+        <a id="update-playstore-btn" href="https://play.google.com/store/apps/details?id=com.lokychat.app" target="_blank" class="royal-primary-auth-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; font-size: 15px; font-weight: 800;">
+          <span>📲</span>
+          <span>تحديث الآن عبر Google Play</span>
+        </a>
+
+        <!-- Secondary Button: Direct APK (Optional) -->
+        <a id="update-direct-apk-btn" href="https://liqaa-chat.onrender.com/LokyChat-Latest.apk" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: #cbd5e1; font-size: 12.5px; font-weight: 700; transition: all 0.2s ease;">
+          <span>📥</span>
+          <span>تحميل التحديث مباشرة (ملف APK)</span>
+        </a>
+      </div>
+
+      <!-- Mandatory notice if force update -->
+      <div id="update-mandatory-badge" style="margin-top: 12px; font-size: 11px; color: #f87171; font-weight: bold;">
+        ⚠️ هذا التحديث ضروري وهام لضمان استمرار عمل التطبيق بدون مشاكل.
+      </div>
+    </div>
+  </div>
+
   <!-- Account Settings Modal (Royal Luxury Redesign) -->
   <div id="settings-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);">
     <div class="modal-content royal-settings-content" style="position: relative;">
@@ -972,6 +1034,18 @@
             </a>
           </div>
         </div>
+      </div>
+
+      <!-- App Version & Check Update Button in Settings -->
+      <div style="width: 100%; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.45); padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(255,215,0,0.25);">
+        <div style="text-align: right;">
+          <span style="font-size: 11px; color: #94a3b8; display: block;">إصدار التطبيق الحالي:</span>
+          <strong style="font-size: 13.5px; color: #ffd700;">v1.2.1 الملكي 👑</strong>
+        </div>
+        <button type="button" onclick="window.checkAppUpdate && window.checkAppUpdate(true)" style="background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.2)); border: 1.2px solid #ffd700; color: #ffd700; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+          <span>🔄</span>
+          <span>فحص التحديثات</span>
+        </button>
       </div>
 
       <!-- Royal Action Button (Close) -->

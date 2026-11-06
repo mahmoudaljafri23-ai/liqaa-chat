@@ -1627,6 +1627,116 @@ function initEmailSuggestions() {
   }
 }
 
+// =============================================
+// 🚀 App Version & In-App Force Update System
+// =============================================
+const CURRENT_APP_VERSION = '1.2.1';
+const CURRENT_VERSION_CODE = 22; // Version code of this build
+
+async function checkAppUpdate(isManualCheck = false) {
+  try {
+    let config = null;
+
+    // 1. Fetch from server API
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/app-version?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success) {
+          config = data;
+        }
+      }
+    } catch (netErr) {
+      console.warn('[Version Check] API fetch error:', netErr);
+    }
+
+    // 2. Fallback to Firebase Firestore if server API unreachable
+    if (!config && typeof firestoreDb !== 'undefined' && firestoreDb) {
+      try {
+        const snap = await firestoreDb.collection('app_config').doc('version').get();
+        if (snap.exists) {
+          config = snap.data();
+        }
+      } catch (fbErr) {
+        console.warn('[Version Check] Firestore fallback error:', fbErr);
+      }
+    }
+
+    if (!config) {
+      if (isManualCheck) showGemToast(`✅ تطبيقك يعمل على أحدث إصدار رسمي (v${CURRENT_APP_VERSION})`);
+      return;
+    }
+
+    const remoteCode = Number(config.latestVersionCode || 0);
+    const minRequiredCode = Number(config.minRequiredVersionCode || 0);
+    const isOutdated = (CURRENT_VERSION_CODE < remoteCode) || (CURRENT_VERSION_CODE < minRequiredCode);
+
+    if (isOutdated) {
+      console.log(`[Version Check] Outdated! Current: ${CURRENT_VERSION_CODE}, Remote: ${remoteCode}`);
+      const updateModal = $('#update-modal');
+      if (updateModal) {
+        const currEl = $('#update-current-version');
+        const latEl = $('#update-latest-version');
+        const descEl = $('#update-modal-desc');
+        const playBtn = $('#update-playstore-btn');
+        const apkBtn = $('#update-direct-apk-btn');
+        const closeBtn = $('#close-update-modal-btn');
+        const mandatoryEl = $('#update-mandatory-badge');
+        const notesList = $('#update-notes-list');
+
+        if (currEl) currEl.textContent = `v${CURRENT_APP_VERSION}`;
+        if (latEl) latEl.textContent = `v${config.latestVersion || '1.2.1'}`;
+        if (descEl && config.message) descEl.textContent = config.message;
+
+        const playUrl = config.playStoreUrl || 'https://play.google.com/store/apps/details?id=com.lokychat.app';
+        if (playBtn) {
+          playBtn.href = playUrl;
+          playBtn.onclick = (e) => {
+            if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+              e.preventDefault();
+              window.location.href = 'market://details?id=com.lokychat.app';
+              setTimeout(() => { window.open(playUrl, '_system'); }, 600);
+            }
+          };
+        }
+
+        if (apkBtn) {
+          apkBtn.href = config.directApkUrl || `${API_BASE_URL}/LokyChat-Latest.apk`;
+        }
+
+        if (notesList && Array.isArray(config.releaseNotes) && config.releaseNotes.length > 0) {
+          notesList.innerHTML = config.releaseNotes.map(n => `<li>${n}</li>`).join('');
+        }
+
+        const isMandatory = (config.forceUpdate === true) || (CURRENT_VERSION_CODE < minRequiredCode);
+        if (closeBtn) {
+          if (isMandatory) {
+            closeBtn.classList.add('hidden');
+            closeBtn.style.display = 'none';
+          } else {
+            closeBtn.classList.remove('hidden');
+            closeBtn.style.display = 'block';
+          }
+        }
+        if (mandatoryEl) {
+          mandatoryEl.style.display = isMandatory ? 'block' : 'none';
+        }
+
+        // Display update modal
+        updateModal.classList.remove('hidden');
+      }
+    } else {
+      if (isManualCheck) {
+        showGemToast(`🎉 تطبيقك يعمل على أحدث إصدار رسمي (v${CURRENT_APP_VERSION})! ✨`);
+      }
+    }
+  } catch (err) {
+    console.warn('[Version Check] Error:', err);
+  }
+}
+
+window.checkAppUpdate = checkAppUpdate;
+
 function init() {
   checkReferralQuery();
   loadUserProfile();
@@ -1651,6 +1761,9 @@ function init() {
   if (IS_NATIVE_APP) {
     initPlayBilling();
   }
+
+  // Check for app updates automatically on startup
+  setTimeout(checkAppUpdate, 1500);
 
   // Pre-warm camera hardware in background for instant 0-second matching without lag
   if (userProfile && userProfile.accountEmail && userProfile.accountEmail.includes('@')) {
@@ -6151,6 +6264,19 @@ function setupDraggableLocalVideo() {
 // Smart Android Back Button Navigation
 // =============================================
 window.handleAppBackButton = function() {
+  // 0. Update modal: If mandatory, back button cannot dismiss it
+  const updateModal = document.querySelector('#update-modal');
+  if (updateModal && !updateModal.classList.contains('hidden') && updateModal.style.display !== 'none') {
+    const mandatoryEl = document.querySelector('#update-mandatory-badge');
+    const isMandatory = mandatoryEl && mandatoryEl.style.display !== 'none';
+    if (isMandatory) {
+      return true; // Keep update prompt visible
+    } else {
+      updateModal.classList.add('hidden');
+      return true;
+    }
+  }
+
   // 1. Check if any dismissible modal is open
   const openModals = [
     '#settings-modal',
