@@ -62,6 +62,15 @@ let fbApp = null;
 let firestoreDb = null;
 let friendsUnsubscribe = null;
 
+// Safe global hook for Google account application
+window.applyGoogleAccount = function(email, name, picture) {
+  if (typeof window._internalApplyGoogleAccount === 'function') {
+    window._internalApplyGoogleAccount(email, name, picture);
+  } else {
+    window._pendingGoogleAuthUser = { email, name, picture };
+  }
+};
+
 function initFirebase() {
   if (typeof firebase === 'undefined') {
     console.warn('[Firebase] SDK not loaded yet, will retry');
@@ -84,14 +93,18 @@ function initFirebase() {
       firebase.auth().onAuthStateChanged((user) => {
         if (user && user.email) {
           console.log('[Firebase Auth] User authenticated via Google:', user.email);
-          applyGoogleAccount(user.email, user.displayName, user.photoURL);
+          if (typeof window.applyGoogleAccount === 'function') {
+            window.applyGoogleAccount(user.email, user.displayName, user.photoURL);
+          }
         }
       });
 
       firebase.auth().getRedirectResult().then((result) => {
         if (result && result.user && result.user.email) {
           console.log('[Firebase Auth] Redirect sign-in success:', result.user.email);
-          applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+          if (typeof window.applyGoogleAccount === 'function') {
+            window.applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+          }
         }
       }).catch((err) => {
         console.warn('[Firebase Auth] getRedirectResult check:', err);
@@ -2566,6 +2579,14 @@ function setupAuthSystem() {
     }
   };
 
+  // Wire internal handler to global window hook
+  window._internalApplyGoogleAccount = applyGoogleAccount;
+  if (window._pendingGoogleAuthUser) {
+    const p = window._pendingGoogleAuthUser;
+    window._pendingGoogleAuthUser = null;
+    applyGoogleAccount(p.email, p.name, p.picture);
+  }
+
   const googleMaleBtn = $('#google-gender-male-btn');
   const googleFemaleBtn = $('#google-gender-female-btn');
   if (googleMaleBtn) googleMaleBtn.onclick = () => setGoogleModalGender('male');
@@ -2633,53 +2654,152 @@ function setupAuthSystem() {
 
   const GOOGLE_APP_CLIENT_ID = window.GOOGLE_CLIENT_ID || '962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com';
 
-  const initGoogleIdentityServices = () => {
-    const customBtn = $('#google-login-btn');
-    if (customBtn) customBtn.style.display = 'flex';
+  const resetGoogleBtnUI = () => {
+    window._isGoogleAuthBusy = false;
+    const btn = $('#google-login-btn');
+    const text = $('#google-login-btn-text');
+    const status = $('#google-auth-status');
+    if (btn) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+    if (text) {
+      text.textContent = (userProfile && userProfile.accountEmail)
+        ? 'تبديل أو إعادة ربط حساب Google'
+        : 'متابعة بحساب Google المحفوظ على الهاتف';
+    }
+    if (status) status.innerHTML = '';
   };
 
-  const executeFirebaseAuthGoogle = () => {
+  const executeFirebaseFallback = () => {
+    const status = $('#google-auth-status');
     if (typeof firebase === 'undefined' || !firebase.auth) {
+      if (status) status.innerHTML = '<span style="color:#ffd700;">⚠️ جاري تهيئة خدمة Google، حاول مجدداً...</span>';
       showGemToast('🔍 جاري تهيئة خدمة Google، يرجى المحاولة بعد قليل...');
+      resetGoogleBtnUI();
       return;
     }
-    showGemToast('🔍 جاري تحويلك لحساب Google...');
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
-    provider.setCustomParameters({ prompt: 'select_account' });
 
-    // On mobile devices, always use signInWithRedirect so it operates inside the SAME tab without a blank popup tab hanging!
-    const isMobileDevice = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 800);
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      provider.setCustomParameters({ prompt: 'select_account' });
 
-    if (isMobileDevice) {
-      firebase.auth().signInWithRedirect(provider).catch((err) => {
-        console.warn('Firebase signInWithRedirect error, trying popup:', err);
-        firebase.auth().signInWithPopup(provider).then((result) => {
-          if (result && result.user) {
-            applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
-          }
-        }).catch((pErr) => {
-          console.warn('Firebase popup error:', pErr);
-        });
-      });
-    } else {
-      // Desktop browser
+      // Try signInWithPopup inside current user gesture
       firebase.auth().signInWithPopup(provider).then((result) => {
-        if (result && result.user) {
+        resetGoogleBtnUI();
+        if (result && result.user && result.user.email) {
           applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
         }
-      }).catch((err) => {
-        console.warn('Desktop popup failed, falling back to redirect:', err);
-        firebase.auth().signInWithRedirect(provider).catch(() => {});
+      }).catch((popupErr) => {
+        console.warn('[Firebase Auth] Popup error, falling back to redirect:', popupErr);
+        // Fallback to redirect if popup was blocked
+        firebase.auth().signInWithRedirect(provider).catch((redirErr) => {
+          console.error('[Firebase Auth] Redirect error:', redirErr);
+          resetGoogleBtnUI();
+          if (status) status.innerHTML = '<span style="color:#ef4444;">⚠️ تعذر فتح نافذة Google، يمكنك تسجيل الدخول بالبريد والرقم السري</span>';
+          showGemToast('⚠️ تعذر فتح حساب Google، يرجى تسجيل الدخول بالبريد والرقم السري');
+        });
       });
+    } catch (fbErr) {
+      console.error('[Firebase Auth] Exception:', fbErr);
+      resetGoogleBtnUI();
     }
   };
 
+  const handleGoogleLogin = (e) => {
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+
+    if (window._isGoogleAuthBusy) {
+      console.log('[Google Auth] Request already in flight...');
+      return;
+    }
+    window._isGoogleAuthBusy = true;
+
+    const btn = $('#google-login-btn');
+    const text = $('#google-login-btn-text');
+    const status = $('#google-auth-status');
+
+    if (btn) {
+      btn.style.opacity = '0.75';
+      btn.style.pointerEvents = 'none';
+    }
+    if (text) text.textContent = '⏳ جاري الاتصال بخدمة Google...';
+    if (status) status.innerHTML = '<span style="color:#ffd700;">🔄 جاري فتح نافذة حساب Google المحفوظ...</span>';
+    showGemToast('🔍 جاري فتح تسجيل الدخول بحساب Google...');
+
+    // Auto safety timer to unfreeze button if user cancels dialog
+    setTimeout(() => {
+      if (window._isGoogleAuthBusy) {
+        resetGoogleBtnUI();
+      }
+    }, 12000);
+
+    // 1. PRIMARY: Modern Google Identity Services OAuth 2.0 Token Client (Popup / Account Chooser)
+    // Works reliably across mobile and desktop without iframe transform hang or cookie partitioning blocks!
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+      try {
+        console.log('[Google Auth] Using Google OAuth2 Token Client...');
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_APP_CLIENT_ID,
+          scope: 'email profile openid',
+          prompt: 'select_account',
+          callback: async (tokenResponse) => {
+            console.log('[Google Auth] Token response:', tokenResponse);
+            if (tokenResponse && tokenResponse.error) {
+              console.warn('[Google Auth] User canceled or token error:', tokenResponse.error);
+              if (status) status.innerHTML = '<span style="color:#ef4444;">⚠️ تم إلغاء اختيار الحساب</span>';
+              resetGoogleBtnUI();
+              return;
+            }
+            if (tokenResponse && tokenResponse.access_token) {
+              try {
+                if (status) status.innerHTML = '<span style="color:#34d399;">✅ تم التحقق، جاري تسجيل الدخول...</span>';
+                const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                const userInfo = await userInfoRes.json();
+                console.log('[Google Auth] UserInfo email:', userInfo ? userInfo.email : null);
+                if (userInfo && userInfo.email) {
+                  applyGoogleAccount(userInfo.email, userInfo.name, userInfo.picture);
+                  resetGoogleBtnUI();
+                  return;
+                }
+              } catch (fetchErr) {
+                console.warn('[Google Auth] UserInfo fetch error:', fetchErr);
+              }
+            }
+            resetGoogleBtnUI();
+          },
+          error_callback: (err) => {
+            console.warn('[Google Auth] Client error, trying Firebase:', err);
+            executeFirebaseFallback();
+          }
+        });
+
+        // Request token directly inside click context
+        tokenClient.requestAccessToken();
+        return;
+      } catch (gisErr) {
+        console.warn('[Google Auth] TokenClient exception:', gisErr);
+      }
+    }
+
+    // 2. Fallback to Firebase Google Auth
+    executeFirebaseFallback();
+  };
+
+  window.handleGoogleLoginClick = handleGoogleLogin;
+  window.startGoogleLogin = handleGoogleLogin;
+
   if (googleLoginBtn) {
-    googleLoginBtn.onclick = () => {
-      executeFirebaseAuthGoogle();
-    };
+    googleLoginBtn.onclick = handleGoogleLogin;
+    googleLoginBtn.addEventListener('click', handleGoogleLogin);
+    googleLoginBtn.addEventListener('touchend', handleGoogleLogin);
   }
 
   // Pre-initialize on window load
