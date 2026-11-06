@@ -714,12 +714,12 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.2.3",
-  latestVersionCode: 24,
-  minRequiredVersionCode: 24, // Any installed version < 22 will be asked/forced to update
+  latestVersion: "1.2.4",
+  latestVersionCode: 25,
+  minRequiredVersionCode: 25, // Any installed version < 25 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث ملكي جديد متوفر! 🚀👑",
-  message: "يتوفر إصدار جديد من Loky Chat (v1.2.1) يتضمن إصلاحات هامة لتسجيل الدخول بحساب Google وسرعة فائقة في الاتصال المباشر. يرجى التحديث الآن للمتابعة.",
+  message: "يتوفر إصدار جديد من Loky Chat (v1.2.4) يتضمن إصلاحات هامة لتسجيل الدخول بحساب Google وسرعة فائقة في الاتصال المباشر. يرجى التحديث الآن للمتابعة.",
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.lokychat.app",
   directApkUrl: "https://liqaa-chat.onrender.com/LokyChat-Latest.apk",
   releaseNotes: [

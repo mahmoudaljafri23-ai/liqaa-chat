@@ -1662,8 +1662,8 @@ function initEmailSuggestions() {
 // =============================================
 // 🚀 App Version & In-App Force Update System
 // =============================================
-const CURRENT_APP_VERSION = '1.2.3';
-const CURRENT_VERSION_CODE = 24; // Version code of this build
+const CURRENT_APP_VERSION = '1.2.4';
+const CURRENT_VERSION_CODE = 25; // Version code of this build
 
 async function checkAppUpdate(isManualCheck = false) {
   try {
@@ -5671,6 +5671,10 @@ function endCall() {
   if (!welcomeCamStream || !welcomeCamStream.active) {
     initWelcomeCamera();
   }
+
+  if (window.AndroidBridge && typeof window.AndroidBridge.resetAudioToNormal === 'function') {
+    window.AndroidBridge.resetAudioToNormal();
+  }
 }
 window.endCall = endCall;
 
@@ -5904,6 +5908,9 @@ async function createPeerConnection(forceFresh = false) {
         if (audPromise !== undefined) {
           audPromise.then(() => {
             console.log('[WebRTC] Remote audio playback active');
+            if (window.AndroidBridge && typeof window.AndroidBridge.setSpeakerphoneOn === 'function') {
+              window.AndroidBridge.setSpeakerphoneOn(true);
+            }
           }).catch(e => {
             console.warn('[WebRTC] Remote audio autoplay blocked by browser policy:', e);
             const unlockAudio = () => {
@@ -6100,6 +6107,9 @@ function setState(state) {
       if (welcomeCamStream) {
         try { welcomeCamStream.getTracks().forEach(t => t.stop()); } catch(e) {}
         welcomeCamStream = null;
+      }
+      if (window.AndroidBridge && typeof window.AndroidBridge.resetAudioToNormal === 'function') {
+        window.AndroidBridge.resetAudioToNormal();
       }
       break;
 
@@ -6443,6 +6453,22 @@ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App
     });
   } catch (e) {}
 }
+
+// Background visibility handler: release idle mic and reset audio so other apps (Facebook, etc.) keep external speakers
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    if (appState !== 'in-call') {
+      if (localStream) {
+        localStream.getAudioTracks().forEach(t => {
+          try { t.stop(); } catch(e) {}
+        });
+      }
+      if (window.AndroidBridge && typeof window.AndroidBridge.resetAudioToNormal === 'function') {
+        window.AndroidBridge.resetAudioToNormal();
+      }
+    }
+  }
+});
 
 // =============================================
 // Start

@@ -137,6 +137,34 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        resetSystemAudioMode();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        resetSystemAudioMode();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        resetSystemAudioMode();
+    }
+
+    private void resetSystemAudioMode() {
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                am.setMode(android.media.AudioManager.MODE_NORMAL);
+                am.setSpeakerphoneOn(false);
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void setupWebViewGeoAndBridge() {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
@@ -194,6 +222,29 @@ public class MainActivity extends BridgeActivity {
                     @JavascriptInterface
                     public void minimizeApp() {
                         runOnUiThread(() -> moveTaskToBack(true));
+                    }
+
+                    @JavascriptInterface
+                    public void setSpeakerphoneOn(boolean enable) {
+                        runOnUiThread(() -> {
+                            try {
+                                android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                if (am != null) {
+                                    if (enable) {
+                                        am.setMode(android.media.AudioManager.MODE_IN_COMMUNICATION);
+                                        am.setSpeakerphoneOn(true);
+                                    } else {
+                                        am.setMode(android.media.AudioManager.MODE_NORMAL);
+                                        am.setSpeakerphoneOn(false);
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void resetAudioToNormal() {
+                        runOnUiThread(() -> resetSystemAudioMode());
                     }
 
                     @JavascriptInterface
