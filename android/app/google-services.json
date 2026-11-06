@@ -12,7 +12,20 @@
           "package_name": "com.lokychat.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "962362893467-9mj1vn4ino5l1ghjps12e8sbvbjhf24c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lokychat.app",
+            "certificate_hash": "404d85caf307d32ad0dd61f43993d09e6e84be00"
+          }
+        },
+        {
+          "client_id": "962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAz_qgSnCstli59ekKRpfJ8hg1fgBLaKdU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
