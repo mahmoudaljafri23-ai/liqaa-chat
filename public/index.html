@@ -49,6 +49,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
+  <meta name="google-signin-client_id" content="962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com">
+  <script>window.GOOGLE_CLIENT_ID = '962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com';</script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Firebase App & Cloud Firestore & Auth SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -549,7 +551,7 @@
   </div>
 
   <!-- Royal Auth & Sign-In Modal (Email + Password, Google 1-Tap, Guest) -->
-  <div id="auth-modal" class="modal hidden" style="z-index: 10003; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+  <div id="auth-modal" class="modal hidden" style="z-index: 10003; background: rgba(13, 8, 20, 0.95);">
     <div class="modal-content royal-auth-content" style="max-width: 440px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 24px 20px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
       <button id="close-auth-modal-btn" class="royal-close-round-btn" style="position: absolute; left: 16px; top: 16px;" title="إغلاق">✕</button>
       
@@ -755,7 +757,7 @@
   </div>
 
   <!-- Google Sign-In Gender & Profile Confirmation Modal -->
-  <div id="google-gender-modal" class="modal hidden" style="z-index: 10005; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+  <div id="google-gender-modal" class="modal hidden" style="z-index: 10005; background: rgba(13, 8, 20, 0.95);">
     <div class="modal-content" style="max-width: 410px; width: 92%; padding: 24px 20px; text-align: center; border: 1.8px solid #ffd700; background: linear-gradient(165deg, #240a16 0%, #15091a 50%, #0d0814 100%); border-radius: 24px; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(255,215,0,0.25);">
       <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8800); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 10px; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #fff;">
         👑

@@ -1961,6 +1961,12 @@ function setupAuthSystem() {
 
     if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
     if (authModal) authModal.classList.add('hidden');
+    const genderModal = $('#google-gender-modal');
+    if (genderModal) genderModal.classList.add('hidden');
+    if (welcomeScreen) {
+      welcomeScreen.classList.add('active');
+      welcomeScreen.style.display = 'block';
+    }
   };
 
   // Continue with already connected/saved account
@@ -1973,6 +1979,12 @@ function setupAuthSystem() {
       updateProfileUI();
       if (closeAuthModalBtn) closeAuthModalBtn.style.display = 'block';
       if (authModal) authModal.classList.add('hidden');
+      const genderModal = $('#google-gender-modal');
+      if (genderModal) genderModal.classList.add('hidden');
+      if (welcomeScreen) {
+        welcomeScreen.classList.add('active');
+        welcomeScreen.style.display = 'block';
+      }
       showGemToast(`✨ أهلاً بك يا ${userProfile.username}! جاهز للمطابقة.`);
     };
   }
@@ -2355,10 +2367,34 @@ function setupAuthSystem() {
 
   const applyGoogleAccount = (email, name, picture) => {
     if (!email || !email.includes('@')) return;
-    const cleanUsername = name || email.split('@')[0];
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanUsername = name || cleanEmail.split('@')[0];
 
+    // 1. Immediately hide authModal so two modals never stack or cause black screen
+    if (authModal) authModal.classList.add('hidden');
+
+    // 2. Check if user already exists in saved accounts or local profile
+    const savedMap = getSavedAccountsMap();
+    const existing = savedMap[cleanEmail];
+    const savedGender = (existing && existing.gender) || (userProfile && userProfile.accountEmail === cleanEmail && userProfile.gender) || null;
+
+    if (existing || savedGender) {
+      // Returning user - enter immediately without any intermediate dialog
+      const gAcc = {
+        email: cleanEmail,
+        username: (existing && existing.username) || cleanUsername,
+        gender: savedGender || 'male',
+        photoUrl: picture || (existing && existing.photoUrl) || ''
+      };
+      saveAccountLocally(gAcc);
+      applyAccount(gAcc);
+      showGemToast(`🎉 مرحباً بعودتك! تم الدخول بحساب Google (${gAcc.username}) بنجاح! ✨`);
+      return;
+    }
+
+    // 3. New user - prompt for gender with authModal closed
     pendingGoogleData = {
-      email: email,
+      email: cleanEmail,
       username: cleanUsername,
       photoUrl: picture
     };
@@ -2374,7 +2410,7 @@ function setupAuthSystem() {
       genderModal.classList.remove('hidden');
     } else {
       const gAcc = {
-        email: email,
+        email: cleanEmail,
         username: cleanUsername,
         gender: initialGender,
         photoUrl: picture
@@ -2385,7 +2421,7 @@ function setupAuthSystem() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email,
+          email: cleanEmail,
           password: 'google_oauth_verified',
           username: cleanUsername,
           gender: initialGender,
@@ -2394,7 +2430,7 @@ function setupAuthSystem() {
           countryName: selectedCountryName || 'الأردن'
         })
       }).catch(() => {});
-      showGemToast(`🎉 تم الدخول بحساب Google (${email}) بنجاح!`);
+      showGemToast(`🎉 تم الدخول بحساب Google (${cleanEmail}) بنجاح!`);
     }
   };
 
@@ -2440,6 +2476,10 @@ function setupAuthSystem() {
       const genderModal = $('#google-gender-modal');
       if (genderModal) genderModal.classList.add('hidden');
       if (authModal) authModal.classList.add('hidden');
+      if (welcomeScreen) {
+        welcomeScreen.classList.add('active');
+        welcomeScreen.style.display = 'block';
+      }
 
       showGemToast(`🎉 تم تأكيد هويتك (${googleSelectedGender === 'female' ? 'أنثى 👩' : 'ذكر 👨'}) والدخول بنجاح! ✨`);
     };
@@ -2459,11 +2499,13 @@ function setupAuthSystem() {
     }
   };
 
+  const GOOGLE_APP_CLIENT_ID = window.GOOGLE_CLIENT_ID || '962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com';
+
   const initGoogleIdentityServices = () => {
     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
       try {
         google.accounts.id.initialize({
-          client_id: window.GOOGLE_CLIENT_ID || '1053705568109-36n6cjlr3s1nqn65muuamnku62sg2f1p.apps.googleusercontent.com',
+          client_id: GOOGLE_APP_CLIENT_ID,
           callback: (res) => {
             if (res && res.credential) {
               const payload = decodeJwtResponse(res.credential);
@@ -2509,13 +2551,41 @@ function setupAuthSystem() {
         try {
           google.accounts.id.prompt((notification) => {
             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-              console.log('Google prompt not displayed, checking GIS button slot');
+              console.log('Google prompt not displayed, checking Firebase Auth fallback');
+              if (typeof firebase !== 'undefined' && firebase.auth) {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                firebase.auth().signInWithPopup(provider)
+                  .then((result) => {
+                    if (result && result.user) {
+                      applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+                    }
+                  })
+                  .catch((err) => {
+                    console.warn('Firebase Google Auth fallback error:', err);
+                  });
+              }
             }
           });
           return;
         } catch (e) {
           console.warn('One-tap prompt error:', e);
         }
+      }
+
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        showGemToast('🔍 جاري تسجيل الدخول بحساب Google...');
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+          .then((result) => {
+            if (result && result.user) {
+              applyGoogleAccount(result.user.email, result.user.displayName, result.user.photoURL);
+            }
+          })
+          .catch((err) => {
+            console.warn('Firebase Google Auth error:', err);
+            showGemToast('❌ تعذر إتمام تسجيل الدخول بـ Google، يرجى المحاولة أو استخدام البريد والرقم السري');
+          });
+        return;
       }
       showGemToast('🔍 جاري تهيئة وتسجيل الدخول بحساب Google...');
     };
