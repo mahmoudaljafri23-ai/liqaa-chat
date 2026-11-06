@@ -1682,15 +1682,29 @@ async function checkAppUpdate(isManualCheck = false) {
       console.warn('[Version Check] API fetch error:', netErr);
     }
 
-    // 2. Fallback to Firebase Firestore if server API unreachable
-    if (!config && typeof firestoreDb !== 'undefined' && firestoreDb) {
+    // 2. Check Firebase Firestore (Real-time Cloud Version Control)
+    if (typeof firestoreDb !== 'undefined' && firestoreDb) {
       try {
-        const snap = await firestoreDb.collection('app_config').doc('version').get();
-        if (snap.exists) {
-          config = snap.data();
+        let snap = await firestoreDb.collection('app_settings').doc('version_control').get();
+        if (!snap || !snap.exists) {
+          snap = await firestoreDb.collection('app_config').doc('version').get();
+        }
+        if (snap && snap.exists) {
+          const d = snap.data();
+          const parsedCode = Number(d.min_version_code || d.minRequiredVersionCode || d.latestVersionCode || 0);
+          if (parsedCode > 0) {
+            config = {
+              ...(config || {}),
+              ...d,
+              latestVersionCode: parsedCode,
+              minRequiredVersionCode: parsedCode,
+              latestVersion: d.latest_version_name || d.latestVersion || (config && config.latestVersion) || '1.2.4',
+              forceUpdate: (d.force_update !== undefined) ? d.force_update : (d.forceUpdate !== undefined ? d.forceUpdate : true)
+            };
+          }
         }
       } catch (fbErr) {
-        console.warn('[Version Check] Firestore fallback error:', fbErr);
+        console.warn('[Version Check] Firestore version control check:', fbErr);
       }
     }
 
