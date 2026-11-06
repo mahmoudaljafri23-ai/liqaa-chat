@@ -30,11 +30,22 @@ import com.getcapacitor.BridgeWebChromeClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
+import android.os.Message;
+import android.app.Dialog;
+import android.webkit.WebViewClient;
 
 public class MainActivity extends BridgeActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 101;
     private static final String NOTIFICATION_CHANNEL_ID = "lokychat_channel_main";
     private LocationManager locationManager;
+    private static final int RC_SIGN_IN = 9001;
+    private GoogleSignInClient mGoogleSignInClient;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -42,6 +53,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         createNotificationChannel();
         initFirebaseMessaging();
+        initGoogleSignIn();
         setupWebViewGeoAndBridge();
         requestAppPermissions();
     }
@@ -165,6 +177,64 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception ignored) {}
     }
 
+    private void initGoogleSignIn() {
+        try {
+            GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken("962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com")
+                    .requestEmail()
+                    .requestProfile()
+                    .build();
+            mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+            android.util.Log.d("LokyGoogleAuth", "Native Google Sign-In initialized successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            handleSignInResult(task);
+        }
+    }
+
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            if (account != null) {
+                String email = account.getEmail() != null ? account.getEmail() : "";
+                String name = account.getDisplayName() != null ? account.getDisplayName() : "";
+                String photo = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+                String idToken = account.getIdToken() != null ? account.getIdToken() : "";
+                android.util.Log.d("LokyGoogleAuth", "Native Google Sign-In Success: " + email);
+                runOnUiThread(() -> {
+                    if (getBridge() != null && getBridge().getWebView() != null) {
+                        String js = "window.applyGoogleAccount && window.applyGoogleAccount('" 
+                            + escapeJs(email) + "', '" 
+                            + escapeJs(name) + "', '" 
+                            + escapeJs(photo) + "', '" 
+                            + escapeJs(idToken) + "');";
+                        getBridge().getWebView().evaluateJavascript(js, null);
+                    }
+                });
+            }
+        } catch (ApiException e) {
+            android.util.Log.e("LokyGoogleAuth", "Native Google Sign-In failed code=" + e.getStatusCode(), e);
+            runOnUiThread(() -> {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().evaluateJavascript("window.onNativeGoogleSignInError && window.onNativeGoogleSignInError(" + e.getStatusCode() + ");", null);
+                }
+            });
+        }
+    }
+
+    private String escapeJs(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "").replace("\r", "");
+    }
+
     private void setupWebViewGeoAndBridge() {
         try {
             if (getBridge() != null && getBridge().getWebView() != null) {
@@ -178,11 +248,50 @@ public class MainActivity extends BridgeActivity {
                 settings.setAllowFileAccess(true);
                 settings.setAllowContentAccess(true);
                 settings.setSaveFormData(true);
+                settings.setSupportMultipleWindows(true);
+                settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     webView.setImportantForAutofill(android.view.View.IMPORTANT_FOR_AUTOFILL_YES);
                 }
 
                 webView.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+                    @Override
+                    public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                        try {
+                            WebView popupWebView = new WebView(MainActivity.this);
+                            WebSettings popSettings = popupWebView.getSettings();
+                            popSettings.setJavaScriptEnabled(true);
+                            popSettings.setDomStorageEnabled(true);
+                            popSettings.setSupportMultipleWindows(true);
+                            popSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+
+                            final Dialog dialog = new Dialog(MainActivity.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                            dialog.setContentView(popupWebView);
+                            dialog.show();
+
+                            popupWebView.setWebChromeClient(new android.webkit.WebChromeClient() {
+                                @Override
+                                public void onCloseWindow(WebView window) {
+                                    try { dialog.dismiss(); } catch (Exception ignored) {}
+                                }
+                            });
+
+                            popupWebView.setWebViewClient(new WebViewClient() {
+                                @Override
+                                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                                    return false;
+                                }
+                            });
+
+                            WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                            transport.setWebView(popupWebView);
+                            resultMsg.sendToTarget();
+                            return true;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return false;
+                        }
+                    }
                     @Override
                     public android.graphics.Bitmap getDefaultVideoPoster() {
                         return android.graphics.Bitmap.createBitmap(1, 1, android.graphics.Bitmap.Config.ARGB_8888);
@@ -245,6 +354,25 @@ public class MainActivity extends BridgeActivity {
                     @JavascriptInterface
                     public void resetAudioToNormal() {
                         runOnUiThread(() -> resetSystemAudioMode());
+                    }
+
+                    @JavascriptInterface
+                    public void startNativeGoogleSignIn() {
+                        runOnUiThread(() -> {
+                            try {
+                                if (mGoogleSignInClient == null) {
+                                    initGoogleSignIn();
+                                }
+                                if (mGoogleSignInClient != null) {
+                                    mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
+                                        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                                        startActivityForResult(signInIntent, RC_SIGN_IN);
+                                    });
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
                     }
 
                     @JavascriptInterface

@@ -63,11 +63,23 @@ let firestoreDb = null;
 let friendsUnsubscribe = null;
 
 // Safe global hook for Google account application
-window.applyGoogleAccount = function(email, name, picture) {
+window.applyGoogleAccount = function(email, name, picture, idToken) {
   if (typeof window._internalApplyGoogleAccount === 'function') {
-    window._internalApplyGoogleAccount(email, name, picture);
+    window._internalApplyGoogleAccount(email, name, picture, idToken);
   } else {
-    window._pendingGoogleAuthUser = { email, name, picture };
+    window._pendingGoogleAuthUser = { email, name, picture, idToken };
+  }
+};
+
+window.onNativeGoogleSignInError = function(code) {
+  console.warn('[Native Google Sign-In Error Code]:', code);
+  if (typeof window.resetGoogleBtnUI === 'function') window.resetGoogleBtnUI();
+  if (code === 12501) {
+    if (typeof showGemToast === 'function') showGemToast('ℹ️ تم إلغاء اختيار حساب Google');
+  } else if (code === 10) {
+    if (typeof showGemToast === 'function') showGemToast('⚠️ يلزم إضافة بصمة Google Play إلى Firebase، يمكنك الدخول بالبريد والرقم السري مؤقتاً');
+  } else {
+    if (typeof showGemToast === 'function') showGemToast('⚠️ تعذر الدخول بـ Google (كود: ' + code + ')، يمكنك الدخول بالبريد والرقم السري');
   }
 };
 
@@ -2524,8 +2536,22 @@ function setupAuthSystem() {
     }
   };
 
-  const applyGoogleAccount = (email, name, picture) => {
+  const applyGoogleAccount = (email, name, picture, idToken) => {
     if (!email || !email.includes('@')) return;
+    
+    // Register user in Firebase Authentication if idToken is present
+    if (idToken && typeof firebase !== 'undefined' && firebase.auth) {
+      try {
+        const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+        firebase.auth().signInWithCredential(credential).then((res) => {
+          console.log('[Firebase Auth] User successfully recorded in Firebase Authentication Console:', res.user.email);
+        }).catch((authErr) => {
+          console.warn('[Firebase Auth] signInWithCredential info:', authErr.message);
+        });
+      } catch (e) {
+        console.warn('[Firebase Auth] Credential creation info:', e.message);
+      }
+    }
     const cleanEmail = email.toLowerCase().trim();
     const cleanUsername = name || cleanEmail.split('@')[0];
 
@@ -2669,6 +2695,7 @@ function setupAuthSystem() {
   const GOOGLE_APP_CLIENT_ID = window.GOOGLE_CLIENT_ID || '962362893467-ffscheb8gaoe8pev4fkghcfvp6digb3o.apps.googleusercontent.com';
 
   const resetGoogleBtnUI = () => {
+    window.resetGoogleBtnUI = resetGoogleBtnUI;
     window._isGoogleAuthBusy = false;
     const btn = $('#google-login-btn');
     const text = $('#google-login-btn-text');
@@ -2753,7 +2780,16 @@ function setupAuthSystem() {
       }
     }, 12000);
 
-    // 1. PRIMARY: Modern Google Identity Services OAuth 2.0 Token Client (Popup / Account Chooser)
+    // 0. PRIMARY ON ANDROID: Official Native Google Sign-In via Google Play Services
+    // Opens the native bottom sheet dialog right inside the app, never leaves the app or opens Samsung Internet!
+    if (window.AndroidBridge && typeof window.AndroidBridge.startNativeGoogleSignIn === 'function') {
+      console.log('[Google Auth] Invoking Native Android Google Sign-In...');
+      if (status) status.innerHTML = '<span style="color:#ffd700;">🔄 جاري فتح نافذة حساب Google المحفوظ...</span>';
+      window.AndroidBridge.startNativeGoogleSignIn();
+      return;
+    }
+
+    // 1. PRIMARY ON WEB: Modern Google Identity Services OAuth 2.0 Token Client (Popup / Account Chooser)
     // Works reliably across mobile and desktop without iframe transform hang or cookie partitioning blocks!
     if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
       try {
