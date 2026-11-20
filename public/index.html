@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261120_ai1">
+  <link rel="stylesheet" href="css/style.css?v=20261120_v3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
@@ -1409,7 +1409,17 @@
         <button type="button" class="ai-chip" onclick="window.sendAIPrompt('عرفني عن نفسك وشو بتعرف تعمل؟')">✨ من أنت؟</button>
         <button type="button" class="ai-chip" onclick="window.sendAIPrompt('أنا زهقان، اعطيني فكرة حلوة أعملها')">💡 فكرة للملل</button>
       </div>
+      <!-- Direct Message & Voice Input Field -->
+      <form class="ai-input-form" id="ai-input-form" onsubmit="event.preventDefault(); window.sendAIMessageFromInput();">
+        <input type="text" id="ai-text-input" placeholder="اكتب رسالتك أو اضغط تحدث الآن بالمايك..." autocomplete="off">
+        <button type="submit" id="ai-send-btn" class="ai-send-btn" title="إرسال">
+          <span>إرسال 🚀</span>
+        </button>
+      </form>
     </div>
+
+    <!-- Hidden Dedicated Real Human Voice Audio Stream -->
+    <audio id="ai-voice-audio" playsinline preload="auto"></audio>
 
     <!-- Bottom Floating Call Controls -->
     <div class="ai-call-footer">
@@ -1436,6 +1446,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261120_ai1"></script>
+  <script src="js/app.js?v=20261120_v3"></script>
 </body>
 </html>

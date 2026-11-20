@@ -6640,7 +6640,22 @@ function initAIVoiceEngine() {
   }
 }
 
+function unlockAIAudio() {
+  const audio = $('#ai-voice-audio');
+  if (audio) {
+    try {
+      if (!audio.src || audio.src === '') {
+        audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+      }
+      audio.play().then(() => {
+        // Unlocked
+      }).catch(() => {});
+    } catch(e) {}
+  }
+}
+
 window.switchAIPersona = function(gender) {
+  unlockAIAudio();
   currentAIPersona = (gender === 'female') ? 'female' : 'male';
   console.log('[AI Companion] Switched persona to:', currentAIPersona);
 
@@ -6680,6 +6695,7 @@ window.switchAIPersona = function(gender) {
 
 window.startAIVoiceCall = function(initialPersona) {
   console.log('[AI Companion] Starting Live Voice Call with persona:', initialPersona || currentAIPersona);
+  unlockAIAudio();
   initAIVoiceEngine();
 
   if (currentState === 'searching') {
@@ -6720,6 +6736,10 @@ window.startAIVoiceCall = function(initialPersona) {
 
 window.endAIVoiceCall = function() {
   console.log('[AI Companion] Ending Voice Call...');
+  const audio = $('#ai-voice-audio');
+  if (audio) {
+    try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+  }
   if (typeof window.speechSynthesis !== 'undefined') {
     window.speechSynthesis.cancel();
   }
@@ -6737,6 +6757,10 @@ window.endAIVoiceCall = function() {
 
 window.switchToRealPartnerFromAI = function() {
   console.log('[AI Companion] Switching to Real Partner Matchmaking...');
+  const audio = $('#ai-voice-audio');
+  if (audio) {
+    try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+  }
   if (typeof window.speechSynthesis !== 'undefined') {
     window.speechSynthesis.cancel();
   }
@@ -6755,14 +6779,18 @@ window.switchToRealPartnerFromAI = function() {
 };
 
 window.toggleAIMic = function() {
-  if (isAISpeaking) {
-    if (typeof window.speechSynthesis !== 'undefined') {
-      window.speechSynthesis.cancel();
-      isAISpeaking = false;
-      const orb = $('#ai-visualizer-orb');
-      if (orb) orb.classList.remove('speaking');
-    }
+  unlockAIAudio();
+
+  const audio = $('#ai-voice-audio');
+  if (audio && !audio.paused) {
+    try { audio.pause(); } catch(e) {}
   }
+  if (typeof window.speechSynthesis !== 'undefined') {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
+  }
+  isAISpeaking = false;
+  const orb = $('#ai-visualizer-orb');
+  if (orb) orb.classList.remove('speaking');
 
   if (isAIMicListening) {
     if (aiSpeechRecognition) {
@@ -6777,19 +6805,43 @@ window.toggleAIMic = function() {
     if (aiSpeechRecognition) {
       try {
         aiSpeechRecognition.start();
+        const micBtn = $('#ai-mic-toggle-btn');
+        if (micBtn) micBtn.classList.add('listening');
+        const micLabel = $('#ai-mic-label');
+        if (micLabel) micLabel.textContent = 'أستمع إليك... 🎙️';
+        const status = $('#ai-status-indicator');
+        if (status) status.textContent = '● أستمع إليك الآن... 👂';
       } catch (e) {
         console.warn('[AI Recognition Start warn]:', e);
+        const input = $('#ai-text-input');
+        if (input) input.focus();
+        if (typeof showGemToast === 'function') {
+          showGemToast('🎙️ يمكنك كتابة رسالتك في الخانة وسيجيبك بالصوت فوراً!');
+        }
       }
     } else {
+      const input = $('#ai-text-input');
+      if (input) input.focus();
       if (typeof showGemToast === 'function') {
-        showGemToast('🎙️ يمكنك اختيار أي سؤال من الأسئلة السريعة بالأعلى');
+        showGemToast('✍️ يمكنك كتابة رسالتك في الخانة وسيجيبك بالصوت فوراً!');
       }
     }
   }
 };
 
+window.sendAIMessageFromInput = function() {
+  unlockAIAudio();
+  const input = $('#ai-text-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  window.sendAIPrompt(text);
+};
+
 window.sendAIPrompt = async function(text) {
   if (!text || !text.trim()) return;
+  unlockAIAudio();
   const cleanPrompt = text.trim();
 
   const transcriptWrap = $('#user-voice-transcript');
@@ -6820,8 +6872,8 @@ window.sendAIPrompt = async function(text) {
   } catch (err) {
     console.warn('[AI Companion Fetch Error]:', err);
     const fallback = (currentAIPersona === 'female')
-      ? 'أنا معك وسامعتك يا غالي، احكيلي أكتر! 🌸'
-      : 'أنا معك وسامعك يا غالي، احكيلي أكثر!';
+      ? 'أنا معك وسامعتك بصوتي يا غالي، احكيلي شو بتحب نسولف! 🌸'
+      : 'أنا معك وسامعك بصوتي يا غالي، احكيلي شو بتحب نسولف! 🎙️';
     const bubble = $('#ai-bubble-text');
     if (bubble) bubble.textContent = fallback;
     window.speakAIText(fallback);
@@ -6829,14 +6881,61 @@ window.sendAIPrompt = async function(text) {
 };
 
 window.speakAIText = function(text) {
-  if (!text || typeof window.speechSynthesis === 'undefined') return;
-
-  try {
-    window.speechSynthesis.cancel();
-  } catch(e) {}
+  if (!text) return;
+  unlockAIAudio();
 
   const status = $('#ai-status-indicator');
-  if (status) status.textContent = '● يتحدث معك الآن 🎙️';
+  if (status) status.textContent = '● يتحدث معك الآن بصوته 🎙️';
+
+  const orb = $('#ai-visualizer-orb');
+  if (orb) orb.classList.add('speaking');
+  isAISpeaking = true;
+
+  const audio = $('#ai-voice-audio');
+  if (audio) {
+    const ttsUrl = `/api/ai-tts?text=${encodeURIComponent(text)}&lang=ar`;
+    audio.src = ttsUrl;
+    audio.playbackRate = (currentAIPersona === 'female') ? 1.0 : 0.88; // Deeper tone for male
+
+    audio.onended = () => {
+      isAISpeaking = false;
+      if (orb) orb.classList.remove('speaking');
+      if (status) status.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
+
+      // Auto-listen after speech ends
+      setTimeout(() => {
+        if (currentState === 'ai_call' && !isAISpeaking && !isAIMicListening && aiSpeechRecognition) {
+          try { aiSpeechRecognition.start(); } catch(e) {}
+        }
+      }, 500);
+    };
+
+    audio.onerror = (e) => {
+      console.warn('[AI Audio Element Error, falling back to speech synthesis]:', e);
+      fallbackToSpeechSynthesis(text);
+    };
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(err => {
+        console.warn('[AI Audio Play Autoplay blocked, falling back to SpeechSynthesis]:', err);
+        fallbackToSpeechSynthesis(text);
+      });
+    }
+  } else {
+    fallbackToSpeechSynthesis(text);
+  }
+};
+
+function fallbackToSpeechSynthesis(text) {
+  if (typeof window.speechSynthesis === 'undefined') {
+    isAISpeaking = false;
+    const orb = $('#ai-visualizer-orb');
+    if (orb) orb.classList.remove('speaking');
+    return;
+  }
+
+  try { window.speechSynthesis.cancel(); } catch(e) {}
 
   const orb = $('#ai-visualizer-orb');
   if (orb) orb.classList.add('speaking');
@@ -6844,53 +6943,32 @@ window.speakAIText = function(text) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'ar-SA';
+  utterance.pitch = (currentAIPersona === 'female') ? 1.35 : 0.98;
+  utterance.rate = (currentAIPersona === 'female') ? 0.96 : 1.0;
 
-  // Customize pitch and rate by persona
-  if (currentAIPersona === 'female') {
-    utterance.pitch = 1.35; // Gentle feminine pitch
-    utterance.rate = 0.96;
-  } else {
-    utterance.pitch = 0.98; // Warm masculine pitch
-    utterance.rate = 1.0;
+  if (aiVoiceSelected) {
+    utterance.voice = aiVoiceSelected;
   }
-
-  // Look for preferred voices if available
-  try {
-    const voices = window.speechSynthesis.getVoices();
-    if (voices && voices.length) {
-      if (currentAIPersona === 'female') {
-        const femaleVoice = voices.find(v => v.lang && (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.includes('female') || v.name.includes('Hoda') || v.name.includes('Maryam') || v.name.includes('Salma') || v.name.includes('Zariyah')));
-        if (femaleVoice) utterance.voice = femaleVoice;
-        else if (aiVoiceSelected) utterance.voice = aiVoiceSelected;
-      } else {
-        const maleVoice = voices.find(v => v.lang && (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.includes('male') || v.name.includes('Naayf') || v.name.includes('Tariq')));
-        if (maleVoice) utterance.voice = maleVoice;
-        else if (aiVoiceSelected) utterance.voice = aiVoiceSelected;
-      }
-    }
-  } catch(e) {}
 
   utterance.onend = () => {
     isAISpeaking = false;
     if (orb) orb.classList.remove('speaking');
     const s = $('#ai-status-indicator');
     if (s) s.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
-
-    setTimeout(() => {
-      if (currentState === 'ai_call' && !isAISpeaking && !isAIMicListening && aiSpeechRecognition) {
-        try { aiSpeechRecognition.start(); } catch(e) {}
-      }
-    }, 600);
   };
 
-  utterance.onerror = (e) => {
-    console.warn('[AI SpeechSynthesis Error]:', e);
+  utterance.onerror = () => {
     isAISpeaking = false;
     if (orb) orb.classList.remove('speaking');
     const s = $('#ai-status-indicator');
     if (s) s.textContent = '● مستعد لسماعك 🎙️';
   };
 
-  window.speechSynthesis.speak(utterance);
-};
+  try {
+    window.speechSynthesis.speak(utterance);
+  } catch(e) {
+    isAISpeaking = false;
+    if (orb) orb.classList.remove('speaking');
+  }
+}
 

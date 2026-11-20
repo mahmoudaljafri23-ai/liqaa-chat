@@ -386,6 +386,46 @@ app.get('/api/admin/reports', (req, res) => {
 });
 
 // =============================================
+// 🎙️ High-Fidelity Arabic Voice Audio Stream API (MP3)
+// =============================================
+app.get('/api/ai-tts', (req, res) => {
+  try {
+    const text = (req.query.text || '').trim();
+    if (!text) return res.status(400).send('No text provided');
+
+    const cleanText = text.replace(/[*#_~`!؟.,:;]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const lang = req.query.lang || 'ar';
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${lang}&client=tw-ob`;
+
+    const request = https.get(ttsUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 6000
+    }, (ttsRes) => {
+      if (ttsRes.statusCode !== 200) {
+        return res.status(ttsRes.statusCode).end();
+      }
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      ttsRes.pipe(res);
+    });
+
+    request.on('error', (err) => {
+      console.warn('[AI TTS Proxy Error]:', err.message);
+      res.status(500).end();
+    });
+    request.on('timeout', () => {
+      request.destroy();
+      res.status(504).end();
+    });
+  } catch (err) {
+    console.warn('[AI TTS Error]:', err);
+    res.status(500).end();
+  }
+});
+
+// =============================================
 // 🤖 Loky AI Voice Companion API (Dual Persona: Male & Female)
 // =============================================
 app.post('/api/ai-companion', async (req, res) => {
@@ -461,6 +501,8 @@ Guidelines:
           `يا مية أهلاً وسهلاً بـ ${username}! وجودك أسعدني، طمني عنك كيف أمورك؟ 💖`
         ];
         reply = femaleGreetings[Math.floor(Math.random() * femaleGreetings.length)];
+      } else if (cleanMsg.includes('صوت') || cleanMsg.includes('احكي') || cleanMsg.includes('تكلم') || cleanMsg.includes('سمعني') || cleanMsg.includes('ما اسمع') || cleanMsg.includes('مش سامع')) {
+        reply = `يا عيوني هيني عم بحكي معك وسامعتك بصوتي! صوتي طالع عندك وواضح هلأ؟ احكيلي شو بتحب تسمع مني؟ 🌸`;
       } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
         const femaleJokes = [
           `بتعرف شو الفرق بينك وبين الورد؟ الورد يذبل وأنت بتنور القلب! ههههه شو رأيك بهاللطافة؟ 🌸`,
@@ -514,6 +556,8 @@ Guidelines:
           `يا هلا بـ ${username}! أنا هون ومستعد للدردشة معك في أي موضوع، شو أخبارك؟`
         ];
         reply = greetings[Math.floor(Math.random() * greetings.length)];
+      } else if (cleanMsg.includes('صوت') || cleanMsg.includes('احكي') || cleanMsg.includes('تكلم') || cleanMsg.includes('سمعني') || cleanMsg.includes('ما اسمع') || cleanMsg.includes('مش سامع')) {
+        reply = `يا هلا يا غالي! هيني عم بحكي معك بصوتي ومتحمس أدردش معك، صوتي طالع عندك وواضح؟ احكيلي شو حابب نسولف! 🎙️`;
       } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
         const jokes = [
           `مرة واحد سأل الثاني: بتعرف شو الفرق بينك وبين السكر؟ قاله لأ، قاله السكر بيذوب بالشاي وأنت بتذوب القلوب! ههههه`,

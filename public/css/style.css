@@ -5319,4 +5319,54 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   color: #f472b6 !important;
 }
 
+/* AI Direct Input Form */
+.ai-input-form {
+  display: flex;
+  gap: 8px;
+  width: 92%;
+  max-width: 420px;
+  margin-top: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 25px;
+  padding: 4px 6px 4px 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+
+.ai-input-form input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13px;
+  font-family: 'Tajawal', sans-serif;
+  direction: rtl;
+}
+
+.ai-input-form input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ai-send-btn {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  border: none;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-voice-call-screen.persona-female .ai-send-btn {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+.ai-voice-call-screen.persona-female .ai-input-form {
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
 
