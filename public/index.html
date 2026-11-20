@@ -241,12 +241,14 @@
             <!-- AI Companion Smart Suggestion (Appears after waiting) -->
             <div id="radar-ai-suggestion" class="radar-ai-suggestion hidden">
               <div class="ai-sugg-badge">✨ الذكاء الاصطناعي متاح فوراً</div>
-              <p class="ai-sugg-sub">لم نجد شريكاً متصلاً الآن، اختر من تحب التحدث معه صوتياً:</p>
-              <div class="ai-sugg-choice-row" style="display: flex; gap: 8px; justify-content: center; margin-top: 6px;">
+              <p class="ai-sugg-sub" id="radar-ai-status-text">لم يتوفر شريك متصل الآن.. جاري نقلك تلقائياً للذكاء الاصطناعي خلال ثوانٍ ⚡</p>
+              <div class="ai-sugg-choice-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
                 <button type="button" class="btn-sugg-ai btn-sugg-female" onclick="window.startAIVoiceCall && window.startAIVoiceCall('female')" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                  <img src="assets/ai-avatars/layla.png" class="sugg-avatar-mini" alt="ليلى">
                   <span>👧 ليلى (بنت)</span>
                 </button>
                 <button type="button" class="btn-sugg-ai btn-sugg-male" onclick="window.startAIVoiceCall && window.startAIVoiceCall('male')" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4);">
+                  <img src="assets/ai-avatars/loky.png" class="sugg-avatar-mini" alt="لوكي">
                   <span>👨‍💼 لوكي (شاب)</span>
                 </button>
               </div>
@@ -1353,7 +1355,7 @@
     <div class="ai-call-header">
       <div class="ai-header-left">
         <div class="ai-avatar-circle" id="ai-avatar-circle">
-          <span class="ai-avatar-emoji" id="ai-avatar-emoji">👨‍💼</span>
+          <img id="ai-avatar-img" src="assets/ai-avatars/loky.png" alt="Loky AI" class="ai-avatar-img-round">
           <span class="ai-online-pulse"></span>
         </div>
         <div class="ai-header-meta">
@@ -1369,11 +1371,11 @@
     <!-- Dual Persona Switcher (Male / Female) -->
     <div class="ai-persona-bar">
       <button type="button" class="ai-persona-btn active" id="btn-persona-male" onclick="window.switchAIPersona('male')">
-        <span class="persona-icon">👨‍💼</span>
+        <img src="assets/ai-avatars/loky.png" class="persona-icon-avatar" alt="لوكي">
         <span class="persona-name">لوكي (شاب)</span>
       </button>
       <button type="button" class="ai-persona-btn" id="btn-persona-female" onclick="window.switchAIPersona('female')">
-        <span class="persona-icon">👧</span>
+        <img src="assets/ai-avatars/layla.png" class="persona-icon-avatar" alt="ليلى">
         <span class="persona-name">ليلى (بنت)</span>
       </button>
     </div>
@@ -1386,7 +1388,8 @@
         <div class="ai-wave-ring ring-3"></div>
         <div class="ai-wave-ring ring-4"></div>
         <div class="ai-center-core" id="ai-center-core" onclick="window.toggleAIMic()">
-          <span class="ai-core-icon" id="ai-core-icon">🎙️</span>
+          <img id="ai-center-avatar-img" src="assets/ai-avatars/loky.png" alt="AI Avatar" class="ai-center-avatar-pic">
+          <div class="ai-center-mic-badge" id="ai-center-mic-badge">🎙️</div>
         </div>
       </div>
 
@@ -1446,6 +1449,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261120_v3"></script>
+  <script src="js/app.js?v=20261120_v4"></script>
 </body>
 </html>

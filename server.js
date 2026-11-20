@@ -389,6 +389,8 @@ app.get('/api/admin/reports', (req, res) => {
 // 🎙️ High-Fidelity Arabic Voice Audio Stream API (MP3)
 // =============================================
 app.get('/api/ai-tts', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   try {
     const text = (req.query.text || '').trim();
     if (!text) return res.status(400).send('No text provided');
@@ -428,7 +430,17 @@ app.get('/api/ai-tts', (req, res) => {
 // =============================================
 // 🤖 Loky AI Voice Companion API (Dual Persona: Male & Female)
 // =============================================
+app.options('/api/ai-companion', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
+
 app.post('/api/ai-companion', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   try {
     const { message = '', language = 'ar', userProfile = {}, character = 'male' } = req.body || {};
     const cleanMsg = (message || '').trim().toLowerCase();

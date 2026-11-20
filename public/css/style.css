@@ -4866,11 +4866,61 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .btn-sugg-ai:active {
   transform: scale(0.96);
+}
+
+.sugg-avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.persona-icon-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: inline-block;
+}
+
+.ai-avatar-img-round {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ai-center-avatar-pic {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
+}
+
+.ai-center-mic-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #ffd700, #ff8800);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 2px solid #09090e;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
 }
 
 /* Full Screen AI Voice Call Screen */
@@ -5038,14 +5088,14 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
 
 .ai-center-core {
   position: relative;
-  width: 76px;
-  height: 76px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: linear-gradient(135deg, #9333ea, #06b6d4);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+  box-shadow: 0 0 35px rgba(168, 85, 247, 0.85);
   cursor: pointer;
   transition: all 0.25s ease;
 }

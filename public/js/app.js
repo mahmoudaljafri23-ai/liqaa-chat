@@ -6136,6 +6136,10 @@ function setState(state) {
         clearTimeout(window.aiSuggestionTimeout);
         window.aiSuggestionTimeout = null;
       }
+      if (window.aiCountdownInterval) {
+        clearInterval(window.aiCountdownInterval);
+        window.aiCountdownInterval = null;
+      }
       const radarSuggIdle = $('#radar-ai-suggestion');
       if (radarSuggIdle) radarSuggIdle.classList.add('hidden');
 
@@ -6177,15 +6181,57 @@ function setState(state) {
       break;
 
     case 'searching':
-      if (window.aiSuggestionTimeout) clearTimeout(window.aiSuggestionTimeout);
+      if (window.aiSuggestionTimeout) {
+        clearTimeout(window.aiSuggestionTimeout);
+        window.aiSuggestionTimeout = null;
+      }
+      if (window.aiCountdownInterval) {
+        clearInterval(window.aiCountdownInterval);
+        window.aiCountdownInterval = null;
+      }
       const radarSuggSearch = $('#radar-ai-suggestion');
       if (radarSuggSearch) radarSuggSearch.classList.add('hidden');
+      
+      const statusTextEl = $('#radar-ai-status-text');
+      if (statusTextEl) {
+        statusTextEl.textContent = 'لم يتوفر شريك متصل الآن.. جاري نقلك تلقائياً للذكاء الاصطناعي خلال 5 ثوانٍ ⚡';
+      }
+
+      // Auto-switch to AI Voice Companion if no human partner found after 8 seconds
       window.aiSuggestionTimeout = setTimeout(() => {
         if (currentState === 'searching') {
-          const s = $('#radar-ai-suggestion');
-          if (s) s.classList.remove('hidden');
+          if (radarSuggSearch) radarSuggSearch.classList.remove('hidden');
+          let countdownSec = 5;
+
+          window.aiCountdownInterval = setInterval(() => {
+            if (currentState !== 'searching') {
+              clearInterval(window.aiCountdownInterval);
+              window.aiCountdownInterval = null;
+              return;
+            }
+            countdownSec--;
+            if (statusTextEl && countdownSec > 0) {
+              statusTextEl.textContent = `لم يتوفر شريك متصل الآن.. جاري نقلك تلقائياً للذكاء الاصطناعي خلال ${countdownSec} ثوانٍ ⚡`;
+            }
+            if (countdownSec <= 0) {
+              clearInterval(window.aiCountdownInterval);
+              window.aiCountdownInterval = null;
+              if (currentState === 'searching') {
+                let autoPersona = 'female';
+                if (userProfile && userProfile.gender === 'female') {
+                  autoPersona = 'male';
+                }
+                if (typeof currentGenderFilter !== 'undefined') {
+                  if (currentGenderFilter === 'male') autoPersona = 'male';
+                  else if (currentGenderFilter === 'female') autoPersona = 'female';
+                }
+                console.log('[Radar] Auto-switching to Voice AI Companion:', autoPersona);
+                window.startAIVoiceCall(autoPersona);
+              }
+            }
+          }, 1000);
         }
-      }, 7000);
+      }, 3500);
 
       if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
@@ -6216,6 +6262,10 @@ function setState(state) {
       if (window.aiSuggestionTimeout) {
         clearTimeout(window.aiSuggestionTimeout);
         window.aiSuggestionTimeout = null;
+      }
+      if (window.aiCountdownInterval) {
+        clearInterval(window.aiCountdownInterval);
+        window.aiCountdownInterval = null;
       }
       const radarSuggConn = $('#radar-ai-suggestion');
       if (radarSuggConn) radarSuggConn.classList.add('hidden');
@@ -6669,6 +6719,8 @@ window.switchAIPersona = function(gender) {
   const btnMale = $('#btn-persona-male');
   const btnFemale = $('#btn-persona-female');
   const avatarEmoji = $('#ai-avatar-emoji');
+  const avatarImg = $('#ai-avatar-img');
+  const centerAvatarImg = $('#ai-center-avatar-img');
   const headerName = $('#ai-header-name');
   const bubbleSpeaker = $('#ai-bubble-speaker');
   const bubbleText = $('#ai-bubble-text');
@@ -6679,6 +6731,8 @@ window.switchAIPersona = function(gender) {
     if (btnFemale) btnFemale.classList.add('active');
     if (btnMale) btnMale.classList.remove('active');
     if (avatarEmoji) avatarEmoji.textContent = '👧';
+    if (avatarImg) avatarImg.src = 'assets/ai-avatars/layla.png';
+    if (centerAvatarImg) centerAvatarImg.src = 'assets/ai-avatars/layla.png';
     if (headerName) headerName.textContent = 'صديقتك الذكية (ليلى AI)';
     if (bubbleSpeaker) bubbleSpeaker.textContent = '👧 ليلى AI:';
 
@@ -6690,6 +6744,8 @@ window.switchAIPersona = function(gender) {
     if (btnMale) btnMale.classList.add('active');
     if (btnFemale) btnFemale.classList.remove('active');
     if (avatarEmoji) avatarEmoji.textContent = '👨‍💼';
+    if (avatarImg) avatarImg.src = 'assets/ai-avatars/loky.png';
+    if (centerAvatarImg) centerAvatarImg.src = 'assets/ai-avatars/loky.png';
     if (headerName) headerName.textContent = 'صديقك الذكي (لوكي AI)';
     if (bubbleSpeaker) bubbleSpeaker.textContent = '👨‍💼 لوكي AI:';
 
@@ -6713,6 +6769,10 @@ window.startAIVoiceCall = function(initialPersona) {
   if (window.aiSuggestionTimeout) {
     clearTimeout(window.aiSuggestionTimeout);
     window.aiSuggestionTimeout = null;
+  }
+  if (window.aiCountdownInterval) {
+    clearInterval(window.aiCountdownInterval);
+    window.aiCountdownInterval = null;
   }
   const radarSugg = $('#radar-ai-suggestion');
   if (radarSugg) radarSugg.classList.add('hidden');
@@ -6859,7 +6919,7 @@ window.sendAIPrompt = async function(text) {
   if (status) status.textContent = '● جاري التفكير والرد... ⚡';
 
   try {
-    const res = await fetch('/api/ai-companion', {
+    const res = await fetch(`${API_BASE_URL}/api/ai-companion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -6899,7 +6959,7 @@ window.speakAIText = function(text) {
 
   const audio = $('#ai-voice-audio');
   if (audio) {
-    const ttsUrl = `/api/ai-tts?text=${encodeURIComponent(text)}&lang=ar`;
+    const ttsUrl = `${API_BASE_URL}/api/ai-tts?text=${encodeURIComponent(text)}&lang=ar`;
     audio.src = ttsUrl;
     audio.playbackRate = (currentAIPersona === 'female') ? 1.0 : 0.88; // Deeper tone for male
 
@@ -6938,6 +6998,8 @@ function fallbackToSpeechSynthesis(text) {
     isAISpeaking = false;
     const orb = $('#ai-visualizer-orb');
     if (orb) orb.classList.remove('speaking');
+    const s = $('#ai-status-indicator');
+    if (s) s.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
     return;
   }
 
@@ -6975,6 +7037,8 @@ function fallbackToSpeechSynthesis(text) {
   } catch(e) {
     isAISpeaking = false;
     if (orb) orb.classList.remove('speaking');
+    const s = $('#ai-status-indicator');
+    if (s) s.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
   }
 }
 
