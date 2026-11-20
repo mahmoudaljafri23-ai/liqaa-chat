@@ -6959,9 +6959,9 @@ window.speakAIText = function(text) {
 
   const audio = $('#ai-voice-audio');
   if (audio) {
-    const ttsUrl = `${API_BASE_URL}/api/ai-tts?text=${encodeURIComponent(text)}&lang=ar`;
+    const ttsUrl = `${API_BASE_URL}/api/ai-tts?text=${encodeURIComponent(text)}&character=${currentAIPersona}&lang=ar`;
     audio.src = ttsUrl;
-    audio.playbackRate = (currentAIPersona === 'female') ? 1.0 : 0.88; // Deeper tone for male
+    audio.playbackRate = 1.0; // Natural studio playback speed (avoids cutting off / stuttering)
 
     audio.onended = () => {
       isAISpeaking = false;
@@ -7011,12 +7011,21 @@ function fallbackToSpeechSynthesis(text) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'ar-SA';
-  utterance.pitch = (currentAIPersona === 'female') ? 1.35 : 0.98;
-  utterance.rate = (currentAIPersona === 'female') ? 0.96 : 1.0;
+  utterance.pitch = (currentAIPersona === 'female') ? 1.35 : 0.75; // Distinct deep tone for male
+  utterance.rate = 1.0;
 
-  if (aiVoiceSelected) {
-    utterance.voice = aiVoiceSelected;
-  }
+  try {
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (voices.length) {
+      if (currentAIPersona === 'female') {
+        const femaleVoice = voices.find(v => (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zariyah') || v.name.toLowerCase().includes('arc')));
+        if (femaleVoice) utterance.voice = femaleVoice;
+      } else {
+        const maleVoice = voices.find(v => (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('hamed') || v.name.toLowerCase().includes('ard')));
+        if (maleVoice) utterance.voice = maleVoice;
+      }
+    }
+  } catch(e) {}
 
   utterance.onend = () => {
     isAISpeaking = false;

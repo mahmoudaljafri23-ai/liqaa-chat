@@ -386,24 +386,149 @@ app.get('/api/admin/reports', (req, res) => {
 });
 
 // =============================================
-// 🎙️ High-Fidelity Arabic Voice Audio Stream API (MP3)
+// 🎙️ High-Fidelity Arabic Voice Audio Stream API (Dual Real Male & Female Neural Voices)
 // =============================================
-app.get('/api/ai-tts', (req, res) => {
+function synthesizeEdgeTTS(text, voiceName = 'ar-SA-HamedNeural', timeoutMs = 6500) {
+  return new Promise((resolve, reject) => {
+    try {
+      const WebSocket = require('ws');
+      const crypto = require('crypto');
+      const connectionId = crypto.randomBytes(16).toString('hex');
+      const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EA5F40C9942E009F810E65F6&ConnectionId=${connectionId}`;
+
+      const ws = new WebSocket(wsUrl, {
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+          'Origin': 'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold'
+        }
+      });
+
+      const audioChunks = [];
+      const timeoutTimer = setTimeout(() => {
+        try { ws.close(); } catch(e) {}
+        reject(new Error('Edge TTS Timeout'));
+      }, timeoutMs);
+
+      ws.on('open', () => {
+        const configMsg = `Content-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}`;
+        ws.send(configMsg);
+
+        const requestId = crypto.randomBytes(16).toString('hex');
+        const escapedText = text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ar-SA'><voice name='${voiceName}'><prosody pitch='+0Hz' rate='+0%'>${escapedText}</prosody></voice></speak>`;
+        const ssmlMsg = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`;
+        ws.send(ssmlMsg);
+      });
+
+      ws.on('message', (data, isBinary) => {
+        if (isBinary) {
+          if (data.length > 2) {
+            const headerLen = data.readUInt16BE(0);
+            if (data.length > 2 + headerLen) {
+              audioChunks.push(data.slice(2 + headerLen));
+            }
+          }
+        } else {
+          const textMsg = data.toString('utf8');
+          if (textMsg.includes('Path:turn.end')) {
+            clearTimeout(timeoutTimer);
+            try { ws.close(); } catch(e) {}
+            if (audioChunks.length > 0) {
+              resolve(Buffer.concat(audioChunks));
+            } else {
+              reject(new Error('No audio chunks'));
+            }
+          }
+        }
+      });
+
+      ws.on('error', (err) => {
+        clearTimeout(timeoutTimer);
+        reject(err);
+      });
+
+      ws.on('close', () => {
+        clearTimeout(timeoutTimer);
+        if (audioChunks.length > 0) {
+          resolve(Buffer.concat(audioChunks));
+        }
+      });
+    } catch(err) {
+      reject(err);
+    }
+  });
+}
+
+function postHttps(urlStr, data, timeoutMs = 4000) {
+  return new Promise((resolve, reject) => {
+    try {
+      const u = new URL(urlStr);
+      const req = https.request({
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname + u.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(data),
+          'User-Agent': 'LokyChat-App/1.2.9'
+        },
+        timeout: timeoutMs
+      }, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => resolve(body));
+      });
+      req.on('error', err => reject(err));
+      req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+      req.write(data);
+      req.end();
+    } catch(e) {
+      reject(e);
+    }
+  });
+}
+
+app.get('/api/ai-tts', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   try {
     const text = (req.query.text || '').trim();
     if (!text) return res.status(400).send('No text provided');
 
-    const cleanText = text.replace(/[*#_~`!؟.,:;]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const cleanText = text.replace(/[*#_~`!؟.,:;]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 250);
+    const character = (req.query.character || req.query.gender || 'male').toLowerCase();
+    const isFemale = (character === 'female' || character === 'layla');
+    const voiceName = isFemale ? 'ar-SA-ZariyahNeural' : 'ar-SA-HamedNeural';
+
+    // 1. Try Microsoft Edge Neural Studio TTS (Real Male Hamed vs Female Zariyah!)
+    try {
+      const mp3Buffer = await synthesizeEdgeTTS(cleanText, voiceName, 6000);
+      if (mp3Buffer && mp3Buffer.length > 500) {
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Length', mp3Buffer.length);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.end(mp3Buffer);
+      }
+    } catch (edgeErr) {
+      console.warn('[Edge TTS fallback to Google]:', edgeErr.message);
+    }
+
+    // 2. Fallback to Google Translate TTS
     const lang = req.query.lang || 'ar';
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${lang}&client=tw-ob`;
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText.slice(0, 100))}&tl=${lang}&client=tw-ob`;
 
     const request = https.get(ttsUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
-      timeout: 6000
+      timeout: 5000
     }, (ttsRes) => {
       if (ttsRes.statusCode !== 200) {
         return res.status(ttsRes.statusCode).end();
@@ -444,69 +569,76 @@ app.post('/api/ai-companion', async (req, res) => {
   try {
     const { message = '', language = 'ar', userProfile = {}, character = 'male' } = req.body || {};
     const cleanMsg = (message || '').trim().toLowerCase();
-    const username = (userProfile.username || 'صديقي').trim();
+    const username = (userProfile.username || 'يا غالي').trim();
     const userCountry = (userProfile.countryName || '').trim();
-    const isFemale = (character === 'female');
-    const aiName = isFemale ? 'ليلى' : 'Loky';
+    const isFemale = (character === 'female' || character === 'layla');
+    const aiName = isFemale ? 'ليلى' : 'لوكي';
 
-    // 1. Optional Google Gemini API Support
-    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-    if (geminiApiKey && cleanMsg.length > 0) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-        const systemInstruction = isFemale
-          ? `You are Layla (ليلى), a warm, kind, sweet, funny, and witty female AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
-Guidelines:
-1. Speak in friendly, charming, conversational Arabic with a natural feminine tone (e.g., استخدام كلمات لطيفة وعفوية مثل: يا هلا، تسلم لي، يسعد قلبك).
-2. Keep responses short (1 to 2 sentences max) as it will be spoken aloud via voice synthesis.
-3. Be witty, playful, and ask a short engaging follow-up.
-4. Plain speakable text only (no markdown, no asterisks).`
-          : `You are Loky (لوكي), a cool, energetic, funny, and loyal male AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
-Guidelines:
-1. Speak in friendly, conversational Arabic like a close friend.
-2. Keep responses short (1 to 2 sentences max) as it will be spoken aloud via voice synthesis.
-3. Be witty, supportive, and ask a short engaging follow-up.
-4. Plain speakable text only (no markdown, no asterisks).`;
+    // 1. Live Generative AI System Instructions
+    const systemInstruction = isFemale
+      ? `أنتِ "ليلى"، فتاة عربية شابة لطيفة وذكية ومرحة وصديقة وفية للمستخدم في تطبيق Loky Chat (تطبيق دردشة فيديو وصوت أنشأه وطوره محمود الجعفري). أنتِ تتحدثين الآن صوتياً مع "${username}" ${userCountry ? `من ${userCountry}` : ''}.
+تعليمات هامة:
+1. أجيبي دائماً باللغة العربية بلهجة شابة لطيفة وودية وعفوية.
+2. أجيبي بدقة وذكاء على أي سؤال يطرحه المستخدم (سواء عن التطبيق، ألعاب، معلومات عامة، ثقافة، نكت، أو دردشة يومية).
+3. اجعلي إجابتك مختصرة (جملة أو جملتين فقط) لأن إجابتك ستُنطق بالصوت عبر المايك مباشرة.
+4. كلام عادي فقط بدون رموز ماركداون (* أو # أو _).`
+      : `أنت "لوكي"، شاب عربي مرح وذكي وشهم وصديق مقرب ومساعد في تطبيق Loky Chat (تطبيق دردشة فيديو وصوت أنشأه وطوره محمود الجعفري). أنت تتحدث الآن صوتياً مع "${username}" ${userCountry ? `من ${userCountry}` : ''}.
+تعليمات هامة:
+1. أجب دائماً باللغة العربية بلهجة شبابية ودودة وكأنك صديقه المقرب.
+2. أجب بدقة وذكاء على أي سؤال يطرحه المستخدم (سواء عن التطبيق، ألعاب، معلومات عامة، ثقافة، نكت، أو دردشة يومية).
+3. اجعل إجابتك مختصرة (جملة أو جملتين فقط) لأن إجابتك ستُنطق بالصوت عبر المايك مباشرة.
+4. كلام عادي فقط بدون رموز ماركداون (* أو # أو _).`;
 
-        const payload = JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nUser: ${cleanMsg}` }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 120 }
-        });
-
-        const geminiRes = await new Promise((resolve, reject) => {
-          const u = new URL(geminiUrl);
-          const reqPost = https.request({
-            hostname: u.hostname,
-            path: u.pathname + u.search,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
-            timeout: 4500
-          }, (resHttp) => {
-            let data = '';
-            resHttp.on('data', chunk => data += chunk);
-            resHttp.on('end', () => resolve(data));
+    if (cleanMsg.length > 0) {
+      // Priority 1: Google Gemini API (if key is configured)
+      const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (geminiApiKey) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+          const payload = JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nسؤال المستخدم: ${cleanMsg}` }] }],
+            generationConfig: { temperature: 0.75, maxOutputTokens: 90 }
           });
-          reqPost.on('error', err => reject(err));
-          reqPost.on('timeout', () => { reqPost.destroy(); reject(new Error('Timeout')); });
-          reqPost.write(payload);
-          reqPost.end();
-        });
-
-        const parsed = JSON.parse(geminiRes);
-        if (parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts[0]) {
-          const rawReply = parsed.candidates[0].content.parts[0].text.replace(/[*#_~`]/g, '').trim();
-          return res.json({ success: true, reply: rawReply, provider: 'gemini', character });
+          const geminiRes = await postHttps(geminiUrl, payload, 3500);
+          const parsed = JSON.parse(geminiRes);
+          const replyText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (replyText) {
+            return res.json({ success: true, reply: replyText.replace(/[*#_~`]/g, '').trim(), provider: 'gemini', character });
+          }
+        } catch (e) {
+          console.warn('[Gemini AI warn]:', e.message);
         }
-      } catch (err) {
-        console.warn('[AI Companion Gemini Error, falling back to local brain]:', err.message);
+      }
+
+      // Priority 2: Free Cloud Generative AI (Zero-config, real-time AI like ChatGPT)
+      try {
+        const pollPayload = JSON.stringify({
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: cleanMsg }
+          ],
+          model: 'openai',
+          seed: Math.floor(Math.random() * 99999)
+        });
+        const pollRes = await postHttps('https://text.pollinations.ai/', pollPayload, 3800);
+        if (pollRes && typeof pollRes === 'string' && pollRes.trim().length > 3 && !pollRes.includes('<!DOCTYPE') && !pollRes.includes('<html')) {
+          const cleanAnswer = pollRes.replace(/[*#_~`]/g, '').trim();
+          return res.json({ success: true, reply: cleanAnswer, provider: 'cloud_ai', character });
+        }
+      } catch (e) {
+        console.warn('[Cloud AI warn]:', e.message);
       }
     }
 
-    // 2. Intelligent Built-in Arabic Conversational Brain for Both Personalities
+    // 2. Intelligent Built-in Arabic Conversational Brain for Both Personalities (Fallback)
     let reply = '';
     if (isFemale) {
       // 🌸 Layla (Female Persona)
-      if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم' || cleanMsg === 'هلا') {
+      if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
+        reply = `هذا تطبيق Loky Chat للدردشة المباشرة ومكالمات الفيديو والتعرف على أصدقاء جدد حول العالم بجودة خيالية! وأنا ليلى رفيقتك الذكية، بتقدر تحكي معي ونتسلى بأي وقت 🌸`;
+      } else if (cleanMsg.includes('مين عمل') || cleanMsg.includes('مين صنع') || cleanMsg.includes('مين سوى') || cleanMsg.includes('مطور') || cleanMsg.includes('محمود') || cleanMsg.includes('الجعفري')) {
+        reply = `صممني وطورني المبدع محمود الجعفري لكون رفيقتك الذكية في تطبيق Loky Chat! 👑✨`;
+      } else if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم' || cleanMsg === 'هلا') {
         const femaleGreetings = [
           `يا هلا بـ ${username}! نورتني وسعيدة جداً إني عم بحكي معك، كيف حالك وكيف كان يومك؟ 🌸`,
           `مرحباً يا غالي! أنا ليلى، مبسوطة كتير بالتعرف عليك، احكيلي شو بتحب ندردش اليوم؟ ✨`,
@@ -544,6 +676,8 @@ Guidelines:
         reply = `تطبيق Loky Chat صممناه بحب ليتعرف الناس على بعض بجودة خيالية 4K! وتقدر تجمع جواهر يومية مجاناً 💎`;
       } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايشة')) {
         reply = `أنا موجودة بالسيرفرات السحابية معك وين ما تكون بالعالم! وأنت من أي بلد منورني يا غالي؟`;
+      } else if (cleanMsg.includes('ساع') || cleanMsg.includes('وقت')) {
+        reply = `الوقت دايماً ممتع وأنا عم بحكي معك يا ${username}! احكيلي كيف يومك؟ 🌸`;
       } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
         const femaleAdvices = [
           `نصيحتي لك اليوم: خليك دايماً مبتسم وواثق بحالك، الابتسامة بتليق عليك وبتفرّح كل اللي حولك 🌸`,
@@ -561,7 +695,11 @@ Guidelines:
       }
     } else {
       // 🤖 Loky (Male Persona)
-      if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم') {
+      if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
+        reply = `أهلاً يا غالي! هذا تطبيق Loky Chat للدردشة المباشرة ومكالمات الفيديو بدقة 4K والتعرف على ناس جدد! وأنا لوكي رفيقك ومساعدك الذكي، شو حابب نسولف اليوم؟ 🎙️`;
+      } else if (cleanMsg.includes('مين عمل') || cleanMsg.includes('مين صنع') || cleanMsg.includes('مين سوى') || cleanMsg.includes('مطور') || cleanMsg.includes('محمود') || cleanMsg.includes('الجعفري')) {
+        reply = `صاحب ومطور التطبيق هو أخونا المبدع محمود الجعفري، وصممنا لنكون أفضل تطبيق دردشة ومكالمات ملكية! 👑🚀`;
+      } else if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم') {
         const greetings = [
           `أهلاً يا ${username}! نورتني وسعيد جداً بالحديث معك، كيف حالك وكيف يومك؟`,
           `مرحباً بك يا غالي! أنا Loky صديقك ومساعدك الذكي، احكيلي شو بتحب نسولف اليوم؟`,
@@ -600,6 +738,8 @@ Guidelines:
         reply = `تطبيق Loky Chat هو أفضل مكان للتعرف على أصدقاء جدد حول العالم بدقة عالية 4K! وتقدر تجمع جواهر يومية مجانية وتتحدث مع أي شخص!`;
       } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايش')) {
         reply = `أنا موجود في سيرفرات السحاب في كل مكان في العالم! وجاهز أزورك في أي لحظة تفتح فيها التطبيق. وأنت من وين منورني؟`;
+      } else if (cleanMsg.includes('ساع') || cleanMsg.includes('وقت')) {
+        reply = `الوقت دايماً مناسب لنسولف سوا يا غالي! احكيلي شو شاغل بالك؟ 🎙️`;
       } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
         const advices = [
           `نصيحتي لك لليوم: ابتسم دائماً، فابتسامتك تصنع يومك ويوم من حولك، ولا تشيل هم أي شيء!`,
