@@ -27,9 +27,13 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -46,6 +50,8 @@ public class MainActivity extends BridgeActivity {
     private LocationManager locationManager;
     private static final int RC_SIGN_IN = 9001;
     private GoogleSignInClient mGoogleSignInClient;
+    private TextToSpeech mTextToSpeech;
+    private boolean isTtsReady = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -54,8 +60,55 @@ public class MainActivity extends BridgeActivity {
         createNotificationChannel();
         initFirebaseMessaging();
         initGoogleSignIn();
+        initNativeTTS();
         setupWebViewGeoAndBridge();
         requestAppPermissions();
+    }
+
+    private void initNativeTTS() {
+        try {
+            mTextToSpeech = new TextToSpeech(this, status -> {
+                if (status == TextToSpeech.SUCCESS) {
+                    isTtsReady = true;
+                    try {
+                        int res = mTextToSpeech.setLanguage(new Locale("ar"));
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            mTextToSpeech.setLanguage(Locale.getDefault());
+                        }
+                    } catch (Exception ignored) {}
+                    mTextToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                        @Override
+                        public void onStart(String utteranceId) {
+                            runOnUiThread(() -> {
+                                if (getBridge() != null && getBridge().getWebView() != null) {
+                                    getBridge().getWebView().evaluateJavascript("if (window.onNativeTtsStarted) window.onNativeTtsStarted();", null);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onDone(String utteranceId) {
+                            runOnUiThread(() -> {
+                                if (getBridge() != null && getBridge().getWebView() != null) {
+                                    getBridge().getWebView().evaluateJavascript("if (window.onNativeTtsEnded) window.onNativeTtsEnded();", null);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onError(String utteranceId) {
+                            runOnUiThread(() -> {
+                                if (getBridge() != null && getBridge().getWebView() != null) {
+                                    getBridge().getWebView().evaluateJavascript("if (window.onNativeTtsEnded) window.onNativeTtsEnded();", null);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void initFirebaseMessaging() {
@@ -165,6 +218,12 @@ public class MainActivity extends BridgeActivity {
     public void onDestroy() {
         super.onDestroy();
         resetSystemAudioMode();
+        if (mTextToSpeech != null) {
+            try {
+                mTextToSpeech.stop();
+                mTextToSpeech.shutdown();
+            } catch (Exception ignored) {}
+        }
     }
 
     private void resetSystemAudioMode() {
@@ -381,6 +440,91 @@ public class MainActivity extends BridgeActivity {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, PERMISSIONS_REQUEST_CODE);
                             }
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void openGooglePlayStore() {
+                        runOnUiThread(() -> {
+                            try {
+                                Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=com.lokychat.app"));
+                                intent.setPackage("com.android.vending");
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                try {
+                                    Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.lokychat.app"));
+                                    webIntent.setPackage("com.android.vending");
+                                    webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(webIntent);
+                                } catch (Exception e2) {
+                                    try {
+                                        Intent fallback = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.lokychat.app"));
+                                        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(fallback);
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void speakNativeTTS(String text, String character) {
+                        runOnUiThread(() -> {
+                            try {
+                                if (mTextToSpeech == null) {
+                                    initNativeTTS();
+                                }
+                                if (mTextToSpeech != null) {
+                                    mTextToSpeech.stop();
+                                    boolean isFemale = "female".equalsIgnoreCase(character) || "layla".equalsIgnoreCase(character);
+
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                        try {
+                                            Set<Voice> voices = mTextToSpeech.getVoices();
+                                            if (voices != null) {
+                                                for (Voice v : voices) {
+                                                    if (v.getLocale() != null && v.getLocale().getLanguage().startsWith("ar")) {
+                                                        String vName = v.getName().toLowerCase();
+                                                        if (isFemale && (vName.contains("female") || vName.contains("f0") || vName.contains("woman"))) {
+                                                            mTextToSpeech.setVoice(v);
+                                                            break;
+                                                        } else if (!isFemale && (vName.contains("male") || vName.contains("m0") || vName.contains("man") || vName.contains("boy"))) {
+                                                            mTextToSpeech.setVoice(v);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } catch (Exception ignored) {}
+                                    }
+
+                                    if (isFemale) {
+                                        mTextToSpeech.setPitch(1.22f); // Sweet natural female tone
+                                        mTextToSpeech.setSpeechRate(1.02f);
+                                    } else {
+                                        mTextToSpeech.setPitch(0.76f); // Distinct deep male masculine tone
+                                        mTextToSpeech.setSpeechRate(0.96f);
+                                    }
+
+                                    Bundle params = new Bundle();
+                                    params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "loky_tts_" + System.currentTimeMillis());
+                                    mTextToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "loky_tts_" + System.currentTimeMillis());
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void stopNativeTTS() {
+                        runOnUiThread(() -> {
+                            try {
+                                if (mTextToSpeech != null) {
+                                    mTextToSpeech.stop();
+                                }
+                            } catch (Exception ignored) {}
                         });
                     }
                 }, "AndroidBridge");

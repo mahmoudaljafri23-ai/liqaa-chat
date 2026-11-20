@@ -1674,8 +1674,8 @@ function initEmailSuggestions() {
 // =============================================
 // 🚀 App Version & In-App Force Update System
 // =============================================
-const CURRENT_APP_VERSION = '1.3.0';
-const CURRENT_VERSION_CODE = 31; // Version code of this build
+const CURRENT_APP_VERSION = '1.3.1';
+const CURRENT_VERSION_CODE = 32; // Version code of this build
 
 async function checkAppUpdate(isManualCheck = false) {
   try {
@@ -1737,7 +1737,6 @@ async function checkAppUpdate(isManualCheck = false) {
         const latEl = $('#update-latest-version');
         const descEl = $('#update-modal-desc');
         const playBtn = $('#update-playstore-btn');
-        const apkBtn = $('#update-direct-apk-btn');
         const closeBtn = $('#close-update-modal-btn');
         const mandatoryEl = $('#update-mandatory-badge');
         const notesList = $('#update-notes-list');
@@ -1750,22 +1749,19 @@ async function checkAppUpdate(isManualCheck = false) {
         if (playBtn) {
           playBtn.href = playUrl;
           playBtn.onclick = (e) => {
+            e.preventDefault();
+            // Direct launch to official Google Play Store app (package: com.android.vending)
+            // This guarantees 100% bypass of OEM stores (Palm Store / GetApps) and WebView popups!
+            if (window.AndroidBridge && typeof window.AndroidBridge.openGooglePlayStore === 'function') {
+              window.AndroidBridge.openGooglePlayStore();
+              return;
+            }
             if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-              e.preventDefault();
-              try {
-                // Direct intent targeting Google Play Store app (com.android.vending)
-                // This bypasses Palm Store / GetApps / OEM hijacked market handlers
-                window.location.href = 'intent://details?id=com.lokychat.app#Intent;scheme=market;package=com.android.vending;end';
-              } catch (intentErr) {
-                window.open(playUrl, '_system');
-              }
-              setTimeout(() => { window.open(playUrl, '_system'); }, 600);
+              window.open(playUrl, '_system');
+            } else {
+              window.open(playUrl, '_blank');
             }
           };
-        }
-
-        if (apkBtn) {
-          apkBtn.href = config.directApkUrl || 'https://play.google.com/store/apps/details?id=com.lokychat.app';
         }
 
         if (notesList && Array.isArray(config.releaseNotes) && config.releaseNotes.length > 0) {
@@ -6712,6 +6708,16 @@ function unlockAIAudio() {
 
 window.switchAIPersona = function(gender) {
   unlockAIAudio();
+  if (window.AndroidBridge && typeof window.AndroidBridge.stopNativeTTS === 'function') {
+    window.AndroidBridge.stopNativeTTS();
+  }
+  if (typeof window.speechSynthesis !== 'undefined') {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
+  }
+  const audio = $('#ai-voice-audio');
+  if (audio) {
+    try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+  }
   currentAIPersona = (gender === 'female') ? 'female' : 'male';
   console.log('[AI Companion] Switched persona to:', currentAIPersona);
 
@@ -6802,6 +6808,9 @@ window.startAIVoiceCall = function(initialPersona) {
 
 window.endAIVoiceCall = function() {
   console.log('[AI Companion] Ending Voice Call...');
+  if (window.AndroidBridge && typeof window.AndroidBridge.stopNativeTTS === 'function') {
+    try { window.AndroidBridge.stopNativeTTS(); } catch(e) {}
+  }
   const audio = $('#ai-voice-audio');
   if (audio) {
     try { audio.pause(); audio.currentTime = 0; } catch(e) {}
@@ -6823,6 +6832,9 @@ window.endAIVoiceCall = function() {
 
 window.switchToRealPartnerFromAI = function() {
   console.log('[AI Companion] Switching to Real Partner Matchmaking...');
+  if (window.AndroidBridge && typeof window.AndroidBridge.stopNativeTTS === 'function') {
+    try { window.AndroidBridge.stopNativeTTS(); } catch(e) {}
+  }
   const audio = $('#ai-voice-audio');
   if (audio) {
     try { audio.pause(); audio.currentTime = 0; } catch(e) {}
@@ -6847,6 +6859,9 @@ window.switchToRealPartnerFromAI = function() {
 window.toggleAIMic = function() {
   unlockAIAudio();
 
+  if (window.AndroidBridge && typeof window.AndroidBridge.stopNativeTTS === 'function') {
+    try { window.AndroidBridge.stopNativeTTS(); } catch(e) {}
+  }
   const audio = $('#ai-voice-audio');
   if (audio && !audio.paused) {
     try { audio.pause(); } catch(e) {}
@@ -6946,6 +6961,26 @@ window.sendAIPrompt = async function(text) {
   }
 };
 
+window.onNativeTtsStarted = function() {
+  const orb = $('#ai-visualizer-orb');
+  if (orb) orb.classList.add('speaking');
+  isAISpeaking = true;
+};
+
+window.onNativeTtsEnded = function() {
+  isAISpeaking = false;
+  const orb = $('#ai-visualizer-orb');
+  if (orb) orb.classList.remove('speaking');
+  const status = $('#ai-status-indicator');
+  if (status) status.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
+
+  setTimeout(() => {
+    if (currentState === 'ai_call' && !isAISpeaking && !isAIMicListening && aiSpeechRecognition) {
+      try { aiSpeechRecognition.start(); } catch(e) {}
+    }
+  }, 400);
+};
+
 window.speakAIText = function(text) {
   if (!text) return;
   unlockAIAudio();
@@ -6957,18 +6992,30 @@ window.speakAIText = function(text) {
   if (orb) orb.classList.add('speaking');
   isAISpeaking = true;
 
+  // 1. High-Fidelity Android Native TTS (Real Male Hamed voice for Loky vs Female Zariyah for Layla, 0 lag!)
+  if (window.AndroidBridge && typeof window.AndroidBridge.speakNativeTTS === 'function') {
+    window.AndroidBridge.speakNativeTTS(text, currentAIPersona);
+    return;
+  }
+
+  // 2. Web Speech Synthesis (Browser built-in with pitch & gender tuning)
+  if (typeof window.speechSynthesis !== 'undefined') {
+    fallbackToSpeechSynthesis(text);
+    return;
+  }
+
+  // 3. Audio Element Fallback
   const audio = $('#ai-voice-audio');
   if (audio) {
     const ttsUrl = `${API_BASE_URL}/api/ai-tts?text=${encodeURIComponent(text)}&character=${currentAIPersona}&lang=ar`;
     audio.src = ttsUrl;
-    audio.playbackRate = 1.0; // Natural studio playback speed (avoids cutting off / stuttering)
+    audio.playbackRate = 1.0;
 
     audio.onended = () => {
       isAISpeaking = false;
       if (orb) orb.classList.remove('speaking');
       if (status) status.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
 
-      // Auto-listen after speech ends
       setTimeout(() => {
         if (currentState === 'ai_call' && !isAISpeaking && !isAIMicListening && aiSpeechRecognition) {
           try { aiSpeechRecognition.start(); } catch(e) {}

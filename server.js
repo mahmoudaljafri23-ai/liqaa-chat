@@ -621,9 +621,21 @@ app.post('/api/ai-companion', async (req, res) => {
           seed: Math.floor(Math.random() * 99999)
         });
         const pollRes = await postHttps('https://text.pollinations.ai/', pollPayload, 3800);
-        if (pollRes && typeof pollRes === 'string' && pollRes.trim().length > 3 && !pollRes.includes('<!DOCTYPE') && !pollRes.includes('<html')) {
+        const isBadPollReply = !pollRes || typeof pollRes !== 'string' ||
+          pollRes.toLowerCase().includes('free limit') ||
+          pollRes.toLowerCase().includes('rate limit') ||
+          pollRes.toLowerCase().includes('pollen key') ||
+          pollRes.toLowerCase().includes('pollinations') ||
+          pollRes.toLowerCase().includes('unlimited replies') ||
+          pollRes.includes('<!DOCTYPE') ||
+          pollRes.includes('<html') ||
+          !(/[\u0600-\u06FF]/.test(pollRes));
+
+        if (!isBadPollReply) {
           const cleanAnswer = pollRes.replace(/[*#_~`]/g, '').trim();
-          return res.json({ success: true, reply: cleanAnswer, provider: 'cloud_ai', character });
+          if (cleanAnswer.length > 2) {
+            return res.json({ success: true, reply: cleanAnswer, provider: 'cloud_ai', character });
+          }
         }
       } catch (e) {
         console.warn('[Cloud AI warn]:', e.message);
@@ -634,7 +646,15 @@ app.post('/api/ai-companion', async (req, res) => {
     let reply = '';
     if (isFemale) {
       // 🌸 Layla (Female Persona)
-      if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
+      if (cleanMsg.includes('بنت') || cleanMsg.includes('شب ولا') || cleanMsg.includes('ولد ولا') || cleanMsg.includes('انت شب') || cleanMsg.includes('صوتك')) {
+        if (cleanMsg.includes('مش منيح') || cleanMsg.includes('مو منيح') || cleanMsg.includes('بقطع') || cleanMsg.includes('واطي') || cleanMsg.includes('مش سامع')) {
+          reply = `يسعد قلبك، هيني عم بحكي معك بصوت نقي وواضح ومبسوطة فيك! سامعني منيح هلأ يا عسل؟ 🌸`;
+        } else {
+          reply = `أنا ليلى، بنوتة لطيفة ورفيقتك الذكية في Loky Chat! بحب أسمعك وأحكي معك ونتسلى سوا بأي وقت 🌸✨`;
+        }
+      } else if (cleanMsg.includes('الو') || cleanMsg.includes('سامعني') || cleanMsg.includes('تسمعني') || cleanMsg.includes('معي انت')) {
+        reply = `ألو يا هلا بـ ${username}! سامعتك بكل وضوح وصوتي معك، احكيلي شو شاغل بالك يا غالي؟ 🌸`;
+      } else if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
         reply = `هذا تطبيق Loky Chat للدردشة المباشرة ومكالمات الفيديو والتعرف على أصدقاء جدد حول العالم بجودة خيالية! وأنا ليلى رفيقتك الذكية، بتقدر تحكي معي ونتسلى بأي وقت 🌸`;
       } else if (cleanMsg.includes('مين عمل') || cleanMsg.includes('مين صنع') || cleanMsg.includes('مين سوى') || cleanMsg.includes('مطور') || cleanMsg.includes('محمود') || cleanMsg.includes('الجعفري')) {
         reply = `صممني وطورني المبدع محمود الجعفري لكون رفيقتك الذكية في تطبيق Loky Chat! 👑✨`;
@@ -695,7 +715,13 @@ app.post('/api/ai-companion', async (req, res) => {
       }
     } else {
       // 🤖 Loky (Male Persona)
-      if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
+      if (cleanMsg.includes('بنت') || cleanMsg.includes('شب ولا') || cleanMsg.includes('ولد ولا') || cleanMsg.includes('صوتك بنت') || cleanMsg.includes('صوتك هيك') || cleanMsg.includes('ليش صوتك')) {
+        reply = `ههههه لا يا غالي، أنا لوكي شب عربي ورفيقك بالبرنامج! صوتي هاد صوتي الرجولي، شو رأيك فيه هلأ؟ واضح عندك ومسموع يا وحش؟ 👑🎙️`;
+      } else if (cleanMsg.includes('صوتك مش') || cleanMsg.includes('صوتك مو') || cleanMsg.includes('بقطع') || cleanMsg.includes('مش سامع') || cleanMsg.includes('واطي') || cleanMsg.includes('مش واضح')) {
+        reply = `ولا يهمك يا غالي، ضبطتلك الصوت ليكون بأعلى جودة ونقاء وبدون أي تقطيع! طمني هلأ صوتي طالع مية بالمية؟ 🎙️✨`;
+      } else if (cleanMsg.includes('الو') || cleanMsg.includes('سامعني') || cleanMsg.includes('تسمعني') || cleanMsg.includes('معي انت')) {
+        reply = `ألووو يا وحش! سامعك بكل وضوح وصوتي معك، كلي آذان صاغية إلك يا ${username}! احكيلي شو الأخبار؟ 👑`;
+      } else if (cleanMsg.includes('عبه') || cleanMsg.includes('لعب') || cleanMsg.includes('تطبيق') || cleanMsg.includes('برنامج') || cleanMsg.includes('شو هاد') || cleanMsg.includes('شو هذا') || cleanMsg.includes('عن شو')) {
         reply = `أهلاً يا غالي! هذا تطبيق Loky Chat للدردشة المباشرة ومكالمات الفيديو بدقة 4K والتعرف على ناس جدد! وأنا لوكي رفيقك ومساعدك الذكي، شو حابب نسولف اليوم؟ 🎙️`;
       } else if (cleanMsg.includes('مين عمل') || cleanMsg.includes('مين صنع') || cleanMsg.includes('مين سوى') || cleanMsg.includes('مطور') || cleanMsg.includes('محمود') || cleanMsg.includes('الجعفري')) {
         reply = `صاحب ومطور التطبيق هو أخونا المبدع محمود الجعفري، وصممنا لنكون أفضل تطبيق دردشة ومكالمات ملكية! 👑🚀`;
@@ -1104,9 +1130,9 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.3.0",
-  latestVersionCode: 31,
-  minRequiredVersionCode: 31, // Any installed version < 31 will be asked/forced to update
+  latestVersion: "1.3.1",
+  latestVersionCode: 32,
+  minRequiredVersionCode: 32, // Any installed version < 32 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث جديد متوفر لـ Loky Chat! 🚀👑",
   message: "يرجى تحديث التطبيق الآن للاستمتاع بالمساعد والرفيق الصوتي الذكي (شخصية لوكي وشخصية ليلى) والسرعة الفائقة في الاتصال ومكالمات 4K.",
@@ -1116,7 +1142,7 @@ let appVersionConfig = {
     "🤖 إضافة المساعد والرفيق الذكي الصوتي (شخصية ليلى وشخصية لوكي)",
     "⚡ تحسين جودة وسرعة مكالمات الفيديو فائقة الوضوح",
     "🛡️ حفظ وتأمين الحسابات ومزامنة الرصيد الملكي والـ VIP",
-    "🌐 دعم كامل للغات المتعددة وإصلاحات عامة للاستقرار"
+    "🌐 فتح رابط Google Play الرسمي مباشرة وتحديث بلمسة واحدة"
   ],
   updatedAt: new Date().toISOString()
 };
