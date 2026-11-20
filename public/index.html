@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="css/style.css?v=20261106_v2">
+  <link rel="stylesheet" href="css/style.css?v=20261120_ai1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://www.paypal.com/sdk/js?client-id=BAAvEJIsUIG8_yexlZ9pMMIMuCv9ulnhj7IVH08GvylXjDYzRZUBjyLcqVUlL-AyMeeTh04rR0ftBNFUA8&currency=USD&disable-funding=venmo"></script>
@@ -172,6 +172,10 @@
 
         <!-- Royal Quick Actions Row -->
         <div class="royal-shortcuts-row">
+          <div class="royal-shortcut-btn highlight-ai" onclick="window.startAIVoiceCall && window.startAIVoiceCall()" id="btn-royal-ai-companion" title="تحدث صوتياً مع صديقك ومساعدك الذكي">
+            <span class="shortcut-icon">🤖</span>
+            <span class="shortcut-text">صديقك الذكي</span>
+          </div>
           <div class="royal-shortcut-btn" onclick="document.getElementById('friends-modal').classList.remove('hidden')">
             <span class="shortcut-icon">👥</span>
             <span class="shortcut-text">الأصدقاء</span>
@@ -233,6 +237,15 @@
           <div class="radar-info-box">
             <h3 class="radar-title">جاري البحث والمطابقة مع شريك...</h3>
             <p class="radar-sub">Searching for a partner live...</p>
+            
+            <!-- AI Companion Smart Suggestion (Appears after waiting) -->
+            <div id="radar-ai-suggestion" class="radar-ai-suggestion hidden">
+              <div class="ai-sugg-badge">🤖 صديقك الذكي جاهز الآن</div>
+              <p class="ai-sugg-sub">لم نجد شريكاً متصلاً حالياً، هل تود التحدث صوتياً مع Loky AI فوراً؟</p>
+              <button type="button" class="btn-sugg-ai" onclick="window.startAIVoiceCall && window.startAIVoiceCall()">
+                <span>🎙️ بدء المكالمة الصوتية مع AI</span>
+              </button>
+            </div>
           </div>
           <button type="button" id="cancel-search-btn" class="radar-cancel-btn">
             <span>✕ إلغاء البحث والرجوع</span>
@@ -1326,8 +1339,86 @@
     </div>
   </div>
 
+  <!-- ============ AI Voice Companion Luxury Call Screen ============ -->
+  <div id="ai-voice-call-screen" class="ai-voice-call-screen hidden">
+    <div class="ai-call-backdrop"></div>
+    <div class="ai-call-glow-orb"></div>
+
+    <!-- Top Header HUD -->
+    <div class="ai-call-header">
+      <div class="ai-header-left">
+        <div class="ai-avatar-circle">
+          <span class="ai-avatar-emoji">🤖</span>
+          <span class="ai-online-pulse"></span>
+        </div>
+        <div class="ai-header-meta">
+          <span class="ai-header-name">صديقك ومساعدك الذكي (Loky AI)</span>
+          <span class="ai-header-status" id="ai-status-indicator">● متصل صوتياً ومستعد للحديث 🎙️</span>
+        </div>
+      </div>
+      <div class="ai-header-right">
+        <span class="ai-badge-live">LIVE VOICE</span>
+      </div>
+    </div>
+
+    <!-- Center Stage: Holographic Sound Wave Orb & Visualizer -->
+    <div class="ai-call-center">
+      <div class="ai-visualizer-container" id="ai-visualizer-orb">
+        <div class="ai-wave-ring ring-1"></div>
+        <div class="ai-wave-ring ring-2"></div>
+        <div class="ai-wave-ring ring-3"></div>
+        <div class="ai-wave-ring ring-4"></div>
+        <div class="ai-center-core" id="ai-center-core" onclick="window.toggleAIMic()">
+          <span class="ai-core-icon" id="ai-core-icon">🎙️</span>
+        </div>
+      </div>
+
+      <!-- Live Speech Subtitles / Dialogue Bubble -->
+      <div class="ai-speech-bubble" id="ai-speech-bubble">
+        <div class="ai-bubble-speaker" id="ai-bubble-speaker">🤖 Loky AI:</div>
+        <div class="ai-bubble-text" id="ai-bubble-text">أهلاً بك يا صديقي في Loky Chat! أنا هنا للتحدث معك ومساعدتك، كيف حالك اليوم وعن ماذا تحب أن نتحدث؟ 🎙️</div>
+      </div>
+
+      <!-- User Live Voice Transcript -->
+      <div class="user-voice-transcript hidden" id="user-voice-transcript">
+        <span class="user-transcript-label">أنت 🗣️:</span>
+        <span class="user-transcript-text" id="user-transcript-text">...</span>
+      </div>
+
+      <!-- Quick Conversational Prompt Chips -->
+      <div class="ai-quick-chips">
+        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('احكيلي نكتة حلوة تضحكني 😂')">😂 نكتة سريعة</button>
+        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('كيف كان يومك وشو بتعمل؟')">☕ كيف يومك؟</button>
+        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('عرفني عن نفسك وشو بتعرف تعمل؟')">✨ من أنت؟</button>
+        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('أنا زهقان، اعطيني فكرة حلوة أعملها')">💡 فكرة للملل</button>
+      </div>
+    </div>
+
+    <!-- Bottom Floating Call Controls -->
+    <div class="ai-call-footer">
+      <!-- End Call Button -->
+      <button type="button" class="ai-btn-ctrl btn-end" onclick="window.endAIVoiceCall()" title="إنهاء المكالمة">
+        <span class="ai-btn-icon">✕</span>
+        <span class="ai-btn-text">إنهاء</span>
+      </button>
+
+      <!-- Interactive Push-to-Talk / Mic Button -->
+      <button type="button" class="ai-btn-mic" id="ai-mic-toggle-btn" onclick="window.toggleAIMic()" title="اضغط للتحدث بالصوت">
+        <div class="ai-mic-pulse"></div>
+        <span class="ai-mic-icon" id="ai-mic-icon">🎙️</span>
+        <span class="ai-mic-label" id="ai-mic-label">تحدث الآن</span>
+      </button>
+
+      <!-- Switch to Real Partner Matchmaking -->
+      <button type="button" class="ai-btn-ctrl btn-match" onclick="window.switchToRealPartnerFromAI()" title="البحث عن شخص حقيقي">
+        <span class="ai-btn-icon">⏭️</span>
+        <span class="ai-btn-text">شخص حقيقي</span>
+      </button>
+    </div>
+  </div>
+
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261106_v5"></script>
+  <script src="js/app.js?v=20261120_ai1"></script>
 </body>
 </html>

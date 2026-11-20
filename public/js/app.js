@@ -6126,6 +6126,13 @@ function setState(state) {
 
   switch (state) {
     case 'idle':
+      if (window.aiSuggestionTimeout) {
+        clearTimeout(window.aiSuggestionTimeout);
+        window.aiSuggestionTimeout = null;
+      }
+      const radarSuggIdle = $('#radar-ai-suggestion');
+      if (radarSuggIdle) radarSuggIdle.classList.add('hidden');
+
       if (royalDash) royalDash.classList.remove('hidden');
       if (welcomeCamCard) {
         welcomeCamCard.classList.add('hidden');
@@ -6164,6 +6171,16 @@ function setState(state) {
       break;
 
     case 'searching':
+      if (window.aiSuggestionTimeout) clearTimeout(window.aiSuggestionTimeout);
+      const radarSuggSearch = $('#radar-ai-suggestion');
+      if (radarSuggSearch) radarSuggSearch.classList.add('hidden');
+      window.aiSuggestionTimeout = setTimeout(() => {
+        if (currentState === 'searching') {
+          const s = $('#radar-ai-suggestion');
+          if (s) s.classList.remove('hidden');
+        }
+      }, 7000);
+
       if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
         welcomeCamCard.classList.remove('hidden');
@@ -6190,6 +6207,13 @@ function setState(state) {
       break;
 
     case 'connected':
+      if (window.aiSuggestionTimeout) {
+        clearTimeout(window.aiSuggestionTimeout);
+        window.aiSuggestionTimeout = null;
+      }
+      const radarSuggConn = $('#radar-ai-suggestion');
+      if (radarSuggConn) radarSuggConn.classList.add('hidden');
+
       if (royalDash) royalDash.classList.add('hidden');
       if (welcomeCamCard) {
         welcomeCamCard.classList.remove('hidden');
@@ -6528,3 +6552,287 @@ document.addEventListener('DOMContentLoaded', () => {
   initFirebase();
   setupDraggableLocalVideo();
 });
+
+// =============================================
+// 🤖 Loky AI Voice Companion (Interactive Voice & Speech Call)
+// =============================================
+let aiSpeechRecognition = null;
+let isAIMicListening = false;
+let isAISpeaking = false;
+let aiVoiceSelected = null;
+
+function initAIVoiceEngine() {
+  if (typeof window.speechSynthesis !== 'undefined') {
+    const loadVoices = () => {
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices && voices.length) {
+          const arVoice = voices.find(v => v.lang && (v.lang.startsWith('ar') || v.lang.includes('AR')));
+          if (arVoice) {
+            aiVoiceSelected = arVoice;
+          } else {
+            aiVoiceSelected = voices[0];
+          }
+        }
+      } catch(e) {}
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition && !aiSpeechRecognition) {
+    try {
+      aiSpeechRecognition = new SpeechRecognition();
+      aiSpeechRecognition.continuous = false;
+      aiSpeechRecognition.interimResults = true;
+      aiSpeechRecognition.lang = 'ar-SA';
+
+      aiSpeechRecognition.onstart = () => {
+        isAIMicListening = true;
+        const micBtn = $('#ai-mic-toggle-btn');
+        if (micBtn) micBtn.classList.add('listening');
+        const micLabel = $('#ai-mic-label');
+        if (micLabel) micLabel.textContent = 'أستمع إليك... 🎙️';
+        const transcriptWrap = $('#user-voice-transcript');
+        if (transcriptWrap) transcriptWrap.classList.remove('hidden');
+        const status = $('#ai-status-indicator');
+        if (status) status.textContent = '● أستمع إليك الآن... 👂';
+      };
+
+      aiSpeechRecognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        const userText = $('#user-transcript-text');
+        if (userText) userText.textContent = transcript;
+
+        if (event.results[0] && event.results[0].isFinal) {
+          window.sendAIPrompt(transcript);
+        }
+      };
+
+      aiSpeechRecognition.onerror = (event) => {
+        console.warn('[AI Companion Speech Error]:', event.error);
+        isAIMicListening = false;
+        const micBtn = $('#ai-mic-toggle-btn');
+        if (micBtn) micBtn.classList.remove('listening');
+        const micLabel = $('#ai-mic-label');
+        if (micLabel) micLabel.textContent = 'تحدث الآن 🎙️';
+        const status = $('#ai-status-indicator');
+        if (status) status.textContent = '● متصل صوتياً 🎙️';
+      };
+
+      aiSpeechRecognition.onend = () => {
+        isAIMicListening = false;
+        const micBtn = $('#ai-mic-toggle-btn');
+        if (micBtn) micBtn.classList.remove('listening');
+        const micLabel = $('#ai-mic-label');
+        if (micLabel) micLabel.textContent = 'تحدث الآن 🎙️';
+      };
+    } catch (e) {
+      console.warn('[AI Companion SpeechRecognition init failed]:', e);
+    }
+  }
+}
+
+window.startAIVoiceCall = function() {
+  console.log('[AI Companion] Starting Live Voice Call...');
+  initAIVoiceEngine();
+
+  if (currentState === 'searching') {
+    if (socket && socket.connected) {
+      socket.emit('stop_search');
+    }
+  }
+
+  if (window.aiSuggestionTimeout) {
+    clearTimeout(window.aiSuggestionTimeout);
+    window.aiSuggestionTimeout = null;
+  }
+  const radarSugg = $('#radar-ai-suggestion');
+  if (radarSugg) radarSugg.classList.add('hidden');
+
+  const royalDash = $('#royal-home-dashboard');
+  if (royalDash) royalDash.classList.add('hidden');
+  const searchingOverlay = $('#searching-overlay');
+  if (searchingOverlay) searchingOverlay.classList.add('hidden');
+  const welcomeCamCard = $('#welcome-camera-card');
+  if (welcomeCamCard) welcomeCamCard.classList.add('hidden');
+  const controlsBar = $('#controls-bar');
+  if (controlsBar) controlsBar.classList.add('hidden');
+  const bottomNav = $('.modern-bottom-nav');
+  if (bottomNav) bottomNav.classList.add('hidden');
+
+  const aiScreen = $('#ai-voice-call-screen');
+  if (aiScreen) aiScreen.classList.remove('hidden');
+
+  currentState = 'ai_call';
+
+  const username = (userProfile && userProfile.username) ? userProfile.username : 'يا صديقي';
+  const initialGreeting = `أهلاً بك يا ${username} في Loky Chat! أنا هنا للتحدث معك ومساعدتك، كيف حالك اليوم وعن ماذا تحب أن نتحدث؟`;
+  const bubbleText = $('#ai-bubble-text');
+  if (bubbleText) bubbleText.textContent = initialGreeting;
+
+  setTimeout(() => {
+    window.speakAIText(initialGreeting);
+  }, 400);
+};
+
+window.endAIVoiceCall = function() {
+  console.log('[AI Companion] Ending Voice Call...');
+  if (typeof window.speechSynthesis !== 'undefined') {
+    window.speechSynthesis.cancel();
+  }
+  if (aiSpeechRecognition && isAIMicListening) {
+    try { aiSpeechRecognition.stop(); } catch(e) {}
+  }
+  isAIMicListening = false;
+  isAISpeaking = false;
+
+  const aiScreen = $('#ai-voice-call-screen');
+  if (aiScreen) aiScreen.classList.add('hidden');
+
+  setState('idle');
+};
+
+window.switchToRealPartnerFromAI = function() {
+  console.log('[AI Companion] Switching to Real Partner Matchmaking...');
+  if (typeof window.speechSynthesis !== 'undefined') {
+    window.speechSynthesis.cancel();
+  }
+  if (aiSpeechRecognition && isAIMicListening) {
+    try { aiSpeechRecognition.stop(); } catch(e) {}
+  }
+  isAIMicListening = false;
+  isAISpeaking = false;
+
+  const aiScreen = $('#ai-voice-call-screen');
+  if (aiScreen) aiScreen.classList.add('hidden');
+
+  if (typeof window.startChat === 'function') {
+    window.startChat();
+  }
+};
+
+window.toggleAIMic = function() {
+  if (isAISpeaking) {
+    if (typeof window.speechSynthesis !== 'undefined') {
+      window.speechSynthesis.cancel();
+      isAISpeaking = false;
+      const orb = $('#ai-visualizer-orb');
+      if (orb) orb.classList.remove('speaking');
+    }
+  }
+
+  if (isAIMicListening) {
+    if (aiSpeechRecognition) {
+      try { aiSpeechRecognition.stop(); } catch(e) {}
+    }
+    isAIMicListening = false;
+    const micBtn = $('#ai-mic-toggle-btn');
+    if (micBtn) micBtn.classList.remove('listening');
+    const micLabel = $('#ai-mic-label');
+    if (micLabel) micLabel.textContent = 'تحدث الآن 🎙️';
+  } else {
+    if (aiSpeechRecognition) {
+      try {
+        aiSpeechRecognition.start();
+      } catch (e) {
+        console.warn('[AI Recognition Start warn]:', e);
+      }
+    } else {
+      if (typeof showGemToast === 'function') {
+        showGemToast('🎙️ يمكنك اختيار أي سؤال من الأسئلة السريعة بالأعلى');
+      }
+    }
+  }
+};
+
+window.sendAIPrompt = async function(text) {
+  if (!text || !text.trim()) return;
+  const cleanPrompt = text.trim();
+
+  const transcriptWrap = $('#user-voice-transcript');
+  if (transcriptWrap) transcriptWrap.classList.remove('hidden');
+  const userText = $('#user-transcript-text');
+  if (userText) userText.textContent = cleanPrompt;
+
+  const status = $('#ai-status-indicator');
+  if (status) status.textContent = '● جاري التفكير والرد... ⚡';
+
+  try {
+    const res = await fetch('/api/ai-companion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: cleanPrompt,
+        language: (typeof currentLang !== 'undefined' ? currentLang : 'ar'),
+        userProfile: (typeof userProfile !== 'undefined' ? userProfile : {})
+      })
+    });
+    const data = await res.json();
+    if (data && data.reply) {
+      const bubble = $('#ai-bubble-text');
+      if (bubble) bubble.textContent = data.reply;
+      window.speakAIText(data.reply);
+    }
+  } catch (err) {
+    console.warn('[AI Companion Fetch Error]:', err);
+    const fallback = 'أنا معك وسامعك يا غالي، احكيلي أكثر!';
+    const bubble = $('#ai-bubble-text');
+    if (bubble) bubble.textContent = fallback;
+    window.speakAIText(fallback);
+  }
+};
+
+window.speakAIText = function(text) {
+  if (!text || typeof window.speechSynthesis === 'undefined') return;
+
+  try {
+    window.speechSynthesis.cancel();
+  } catch(e) {}
+
+  const status = $('#ai-status-indicator');
+  if (status) status.textContent = '● يتحدث معك الآن 🎙️';
+
+  const orb = $('#ai-visualizer-orb');
+  if (orb) orb.classList.add('speaking');
+  isAISpeaking = true;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ar-SA';
+  utterance.rate = 1.0;
+  utterance.pitch = 1.05;
+
+  if (aiVoiceSelected) {
+    utterance.voice = aiVoiceSelected;
+  }
+
+  utterance.onend = () => {
+    isAISpeaking = false;
+    if (orb) orb.classList.remove('speaking');
+    const s = $('#ai-status-indicator');
+    if (s) s.textContent = '● مستعد لسماعك.. تحدث الآن 🎙️';
+
+    setTimeout(() => {
+      if (currentState === 'ai_call' && !isAISpeaking && !isAIMicListening && aiSpeechRecognition) {
+        try { aiSpeechRecognition.start(); } catch(e) {}
+      }
+    }, 600);
+  };
+
+  utterance.onerror = (e) => {
+    console.warn('[AI SpeechSynthesis Error]:', e);
+    isAISpeaking = false;
+    if (orb) orb.classList.remove('speaking');
+    const s = $('#ai-status-indicator');
+    if (s) s.textContent = '● مستعد لسماعك 🎙️';
+  };
+
+  window.speechSynthesis.speak(utterance);
+};
+

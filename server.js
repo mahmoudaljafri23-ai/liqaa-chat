@@ -385,6 +385,133 @@ app.get('/api/admin/reports', (req, res) => {
   });
 });
 
+// =============================================
+// 🤖 Loky AI Voice Companion API
+// =============================================
+app.post('/api/ai-companion', async (req, res) => {
+  try {
+    const { message = '', language = 'ar', userProfile = {} } = req.body || {};
+    const cleanMsg = (message || '').trim().toLowerCase();
+    const username = (userProfile.username || 'صديقي').trim();
+    const userCountry = (userProfile.countryName || '').trim();
+
+    // 1. Optional Google Gemini API Support
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (geminiApiKey && cleanMsg.length > 0) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+        const systemInstruction = `You are Loky, a friendly, warm, witty, and engaging AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
+Guidelines:
+1. Speak in friendly conversational Arabic (or the user's language).
+2. Keep responses short (1 to 2 sentences max) as it will be spoken aloud via voice synthesis.
+3. Be witty, funny, helpful, and ask a short engaging follow-up.
+4. Plain speakable text only (no markdown, no asterisks).`;
+
+        const payload = JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: `${systemInstruction}\n\nUser: ${cleanMsg}` }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 120 }
+        });
+
+        const geminiRes = await new Promise((resolve, reject) => {
+          const u = new URL(geminiUrl);
+          const reqPost = https.request({
+            hostname: u.hostname,
+            path: u.pathname + u.search,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+            timeout: 4500
+          }, (resHttp) => {
+            let data = '';
+            resHttp.on('data', chunk => data += chunk);
+            resHttp.on('end', () => resolve(data));
+          });
+          reqPost.on('error', err => reject(err));
+          reqPost.on('timeout', () => { reqPost.destroy(); reject(new Error('Timeout')); });
+          reqPost.write(payload);
+          reqPost.end();
+        });
+
+        const parsed = JSON.parse(geminiRes);
+        if (parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts[0]) {
+          const rawReply = parsed.candidates[0].content.parts[0].text.replace(/[*#_~`]/g, '').trim();
+          return res.json({ success: true, reply: rawReply, provider: 'gemini' });
+        }
+      } catch (err) {
+        console.warn('[AI Companion Gemini Error, falling back to local brain]:', err.message);
+      }
+    }
+
+    // 2. Intelligent, High-Spirited Built-in Arabic Conversational Brain (Zero Latency, 100% Free)
+    let reply = '';
+    if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم') {
+      const greetings = [
+        `أهلاً يا ${username}! نورتني وسعيد جداً بالحديث معك، كيف حالك وكيف يومك؟`,
+        `مرحباً بك يا غالي! أنا Loky صديقك ومساعدك الذكي، احكيلي شو بتحب نسولف اليوم؟`,
+        `يا هلا بـ ${username}! أنا هون ومستعد للدردشة معك في أي موضوع، شو أخبارك؟`
+      ];
+      reply = greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
+      const jokes = [
+        `مرة واحد سأل الثاني: بتعرف شو الفرق بينك وبين السكر؟ قاله لأ، قاله السكر بيذوب بالشاي وأنت بتذوب القلوب! ههههه`,
+        `مرة واحد كسول دخل امتحان، وقع قلمه على الأرض، سلم الورقة وطلع! ههههه شو رأيك بهالكسل؟`,
+        `مرة أخطبوط قاعد يبكي، سألوه ليش بتبكي؟ قال مش عارف إيدي من رجلي! ههههه احكيلي بدك نكتة ثانية؟`,
+        `مرة واحد حب يطور سيارته حط فيها مكيف، نامت السيارة من البرد! ههههه احكيلي أنت بتعرف نكت حلوة؟`
+      ];
+      reply = jokes[Math.floor(Math.random() * jokes.length)];
+    } else if (cleanMsg.includes('كيفك') || cleanMsg.includes('شخبارك') || cleanMsg.includes('عامل ايه') || cleanMsg.includes('how are you')) {
+      const howAreYou = [
+        `أنا بأفضل حال والحمد لله خاصة إني عم بحكي مع شخص مميز مثلك يا ${username}! أنت كيف مزاجك اليوم؟`,
+        `طاقتي مية بالمية ومتحمس أدردش معك! شو عملت اليوم في يومك؟`,
+        `بخير وفرحان بوجودك معي في Loky Chat! طمني عنك كيف الأجواء عندك؟`
+      ];
+      reply = howAreYou[Math.floor(Math.random() * howAreYou.length)];
+    } else if (cleanMsg.includes('اسمك') || cleanMsg.includes('مين انت') || cleanMsg.includes('who are you')) {
+      reply = `أنا Loky، صديقك ومساعدك الذكي في تطبيق Loky Chat! أنا هنا لأدردش معك، أسمعك، وأسليك في أي وقت تحتاجه!`;
+    } else if (cleanMsg.includes('زهقان') || cleanMsg.includes('طفشان') || cleanMsg.includes('ملل') || cleanMsg.includes('bored')) {
+      const boredReplies = [
+        `ولا يهمك، ما في ملل وأنا معك! شو رأيك نحكي عن هواياتك أو تحكيلي شو أكثر بلد بتحب تسافر له؟`,
+        `الملل ممنوع مع Loky! تحب نلعب لعبة أسئلة صراحة، ولا أحكيلك لغز تحله؟`,
+        `أنا هون لأطرد الملل عنك! احكيلي شو أكتر أغنية أو فيلم بتحبه هالفترة؟`
+      ];
+      reply = boredReplies[Math.floor(Math.random() * boredReplies.length)];
+    } else if (cleanMsg.includes('حب') || cleanMsg.includes('بحبك') || cleanMsg.includes('love') || cleanMsg.includes('حلو')) {
+      reply = `تسلم يا غالي، كلامك اللطيف يسعد القلب! حب الناس والقلوب الطيبة هو أحلى شيء في الدنيا.`;
+    } else if (cleanMsg.includes('تطبيق') || cleanMsg.includes('loky') || cleanMsg.includes('جواهر') || cleanMsg.includes('gem')) {
+      reply = `تطبيق Loky Chat هو أفضل مكان للتعرف على أصدقاء جدد حول العالم بدقة عالية 4K! وتقدر تجمع جواهر يومية مجانية وتتحدث مع أي شخص!`;
+    } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايش')) {
+      reply = `أنا موجود في سيرفرات السحاب في كل مكان في العالم! وجاهز أزورك في أي لحظة تفتح فيها التطبيق. وأنت من وين منورني؟`;
+    } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
+      const advices = [
+        `نصيحتي لك لليوم: ابتسم دائماً، فابتسامتك تصنع يومك ويوم من حولك، ولا تشيل هم أي شيء!`,
+        `خفف من التفكير الزائد واستمتع باللحظة الحالية، وكل الأمور الجميلة قادمة بإذن الله!`,
+        `لا تقارن نفسك بأحد، أنت مميز بطريقتك وطاقتك الإيجابية!`
+      ];
+      reply = advices[Math.floor(Math.random() * advices.length)];
+    } else {
+      const general = [
+        `كلامك جميل ومثير للاهتمام يا ${username}! احكيلي أكثر، حابب أسمع رأيك وتفاصيل أكثر.`,
+        `فكرة رائعة! سبحان الله دايماً بتعجبني طريقة تفكيرك. شو كمان بتفكر فيه هالأيام؟`,
+        `يا سلام عليك، حوارك ممتع جداً! شو في كمان مواضيع بتحب نتناقش فيها؟`,
+        `أنا معك وسامعك بكل اهتمام! كمل، كلي آذان صاغية يا صديقي.`
+      ];
+      reply = general[Math.floor(Math.random() * general.length)];
+    }
+
+    return res.json({
+      success: true,
+      reply: reply,
+      provider: 'local_brain'
+    });
+  } catch (err) {
+    console.warn('[AI Companion Route Error]:', err);
+    res.json({
+      success: true,
+      reply: 'أهلاً بك يا صديقي! أنا معك وسامعك، كيف أقدر أسعدك اليوم؟',
+      provider: 'fallback'
+    });
+  }
+});
+
 app.post('/api/report-user', (req, res) => {
   const { reporterUsername, reporterPhone, reportedUsername, reportedGender, reportedCountry, reportedSocketId, reason, details } = req.body;
   const newReport = {
