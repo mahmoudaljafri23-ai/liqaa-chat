@@ -6554,12 +6554,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =============================================
-// 🤖 Loky AI Voice Companion (Interactive Voice & Speech Call)
+// 🤖 Loky AI Voice Companion (Dual Persona: Male & Female)
 // =============================================
 let aiSpeechRecognition = null;
 let isAIMicListening = false;
 let isAISpeaking = false;
 let aiVoiceSelected = null;
+let currentAIPersona = 'male'; // 'male' (Loky) | 'female' (Layla)
 
 function initAIVoiceEngine() {
   if (typeof window.speechSynthesis !== 'undefined') {
@@ -6639,8 +6640,46 @@ function initAIVoiceEngine() {
   }
 }
 
-window.startAIVoiceCall = function() {
-  console.log('[AI Companion] Starting Live Voice Call...');
+window.switchAIPersona = function(gender) {
+  currentAIPersona = (gender === 'female') ? 'female' : 'male';
+  console.log('[AI Companion] Switched persona to:', currentAIPersona);
+
+  const screen = $('#ai-voice-call-screen');
+  const btnMale = $('#btn-persona-male');
+  const btnFemale = $('#btn-persona-female');
+  const avatarEmoji = $('#ai-avatar-emoji');
+  const headerName = $('#ai-header-name');
+  const bubbleSpeaker = $('#ai-bubble-speaker');
+  const bubbleText = $('#ai-bubble-text');
+  const username = (userProfile && userProfile.username) ? userProfile.username : 'يا صديقي';
+
+  if (currentAIPersona === 'female') {
+    if (screen) screen.classList.add('persona-female');
+    if (btnFemale) btnFemale.classList.add('active');
+    if (btnMale) btnMale.classList.remove('active');
+    if (avatarEmoji) avatarEmoji.textContent = '👧';
+    if (headerName) headerName.textContent = 'صديقتك الذكية (ليلى AI)';
+    if (bubbleSpeaker) bubbleSpeaker.textContent = '👧 ليلى AI:';
+
+    const femaleGreeting = `يا هلا والله يا ${username}! أنا ليلى، سعيدة جداً إني عم بحكي معك.. كيفك اليوم وشو أخبارك؟ 🌸✨`;
+    if (bubbleText) bubbleText.textContent = femaleGreeting;
+    window.speakAIText(femaleGreeting);
+  } else {
+    if (screen) screen.classList.remove('persona-female');
+    if (btnMale) btnMale.classList.add('active');
+    if (btnFemale) btnFemale.classList.remove('active');
+    if (avatarEmoji) avatarEmoji.textContent = '👨‍💼';
+    if (headerName) headerName.textContent = 'صديقك الذكي (لوكي AI)';
+    if (bubbleSpeaker) bubbleSpeaker.textContent = '👨‍💼 لوكي AI:';
+
+    const maleGreeting = `يا هلا يا ${username}! أنا لوكي، كيف أقدر أسعدك اليوم؟ احكيلي شو بتحب نسولف! 🎙️`;
+    if (bubbleText) bubbleText.textContent = maleGreeting;
+    window.speakAIText(maleGreeting);
+  }
+};
+
+window.startAIVoiceCall = function(initialPersona) {
+  console.log('[AI Companion] Starting Live Voice Call with persona:', initialPersona || currentAIPersona);
   initAIVoiceEngine();
 
   if (currentState === 'searching') {
@@ -6672,14 +6711,11 @@ window.startAIVoiceCall = function() {
 
   currentState = 'ai_call';
 
-  const username = (userProfile && userProfile.username) ? userProfile.username : 'يا صديقي';
-  const initialGreeting = `أهلاً بك يا ${username} في Loky Chat! أنا هنا للتحدث معك ومساعدتك، كيف حالك اليوم وعن ماذا تحب أن نتحدث؟`;
-  const bubbleText = $('#ai-bubble-text');
-  if (bubbleText) bubbleText.textContent = initialGreeting;
-
-  setTimeout(() => {
-    window.speakAIText(initialGreeting);
-  }, 400);
+  if (initialPersona) {
+    window.switchAIPersona(initialPersona);
+  } else {
+    window.switchAIPersona(currentAIPersona);
+  }
 };
 
 window.endAIVoiceCall = function() {
@@ -6771,7 +6807,8 @@ window.sendAIPrompt = async function(text) {
       body: JSON.stringify({
         message: cleanPrompt,
         language: (typeof currentLang !== 'undefined' ? currentLang : 'ar'),
-        userProfile: (typeof userProfile !== 'undefined' ? userProfile : {})
+        userProfile: (typeof userProfile !== 'undefined' ? userProfile : {}),
+        character: currentAIPersona
       })
     });
     const data = await res.json();
@@ -6782,7 +6819,9 @@ window.sendAIPrompt = async function(text) {
     }
   } catch (err) {
     console.warn('[AI Companion Fetch Error]:', err);
-    const fallback = 'أنا معك وسامعك يا غالي، احكيلي أكثر!';
+    const fallback = (currentAIPersona === 'female')
+      ? 'أنا معك وسامعتك يا غالي، احكيلي أكتر! 🌸'
+      : 'أنا معك وسامعك يا غالي، احكيلي أكثر!';
     const bubble = $('#ai-bubble-text');
     if (bubble) bubble.textContent = fallback;
     window.speakAIText(fallback);
@@ -6805,12 +6844,31 @@ window.speakAIText = function(text) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'ar-SA';
-  utterance.rate = 1.0;
-  utterance.pitch = 1.05;
 
-  if (aiVoiceSelected) {
-    utterance.voice = aiVoiceSelected;
+  // Customize pitch and rate by persona
+  if (currentAIPersona === 'female') {
+    utterance.pitch = 1.35; // Gentle feminine pitch
+    utterance.rate = 0.96;
+  } else {
+    utterance.pitch = 0.98; // Warm masculine pitch
+    utterance.rate = 1.0;
   }
+
+  // Look for preferred voices if available
+  try {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length) {
+      if (currentAIPersona === 'female') {
+        const femaleVoice = voices.find(v => v.lang && (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.includes('female') || v.name.includes('Hoda') || v.name.includes('Maryam') || v.name.includes('Salma') || v.name.includes('Zariyah')));
+        if (femaleVoice) utterance.voice = femaleVoice;
+        else if (aiVoiceSelected) utterance.voice = aiVoiceSelected;
+      } else {
+        const maleVoice = voices.find(v => v.lang && (v.lang.startsWith('ar') || v.lang.includes('AR')) && (v.name.includes('male') || v.name.includes('Naayf') || v.name.includes('Tariq')));
+        if (maleVoice) utterance.voice = maleVoice;
+        else if (aiVoiceSelected) utterance.voice = aiVoiceSelected;
+      }
+    }
+  } catch(e) {}
 
   utterance.onend = () => {
     isAISpeaking = false;

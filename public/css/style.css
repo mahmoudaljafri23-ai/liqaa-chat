@@ -5239,4 +5239,84 @@ body:has(#welcome-camera-card:not(.hidden)) .toast-container {
   font-weight: 800;
 }
 
+/* Persona Switcher (Male vs Female) */
+.ai-persona-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  padding: 6px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ai-persona-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.ai-persona-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
+}
+
+.ai-persona-btn#btn-persona-female.active {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.5);
+}
+
+/* Female Mode Dynamic Theme on AI Voice Call */
+.ai-voice-call-screen.persona-female .ai-call-backdrop {
+  background: radial-gradient(circle at 50% 30%, rgba(190, 24, 93, 0.45) 0%, rgba(30, 10, 30, 0.8) 50%, #09090e 100%);
+}
+
+.ai-voice-call-screen.persona-female .ai-call-glow-orb {
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, rgba(244, 63, 94, 0.18) 50%, transparent 70%);
+}
+
+.ai-voice-call-screen.persona-female .ai-avatar-circle {
+  background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.7) !important;
+}
+
+.ai-voice-call-screen.persona-female .ai-center-core {
+  background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+  box-shadow: 0 0 30px rgba(236, 72, 153, 0.8) !important;
+}
+
+.ai-voice-call-screen.persona-female .ai-wave-ring {
+  border-color: rgba(236, 72, 153, 0.4) !important;
+}
+
+.ai-voice-call-screen.persona-female .ai-bubble-speaker {
+  color: #f472b6 !important;
+}
+
+.ai-voice-call-screen.persona-female .ai-btn-mic .ai-mic-icon {
+  background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+  box-shadow: 0 6px 24px rgba(236, 72, 153, 0.6) !important;
+}
+
+.ai-voice-call-screen.persona-female .ai-mic-label {
+  color: #f472b6 !important;
+}
+
 

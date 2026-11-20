@@ -240,11 +240,16 @@
             
             <!-- AI Companion Smart Suggestion (Appears after waiting) -->
             <div id="radar-ai-suggestion" class="radar-ai-suggestion hidden">
-              <div class="ai-sugg-badge">🤖 صديقك الذكي جاهز الآن</div>
-              <p class="ai-sugg-sub">لم نجد شريكاً متصلاً حالياً، هل تود التحدث صوتياً مع Loky AI فوراً؟</p>
-              <button type="button" class="btn-sugg-ai" onclick="window.startAIVoiceCall && window.startAIVoiceCall()">
-                <span>🎙️ بدء المكالمة الصوتية مع AI</span>
-              </button>
+              <div class="ai-sugg-badge">✨ الذكاء الاصطناعي متاح فوراً</div>
+              <p class="ai-sugg-sub">لم نجد شريكاً متصلاً الآن، اختر من تحب التحدث معه صوتياً:</p>
+              <div class="ai-sugg-choice-row" style="display: flex; gap: 8px; justify-content: center; margin-top: 6px;">
+                <button type="button" class="btn-sugg-ai btn-sugg-female" onclick="window.startAIVoiceCall && window.startAIVoiceCall('female')" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                  <span>👧 ليلى (بنت)</span>
+                </button>
+                <button type="button" class="btn-sugg-ai btn-sugg-male" onclick="window.startAIVoiceCall && window.startAIVoiceCall('male')" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4);">
+                  <span>👨‍💼 لوكي (شاب)</span>
+                </button>
+              </div>
             </div>
           </div>
           <button type="button" id="cancel-search-btn" class="radar-cancel-btn">
@@ -1347,18 +1352,30 @@
     <!-- Top Header HUD -->
     <div class="ai-call-header">
       <div class="ai-header-left">
-        <div class="ai-avatar-circle">
-          <span class="ai-avatar-emoji">🤖</span>
+        <div class="ai-avatar-circle" id="ai-avatar-circle">
+          <span class="ai-avatar-emoji" id="ai-avatar-emoji">👨‍💼</span>
           <span class="ai-online-pulse"></span>
         </div>
         <div class="ai-header-meta">
-          <span class="ai-header-name">صديقك ومساعدك الذكي (Loky AI)</span>
+          <span class="ai-header-name" id="ai-header-name">صديقك الذكي (لوكي AI)</span>
           <span class="ai-header-status" id="ai-status-indicator">● متصل صوتياً ومستعد للحديث 🎙️</span>
         </div>
       </div>
       <div class="ai-header-right">
         <span class="ai-badge-live">LIVE VOICE</span>
       </div>
+    </div>
+
+    <!-- Dual Persona Switcher (Male / Female) -->
+    <div class="ai-persona-bar">
+      <button type="button" class="ai-persona-btn active" id="btn-persona-male" onclick="window.switchAIPersona('male')">
+        <span class="persona-icon">👨‍💼</span>
+        <span class="persona-name">لوكي (شاب)</span>
+      </button>
+      <button type="button" class="ai-persona-btn" id="btn-persona-female" onclick="window.switchAIPersona('female')">
+        <span class="persona-icon">👧</span>
+        <span class="persona-name">ليلى (بنت)</span>
+      </button>
     </div>
 
     <!-- Center Stage: Holographic Sound Wave Orb & Visualizer -->

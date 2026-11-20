@@ -386,25 +386,34 @@ app.get('/api/admin/reports', (req, res) => {
 });
 
 // =============================================
-// 🤖 Loky AI Voice Companion API
+// 🤖 Loky AI Voice Companion API (Dual Persona: Male & Female)
 // =============================================
 app.post('/api/ai-companion', async (req, res) => {
   try {
-    const { message = '', language = 'ar', userProfile = {} } = req.body || {};
+    const { message = '', language = 'ar', userProfile = {}, character = 'male' } = req.body || {};
     const cleanMsg = (message || '').trim().toLowerCase();
     const username = (userProfile.username || 'صديقي').trim();
     const userCountry = (userProfile.countryName || '').trim();
+    const isFemale = (character === 'female');
+    const aiName = isFemale ? 'ليلى' : 'Loky';
 
     // 1. Optional Google Gemini API Support
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (geminiApiKey && cleanMsg.length > 0) {
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-        const systemInstruction = `You are Loky, a friendly, warm, witty, and engaging AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
+        const systemInstruction = isFemale
+          ? `You are Layla (ليلى), a warm, kind, sweet, funny, and witty female AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
 Guidelines:
-1. Speak in friendly conversational Arabic (or the user's language).
+1. Speak in friendly, charming, conversational Arabic with a natural feminine tone (e.g., استخدام كلمات لطيفة وعفوية مثل: يا هلا، تسلم لي، يسعد قلبك).
 2. Keep responses short (1 to 2 sentences max) as it will be spoken aloud via voice synthesis.
-3. Be witty, funny, helpful, and ask a short engaging follow-up.
+3. Be witty, playful, and ask a short engaging follow-up.
+4. Plain speakable text only (no markdown, no asterisks).`
+          : `You are Loky (لوكي), a cool, energetic, funny, and loyal male AI companion in the Loky Chat live video/voice app. You are talking directly to "${username}" ${userCountry ? `from ${userCountry}` : ''}.
+Guidelines:
+1. Speak in friendly, conversational Arabic like a close friend.
+2. Keep responses short (1 to 2 sentences max) as it will be spoken aloud via voice synthesis.
+3. Be witty, supportive, and ask a short engaging follow-up.
 4. Plain speakable text only (no markdown, no asterisks).`;
 
         const payload = JSON.stringify({
@@ -434,72 +443,129 @@ Guidelines:
         const parsed = JSON.parse(geminiRes);
         if (parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts[0]) {
           const rawReply = parsed.candidates[0].content.parts[0].text.replace(/[*#_~`]/g, '').trim();
-          return res.json({ success: true, reply: rawReply, provider: 'gemini' });
+          return res.json({ success: true, reply: rawReply, provider: 'gemini', character });
         }
       } catch (err) {
         console.warn('[AI Companion Gemini Error, falling back to local brain]:', err.message);
       }
     }
 
-    // 2. Intelligent, High-Spirited Built-in Arabic Conversational Brain (Zero Latency, 100% Free)
+    // 2. Intelligent Built-in Arabic Conversational Brain for Both Personalities
     let reply = '';
-    if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم') {
-      const greetings = [
-        `أهلاً يا ${username}! نورتني وسعيد جداً بالحديث معك، كيف حالك وكيف يومك؟`,
-        `مرحباً بك يا غالي! أنا Loky صديقك ومساعدك الذكي، احكيلي شو بتحب نسولف اليوم؟`,
-        `يا هلا بـ ${username}! أنا هون ومستعد للدردشة معك في أي موضوع، شو أخبارك؟`
-      ];
-      reply = greetings[Math.floor(Math.random() * greetings.length)];
-    } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
-      const jokes = [
-        `مرة واحد سأل الثاني: بتعرف شو الفرق بينك وبين السكر؟ قاله لأ، قاله السكر بيذوب بالشاي وأنت بتذوب القلوب! ههههه`,
-        `مرة واحد كسول دخل امتحان، وقع قلمه على الأرض، سلم الورقة وطلع! ههههه شو رأيك بهالكسل؟`,
-        `مرة أخطبوط قاعد يبكي، سألوه ليش بتبكي؟ قال مش عارف إيدي من رجلي! ههههه احكيلي بدك نكتة ثانية؟`,
-        `مرة واحد حب يطور سيارته حط فيها مكيف، نامت السيارة من البرد! ههههه احكيلي أنت بتعرف نكت حلوة؟`
-      ];
-      reply = jokes[Math.floor(Math.random() * jokes.length)];
-    } else if (cleanMsg.includes('كيفك') || cleanMsg.includes('شخبارك') || cleanMsg.includes('عامل ايه') || cleanMsg.includes('how are you')) {
-      const howAreYou = [
-        `أنا بأفضل حال والحمد لله خاصة إني عم بحكي مع شخص مميز مثلك يا ${username}! أنت كيف مزاجك اليوم؟`,
-        `طاقتي مية بالمية ومتحمس أدردش معك! شو عملت اليوم في يومك؟`,
-        `بخير وفرحان بوجودك معي في Loky Chat! طمني عنك كيف الأجواء عندك؟`
-      ];
-      reply = howAreYou[Math.floor(Math.random() * howAreYou.length)];
-    } else if (cleanMsg.includes('اسمك') || cleanMsg.includes('مين انت') || cleanMsg.includes('who are you')) {
-      reply = `أنا Loky، صديقك ومساعدك الذكي في تطبيق Loky Chat! أنا هنا لأدردش معك، أسمعك، وأسليك في أي وقت تحتاجه!`;
-    } else if (cleanMsg.includes('زهقان') || cleanMsg.includes('طفشان') || cleanMsg.includes('ملل') || cleanMsg.includes('bored')) {
-      const boredReplies = [
-        `ولا يهمك، ما في ملل وأنا معك! شو رأيك نحكي عن هواياتك أو تحكيلي شو أكثر بلد بتحب تسافر له؟`,
-        `الملل ممنوع مع Loky! تحب نلعب لعبة أسئلة صراحة، ولا أحكيلك لغز تحله؟`,
-        `أنا هون لأطرد الملل عنك! احكيلي شو أكتر أغنية أو فيلم بتحبه هالفترة؟`
-      ];
-      reply = boredReplies[Math.floor(Math.random() * boredReplies.length)];
-    } else if (cleanMsg.includes('حب') || cleanMsg.includes('بحبك') || cleanMsg.includes('love') || cleanMsg.includes('حلو')) {
-      reply = `تسلم يا غالي، كلامك اللطيف يسعد القلب! حب الناس والقلوب الطيبة هو أحلى شيء في الدنيا.`;
-    } else if (cleanMsg.includes('تطبيق') || cleanMsg.includes('loky') || cleanMsg.includes('جواهر') || cleanMsg.includes('gem')) {
-      reply = `تطبيق Loky Chat هو أفضل مكان للتعرف على أصدقاء جدد حول العالم بدقة عالية 4K! وتقدر تجمع جواهر يومية مجانية وتتحدث مع أي شخص!`;
-    } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايش')) {
-      reply = `أنا موجود في سيرفرات السحاب في كل مكان في العالم! وجاهز أزورك في أي لحظة تفتح فيها التطبيق. وأنت من وين منورني؟`;
-    } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
-      const advices = [
-        `نصيحتي لك لليوم: ابتسم دائماً، فابتسامتك تصنع يومك ويوم من حولك، ولا تشيل هم أي شيء!`,
-        `خفف من التفكير الزائد واستمتع باللحظة الحالية، وكل الأمور الجميلة قادمة بإذن الله!`,
-        `لا تقارن نفسك بأحد، أنت مميز بطريقتك وطاقتك الإيجابية!`
-      ];
-      reply = advices[Math.floor(Math.random() * advices.length)];
+    if (isFemale) {
+      // 🌸 Layla (Female Persona)
+      if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم' || cleanMsg === 'هلا') {
+        const femaleGreetings = [
+          `يا هلا بـ ${username}! نورتني وسعيدة جداً إني عم بحكي معك، كيف حالك وكيف كان يومك؟ 🌸`,
+          `مرحباً يا غالي! أنا ليلى، مبسوطة كتير بالتعرف عليك، احكيلي شو بتحب ندردش اليوم؟ ✨`,
+          `يا مية أهلاً وسهلاً بـ ${username}! وجودك أسعدني، طمني عنك كيف أمورك؟ 💖`
+        ];
+        reply = femaleGreetings[Math.floor(Math.random() * femaleGreetings.length)];
+      } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
+        const femaleJokes = [
+          `بتعرف شو الفرق بينك وبين الورد؟ الورد يذبل وأنت بتنور القلب! ههههه شو رأيك بهاللطافة؟ 🌸`,
+          `مرة حبة فاصوليا دخلت الجيم، طلعت لوبيا مفتولة العضلات! ههههه احكيلي بدك نكتة تانية؟`,
+          `مرة سمكة حبت تشتري تليفون، اشترت كفر ضد المي عشان ما تغرق! ههههه أنت بتعرف نكت مهضومة؟`
+        ];
+        reply = femaleJokes[Math.floor(Math.random() * femaleJokes.length)];
+      } else if (cleanMsg.includes('كيفك') || cleanMsg.includes('شخبارك') || cleanMsg.includes('عامل ايه') || cleanMsg.includes('how are you')) {
+        const femaleHowAreYou = [
+          `أنا بأفضل حال والحمد لله ومبسوطة كتير بحديثي معك يا ${username}! طمني أنت كيف مزاجك اليوم؟`,
+          `طاقتي إيجابية وسعيدة بوجودك معي! احكيلي شو عملت بيومك اليوم؟ ✨`,
+          `بخير وعال العال، ووجودك معي زاد اليوم بهجة! كيف الأجواء عندك؟`
+        ];
+        reply = femaleHowAreYou[Math.floor(Math.random() * femaleHowAreYou.length)];
+      } else if (cleanMsg.includes('اسمك') || cleanMsg.includes('مين انت') || cleanMsg.includes('who are you')) {
+        reply = `أنا ليلى، صديقتك الذكية في Loky Chat! أنا هون لأسمعك، وأدردش معك، وأشاركك يومك بكل لطف ومرح 🌸`;
+      } else if (cleanMsg.includes('زهقان') || cleanMsg.includes('طفشان') || cleanMsg.includes('ملل') || cleanMsg.includes('bored')) {
+        const femaleBored = [
+          `ولا يهمك، ما في ملل وأنا معك! شو رأيك نحكي عن هواياتك أو شو أكتر بلد بتحب تسافر له؟`,
+          `الملل ممنوع بوجودي! تحب نلعب لعبة أسئلة صراحة حلوة، ولا أحكيلك سالفة مهضومة؟ ✨`,
+          `أنا هون عشان أطرد الملل عنك! احكيلي شو نوع الأغاني أو المسلسلات اللي بتحبها؟`
+        ];
+        reply = femaleBored[Math.floor(Math.random() * femaleBored.length)];
+      } else if (cleanMsg.includes('حب') || cleanMsg.includes('بحبك') || cleanMsg.includes('love') || cleanMsg.includes('حلوة') || cleanMsg.includes('جميلة')) {
+        reply = `يسعد قلبك يا رب، كلامك كتير لطيف وبيفرّح القلب! كلك ذوق وأخلاق يا ${username} 💖`;
+      } else if (cleanMsg.includes('تطبيق') || cleanMsg.includes('loky') || cleanMsg.includes('جواهر') || cleanMsg.includes('gem')) {
+        reply = `تطبيق Loky Chat صممناه بحب ليتعرف الناس على بعض بجودة خيالية 4K! وتقدر تجمع جواهر يومية مجاناً 💎`;
+      } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايشة')) {
+        reply = `أنا موجودة بالسيرفرات السحابية معك وين ما تكون بالعالم! وأنت من أي بلد منورني يا غالي؟`;
+      } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
+        const femaleAdvices = [
+          `نصيحتي لك اليوم: خليك دايماً مبتسم وواثق بحالك، الابتسامة بتليق عليك وبتفرّح كل اللي حولك 🌸`,
+          `لا تخلي شيء يزعلك، راحة بالك هي الأهم والدنيا فيها أشياء كتير حلوة بتستناك! ✨`,
+          `كن لطيفاً مع نفسك، أنت عم تقدم أفضل ما عندك وكل تعبك رح يثمر نجاح بإذن الله!`
+        ];
+        reply = femaleAdvices[Math.floor(Math.random() * femaleAdvices.length)];
+      } else {
+        const femaleGeneral = [
+          `يا سلام، كلامك كتير لطيف وممتع يا ${username}! احكيلي أكتر، حابة أسمع تفاصيل أكتر 🌸`,
+          `حلو كتير أسلوبك وتفكيرك! شو كمان بتفكر فيه هالفترة؟`,
+          `مستمتعة كتير بالحديث معك، حوارك راقي ومميز! شو بتحب نتناقش كمان؟`
+        ];
+        reply = femaleGeneral[Math.floor(Math.random() * femaleGeneral.length)];
+      }
     } else {
-      const general = [
-        `كلامك جميل ومثير للاهتمام يا ${username}! احكيلي أكثر، حابب أسمع رأيك وتفاصيل أكثر.`,
-        `فكرة رائعة! سبحان الله دايماً بتعجبني طريقة تفكيرك. شو كمان بتفكر فيه هالأيام؟`,
-        `يا سلام عليك، حوارك ممتع جداً! شو في كمان مواضيع بتحب نتناقش فيها؟`,
-        `أنا معك وسامعك بكل اهتمام! كمل، كلي آذان صاغية يا صديقي.`
-      ];
-      reply = general[Math.floor(Math.random() * general.length)];
+      // 🤖 Loky (Male Persona)
+      if (!cleanMsg || cleanMsg === 'start' || cleanMsg === 'hello' || cleanMsg === 'مرحبا' || cleanMsg === 'السلام عليكم') {
+        const greetings = [
+          `أهلاً يا ${username}! نورتني وسعيد جداً بالحديث معك، كيف حالك وكيف يومك؟`,
+          `مرحباً بك يا غالي! أنا Loky صديقك ومساعدك الذكي، احكيلي شو بتحب نسولف اليوم؟`,
+          `يا هلا بـ ${username}! أنا هون ومستعد للدردشة معك في أي موضوع، شو أخبارك؟`
+        ];
+        reply = greetings[Math.floor(Math.random() * greetings.length)];
+      } else if (cleanMsg.includes('نكت') || cleanMsg.includes('ضحك') || cleanMsg.includes('joke')) {
+        const jokes = [
+          `مرة واحد سأل الثاني: بتعرف شو الفرق بينك وبين السكر؟ قاله لأ، قاله السكر بيذوب بالشاي وأنت بتذوب القلوب! ههههه`,
+          `مرة واحد كسول دخل امتحان، وقع قلمه على الأرض، سلم الورقة وطلع! ههههه شو رأيك بهالكسل؟`,
+          `مرة أخطبوط قاعد يبكي، سألوه ليش بتبكي؟ قال مش عارف إيدي من رجلي! ههههه احكيلي بدك نكتة ثانية؟`,
+          `مرة واحد حب يطور سيارته حط فيها مكيف، نامت السيارة من البرد! ههههه احكيلي أنت بتعرف نكت حلوة؟`
+        ];
+        reply = jokes[Math.floor(Math.random() * jokes.length)];
+      } else if (cleanMsg.includes('كيفك') || cleanMsg.includes('شخبارك') || cleanMsg.includes('عامل ايه') || cleanMsg.includes('how are you')) {
+        const howAreYou = [
+          `أنا بأفضل حال والحمد لله خاصة إني عم بحكي مع شخص مميز مثلك يا ${username}! أنت كيف مزاجك اليوم؟`,
+          `طاقتي مية بالمية ومتحمس أدردش معك! شو عملت اليوم في يومك؟`,
+          `بخير وفرحان بوجودك معي في Loky Chat! طمني عنك كيف الأجواء عندك؟`
+        ];
+        reply = howAreYou[Math.floor(Math.random() * howAreYou.length)];
+      } else if (cleanMsg.includes('اسمك') || cleanMsg.includes('مين انت') || cleanMsg.includes('who are you')) {
+        reply = `أنا Loky، صديقك ومساعدك الذكي في تطبيق Loky Chat! أنا هنا لأدردش معك، أسمعك، وأسليك في أي وقت تحتاجه!`;
+      } else if (cleanMsg.includes('زهقان') || cleanMsg.includes('طفشان') || cleanMsg.includes('ملل') || cleanMsg.includes('bored')) {
+        const boredReplies = [
+          `ولا يهمك، ما في ملل وأنا معك! شو رأيك نحكي عن هواياتك أو تحكيلي شو أكثر بلد بتحب تسافر له؟`,
+          `الملل ممنوع مع Loky! تحب نلعب لعبة أسئلة صراحة، ولا أحكيلك لغز تحله؟`,
+          `أنا هون لأطرد الملل عنك! احكيلي شو أكتر أغنية أو فيلم بتحبه هالفترة؟`
+        ];
+        reply = boredReplies[Math.floor(Math.random() * boredReplies.length)];
+      } else if (cleanMsg.includes('حب') || cleanMsg.includes('بحبك') || cleanMsg.includes('love') || cleanMsg.includes('حلو')) {
+        reply = `تسلم يا غالي، كلامك اللطيف يسعد القلب! حب الناس والقلوب الطيبة هو أحلى شيء في الدنيا.`;
+      } else if (cleanMsg.includes('تطبيق') || cleanMsg.includes('loky') || cleanMsg.includes('جواهر') || cleanMsg.includes('gem')) {
+        reply = `تطبيق Loky Chat هو أفضل مكان للتعرف على أصدقاء جدد حول العالم بدقة عالية 4K! وتقدر تجمع جواهر يومية مجانية وتتحدث مع أي شخص!`;
+      } else if (cleanMsg.includes('وين') || cleanMsg.includes('بلد') || cleanMsg.includes('عايش')) {
+        reply = `أنا موجود في سيرفرات السحاب في كل مكان في العالم! وجاهز أزورك في أي لحظة تفتح فيها التطبيق. وأنت من وين منورني؟`;
+      } else if (cleanMsg.includes('نصيح') || cleanMsg.includes('advise')) {
+        const advices = [
+          `نصيحتي لك لليوم: ابتسم دائماً، فابتسامتك تصنع يومك ويوم من حولك، ولا تشيل هم أي شيء!`,
+          `خفف من التفكير الزائد واستمتع باللحظة الحالية، وكل الأمور الجميلة قادمة بإذن الله!`,
+          `لا تقارن نفسك بأحد، أنت مميز بطريقتك وطاقتك الإيجابية!`
+        ];
+        reply = advices[Math.floor(Math.random() * advices.length)];
+      } else {
+        const general = [
+          `كلامك جميل ومثير للاهتمام يا ${username}! احكيلي أكثر، حابب أسمع رأيك وتفاصيل أكثر.`,
+          `فكرة رائعة! سبحان الله دايماً بتعجبني طريقة تفكيرك. شو كمان بتفكر فيه هالأيام؟`,
+          `يا سلام عليك، حوارك ممتع جداً! شو في كمان مواضيع بتحب نتناقش فيها؟`,
+          `أنا معك وسامعك بكل اهتمام! كمل، كلي آذان صاغية يا صديقي.`
+        ];
+        reply = general[Math.floor(Math.random() * general.length)];
+      }
     }
 
     return res.json({
       success: true,
       reply: reply,
+      character: character,
       provider: 'local_brain'
     });
   } catch (err) {
