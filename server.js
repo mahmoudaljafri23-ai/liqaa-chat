@@ -954,17 +954,17 @@ app.get('/api/profile', (req, res) => {
 let appVersionConfig = {
   latestVersion: "1.2.8",
   latestVersionCode: 29,
-  minRequiredVersionCode: 25, // Any installed version < 25 will be asked/forced to update
+  minRequiredVersionCode: 29, // Any installed version < 29 will be asked/forced to update
   forceUpdate: true,
-  title: "تحديث ملكي جديد متوفر! 🚀👑",
-  message: "يتوفر إصدار جديد من Loky Chat (v1.2.4) يتضمن إصلاحات هامة لتسجيل الدخول بحساب Google وسرعة فائقة في الاتصال المباشر. يرجى التحديث الآن للمتابعة.",
+  title: "تحديث جديد متوفر لـ Loky Chat! 🚀👑",
+  message: "يرجى تحديث التطبيق الآن للاستمتاع بالمساعد والرفيق الصوتي الذكي (شخصية لوكي وشخصية ليلى) والسرعة الفائقة في الاتصال ومكالمات 4K.",
   playStoreUrl: "https://play.google.com/store/apps/details?id=com.lokychat.app",
-  directApkUrl: "https://liqaa-chat.onrender.com/LokyChat-Latest.apk",
+  directApkUrl: "https://play.google.com/store/apps/details?id=com.lokychat.app",
   releaseNotes: [
-    "✅ إصلاح شاشة تسجيل الدخول بحساب Google بشكل نهائي",
-    "⚡ تحسين جودة وسرعة مكالمات الفيديو الملكية",
-    "🛡️ حفظ الحسابات وكلمات المرور في السيرفر مع ميزة استعادة الرمز السري",
-    "💎 حماية وتوثيق شارة VIP والرصيد الملكي"
+    "🤖 إضافة المساعد والرفيق الذكي الصوتي (شخصية ليلى وشخصية لوكي)",
+    "⚡ تحسين جودة وسرعة مكالمات الفيديو فائقة الوضوح",
+    "🛡️ حفظ وتأمين الحسابات ومزامنة الرصيد الملكي والـ VIP",
+    "🌐 دعم كامل للغات المتعددة وإصلاحات عامة للاستقرار"
   ],
   updatedAt: new Date().toISOString()
 };
@@ -1055,11 +1055,12 @@ app.post('/api/admin/set-app-version', (req, res) => {
   res.json({ success: true, appVersionConfig });
 });
 
-// Route to download latest APK directly if available
+// Route to download latest APK directly if available (fallback redirects to Google Play)
 app.get(['/LokyChat-Latest.apk', '/download-apk'], (req, res) => {
   const candidates = [
     path.join(__dirname, 'LokyChat-Latest.apk'),
     path.join(__dirname, 'LokyChat-Royal.apk'),
+    path.join(__dirname, 'LokyChat-Release-v1.2.7.apk'),
     path.join(__dirname, 'android/app/build/outputs/apk/release/app-release.apk')
   ];
   for (const f of candidates) {
@@ -1071,7 +1072,8 @@ app.get(['/LokyChat-Latest.apk', '/download-apk'], (req, res) => {
       return fs.createReadStream(f).pipe(res);
     }
   }
-  res.status(404).send('APK file not found on server.');
+  // If APK file not on server, automatically redirect directly to Google Play Store
+  res.redirect(302, 'https://play.google.com/store/apps/details?id=com.lokychat.app');
 });
 
 // =============================================

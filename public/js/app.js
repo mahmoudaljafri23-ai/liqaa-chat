@@ -1675,7 +1675,7 @@ function initEmailSuggestions() {
 // 🚀 App Version & In-App Force Update System
 // =============================================
 const CURRENT_APP_VERSION = '1.2.8';
-const CURRENT_VERSION_CODE = 27; // Version code of this build
+const CURRENT_VERSION_CODE = 29; // Version code of this build
 
 async function checkAppUpdate(isManualCheck = false) {
   try {
@@ -1752,14 +1752,20 @@ async function checkAppUpdate(isManualCheck = false) {
           playBtn.onclick = (e) => {
             if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
               e.preventDefault();
-              window.location.href = 'market://details?id=com.lokychat.app';
+              try {
+                // Direct intent targeting Google Play Store app (com.android.vending)
+                // This bypasses Palm Store / GetApps / OEM hijacked market handlers
+                window.location.href = 'intent://details?id=com.lokychat.app#Intent;scheme=market;package=com.android.vending;end';
+              } catch (intentErr) {
+                window.open(playUrl, '_system');
+              }
               setTimeout(() => { window.open(playUrl, '_system'); }, 600);
             }
           };
         }
 
         if (apkBtn) {
-          apkBtn.href = config.directApkUrl || `${API_BASE_URL}/LokyChat-Latest.apk`;
+          apkBtn.href = config.directApkUrl || 'https://play.google.com/store/apps/details?id=com.lokychat.app';
         }
 
         if (notesList && Array.isArray(config.releaseNotes) && config.releaseNotes.length > 0) {
