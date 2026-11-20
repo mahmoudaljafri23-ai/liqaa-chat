@@ -1130,9 +1130,9 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.3.1",
-  latestVersionCode: 32,
-  minRequiredVersionCode: 32, // Any installed version < 32 will be asked/forced to update
+  latestVersion: "1.3.2",
+  latestVersionCode: 33,
+  minRequiredVersionCode: 33, // Any installed version < 33 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث جديد متوفر لـ Loky Chat! 🚀👑",
   message: "يرجى تحديث التطبيق الآن للاستمتاع بالمساعد والرفيق الصوتي الذكي (شخصية لوكي وشخصية ليلى) والسرعة الفائقة في الاتصال ومكالمات 4K.",
