@@ -172,10 +172,6 @@
 
         <!-- Royal Quick Actions Row -->
         <div class="royal-shortcuts-row">
-          <div class="royal-shortcut-btn highlight-ai" onclick="window.startAIVoiceCall && window.startAIVoiceCall()" id="btn-royal-ai-companion" title="تحدث صوتياً مع صديقك ومساعدك الذكي">
-            <span class="shortcut-icon">🤖</span>
-            <span class="shortcut-text">صديقك الذكي</span>
-          </div>
           <div class="royal-shortcut-btn" onclick="document.getElementById('friends-modal').classList.remove('hidden')">
             <span class="shortcut-icon">👥</span>
             <span class="shortcut-text">الأصدقاء</span>
@@ -237,22 +233,6 @@
           <div class="radar-info-box">
             <h3 class="radar-title">جاري البحث والمطابقة مع شريك...</h3>
             <p class="radar-sub">Searching for a partner live...</p>
-            
-            <!-- AI Companion Smart Suggestion (Appears after waiting) -->
-            <div id="radar-ai-suggestion" class="radar-ai-suggestion hidden">
-              <div class="ai-sugg-badge">✨ الذكاء الاصطناعي متاح فوراً</div>
-              <p class="ai-sugg-sub" id="radar-ai-status-text">لم يتوفر شريك متصل الآن.. جاري نقلك تلقائياً للذكاء الاصطناعي خلال ثوانٍ ⚡</p>
-              <div class="ai-sugg-choice-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
-                <button type="button" class="btn-sugg-ai btn-sugg-female" onclick="window.startAIVoiceCall && window.startAIVoiceCall('female')" style="background: linear-gradient(135deg, #ec4899, #be185d);">
-                  <img src="assets/ai-avatars/layla.png" class="sugg-avatar-mini" alt="ليلى">
-                  <span>👧 ليلى (بنت)</span>
-                </button>
-                <button type="button" class="btn-sugg-ai btn-sugg-male" onclick="window.startAIVoiceCall && window.startAIVoiceCall('male')" style="background: linear-gradient(135deg, #8b5cf6, #06b6d4);">
-                  <img src="assets/ai-avatars/loky.png" class="sugg-avatar-mini" alt="لوكي">
-                  <span>👨‍💼 لوكي (شاب)</span>
-                </button>
-              </div>
-            </div>
           </div>
           <button type="button" id="cancel-search-btn" class="radar-cancel-btn">
             <span>✕ إلغاء البحث والرجوع</span>
@@ -1340,109 +1320,8 @@
     </div>
   </div>
 
-  <!-- ============ AI Voice Companion Luxury Call Screen ============ -->
-  <div id="ai-voice-call-screen" class="ai-voice-call-screen hidden">
-    <div class="ai-call-backdrop"></div>
-    <div class="ai-call-glow-orb"></div>
-
-    <!-- Top Header HUD -->
-    <div class="ai-call-header">
-      <div class="ai-header-left">
-        <div class="ai-avatar-circle" id="ai-avatar-circle">
-          <img id="ai-avatar-img" src="assets/ai-avatars/loky.png" alt="Loky AI" class="ai-avatar-img-round">
-          <span class="ai-online-pulse"></span>
-        </div>
-        <div class="ai-header-meta">
-          <span class="ai-header-name" id="ai-header-name">صديقك الذكي (لوكي AI)</span>
-          <span class="ai-header-status" id="ai-status-indicator">● متصل صوتياً ومستعد للحديث 🎙️</span>
-        </div>
-      </div>
-      <div class="ai-header-right">
-        <span class="ai-badge-live">LIVE VOICE</span>
-      </div>
-    </div>
-
-    <!-- Dual Persona Switcher (Male / Female) -->
-    <div class="ai-persona-bar">
-      <button type="button" class="ai-persona-btn active" id="btn-persona-male" onclick="window.switchAIPersona('male')">
-        <img src="assets/ai-avatars/loky.png" class="persona-icon-avatar" alt="لوكي">
-        <span class="persona-name">لوكي (شاب)</span>
-      </button>
-      <button type="button" class="ai-persona-btn" id="btn-persona-female" onclick="window.switchAIPersona('female')">
-        <img src="assets/ai-avatars/layla.png" class="persona-icon-avatar" alt="ليلى">
-        <span class="persona-name">ليلى (بنت)</span>
-      </button>
-    </div>
-
-    <!-- Center Stage: Holographic Sound Wave Orb & Visualizer -->
-    <div class="ai-call-center">
-      <div class="ai-visualizer-container" id="ai-visualizer-orb">
-        <div class="ai-wave-ring ring-1"></div>
-        <div class="ai-wave-ring ring-2"></div>
-        <div class="ai-wave-ring ring-3"></div>
-        <div class="ai-wave-ring ring-4"></div>
-        <div class="ai-center-core" id="ai-center-core" onclick="window.toggleAIMic()">
-          <img id="ai-center-avatar-img" src="assets/ai-avatars/loky.png" alt="AI Avatar" class="ai-center-avatar-pic">
-          <div class="ai-center-mic-badge" id="ai-center-mic-badge">🎙️</div>
-        </div>
-      </div>
-
-      <!-- Live Speech Subtitles / Dialogue Bubble -->
-      <div class="ai-speech-bubble" id="ai-speech-bubble">
-        <div class="ai-bubble-speaker" id="ai-bubble-speaker">🤖 Loky AI:</div>
-        <div class="ai-bubble-text" id="ai-bubble-text">أهلاً بك يا صديقي في Loky Chat! أنا هنا للتحدث معك ومساعدتك، كيف حالك اليوم وعن ماذا تحب أن نتحدث؟ 🎙️</div>
-      </div>
-
-      <!-- User Live Voice Transcript -->
-      <div class="user-voice-transcript hidden" id="user-voice-transcript">
-        <span class="user-transcript-label">أنت 🗣️:</span>
-        <span class="user-transcript-text" id="user-transcript-text">...</span>
-      </div>
-
-      <!-- Quick Conversational Prompt Chips -->
-      <div class="ai-quick-chips">
-        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('احكيلي نكتة حلوة تضحكني 😂')">😂 نكتة سريعة</button>
-        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('كيف كان يومك وشو بتعمل؟')">☕ كيف يومك؟</button>
-        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('عرفني عن نفسك وشو بتعرف تعمل؟')">✨ من أنت؟</button>
-        <button type="button" class="ai-chip" onclick="window.sendAIPrompt('أنا زهقان، اعطيني فكرة حلوة أعملها')">💡 فكرة للملل</button>
-      </div>
-      <!-- Direct Message & Voice Input Field -->
-      <form class="ai-input-form" id="ai-input-form" onsubmit="event.preventDefault(); window.sendAIMessageFromInput();">
-        <input type="text" id="ai-text-input" placeholder="اكتب رسالتك أو اضغط تحدث الآن بالمايك..." autocomplete="off">
-        <button type="submit" id="ai-send-btn" class="ai-send-btn" title="إرسال">
-          <span>إرسال 🚀</span>
-        </button>
-      </form>
-    </div>
-
-    <!-- Hidden Dedicated Real Human Voice Audio Stream -->
-    <audio id="ai-voice-audio" playsinline preload="auto"></audio>
-
-    <!-- Bottom Floating Call Controls -->
-    <div class="ai-call-footer">
-      <!-- End Call Button -->
-      <button type="button" class="ai-btn-ctrl btn-end" onclick="window.endAIVoiceCall()" title="إنهاء المكالمة">
-        <span class="ai-btn-icon">✕</span>
-        <span class="ai-btn-text">إنهاء</span>
-      </button>
-
-      <!-- Interactive Push-to-Talk / Mic Button -->
-      <button type="button" class="ai-btn-mic" id="ai-mic-toggle-btn" onclick="window.toggleAIMic()" title="اضغط للتحدث بالصوت">
-        <div class="ai-mic-pulse"></div>
-        <span class="ai-mic-icon" id="ai-mic-icon">🎙️</span>
-        <span class="ai-mic-label" id="ai-mic-label">تحدث الآن</span>
-      </button>
-
-      <!-- Switch to Real Partner Matchmaking -->
-      <button type="button" class="ai-btn-ctrl btn-match" onclick="window.switchToRealPartnerFromAI()" title="البحث عن شخص حقيقي">
-        <span class="ai-btn-icon">⏭️</span>
-        <span class="ai-btn-text">شخص حقيقي</span>
-      </button>
-    </div>
-  </div>
-
   <script src="js/i18n.js"></script>
   <script src="js/socket.io.min.js"></script>
-  <script src="js/app.js?v=20261120_v5"></script>
+  <script src="js/app.js?v=20261124_v1"></script>
 </body>
 </html>
