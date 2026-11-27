@@ -25,10 +25,10 @@ const io = new Server(server, {
     origin: '*',
     methods: ['GET', 'POST']
   },
-  transports: ['polling', 'websocket'],
-  pingTimeout: 120000,
-  pingInterval: 30000,
-  upgradeTimeout: 30000,
+  transports: ['websocket', 'polling'],
+  pingTimeout: 5000,
+  pingInterval: 10000,
+  upgradeTimeout: 10000,
   allowUpgrades: true,
   cookie: false
 });
@@ -715,9 +715,9 @@ app.get('/api/profile', (req, res) => {
 // 🚀 App Version & In-App Force Update Management
 // =============================================
 let appVersionConfig = {
-  latestVersion: "1.3.3",
-  latestVersionCode: 34,
-  minRequiredVersionCode: 34, // Any installed version < 34 will be asked/forced to update
+  latestVersion: "1.3.4",
+  latestVersionCode: 35,
+  minRequiredVersionCode: 35, // Any installed version < 35 will be asked/forced to update
   forceUpdate: true,
   title: "تحديث جديد متوفر لـ Loky Chat! 🚀👑",
   message: "يرجى تحديث التطبيق الآن للاستمتاع بالسرعة الفائقة في الاتصال والمطابقة المباشرة ومكالمات الفيديو فائقة الوضوح.",
@@ -1419,6 +1419,17 @@ io.on('connection', (socket) => {
     if (targetId) {
       io.to(targetId).emit('ice_candidate', {
         candidate: data.candidate || data,
+        from: socket.id
+      });
+    }
+  });
+
+  // WebRTC Signaling: Proactive ICE Restart Request
+  socket.on('request_ice_restart', (data) => {
+    const user = users.get(socket.id);
+    const targetId = (data && data.partnerId) || (user && user.partnerId);
+    if (targetId) {
+      io.to(targetId).emit('request_ice_restart', {
         from: socket.id
       });
     }

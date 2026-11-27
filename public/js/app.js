@@ -24,16 +24,20 @@ const ICE_SERVERS = {
     { urls: 'stun:stun4.l.google.com:19302' },
     { urls: 'stun:stun.cloudflare.com:3478' },
     { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'stun:stun.services.mozilla.com' },
     {
       urls: [
         'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443?transport=tcp'
+        'turn:openrelay.metered.ca:80?transport=tcp',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+        'turns:openrelay.metered.ca:443?transport=tcp'
       ],
       username: 'openrelay',
       credential: 'openrelay'
     }
   ],
-  iceCandidatePoolSize: 4,
+  iceCandidatePoolSize: 8,
   bundlePolicy: 'max-bundle',
   rtcpMuxPolicy: 'require'
 };
@@ -1674,8 +1678,8 @@ function initEmailSuggestions() {
 // =============================================
 // 🚀 App Version & In-App Force Update System
 // =============================================
-const CURRENT_APP_VERSION = '1.3.3';
-const CURRENT_VERSION_CODE = 34; // Version code of this build
+const CURRENT_APP_VERSION = '1.3.4';
+const CURRENT_VERSION_CODE = 35; // Version code of this build
 
 async function checkAppUpdate(isManualCheck = false) {
   try {
@@ -4668,7 +4672,7 @@ function connectSocket() {
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    transports: ['polling', 'websocket'],
+    transports: ['websocket', 'polling'], // WebSocket first for instant zero-latency connection
     upgrade: true,
     forceNew: false,
     timeout: 20000
@@ -5116,6 +5120,14 @@ async function sendLocalPushNotification(title, body) {
       } else {
         iceCandidateQueue.push(data.candidate);
       }
+    }
+  });
+
+  // Proactive ICE restart request from partner (auto-heals connection if cellular drops)
+  socket.on('request_ice_restart', async () => {
+    console.log('[Socket] Partner requested ICE restart, re-negotiating connection...');
+    if (peerConnection && peerConnection.signalingState !== 'closed') {
+      await createAndSendOffer({ iceRestart: true });
     }
   });
 
@@ -5773,7 +5785,7 @@ function optimizeSdp(sdp) {
       }
     }
 
-    // 2. Opus In-Band FEC & Low Jitter: Crystal clear zero-delay voice
+    // 2. Opus In-Band FEC & Low Jitter: Crystal clear zero-delay voice (10ms packets, mono, FEC enabled, steady 32kbps)
     const opusMatch = newSdp.match(/a=rtpmap:(\d+)\s+opus\/48000/i);
     if (opusMatch && opusMatch[1]) {
       const pt = opusMatch[1];
@@ -5781,16 +5793,24 @@ function optimizeSdp(sdp) {
       if (fmtpRegex.test(newSdp)) {
         newSdp = newSdp.replace(fmtpRegex, (match, params) => {
           let updated = params;
-          if (!updated.includes('useinbandfec=1')) updated += ';useinbandfec=1';
+          if (!updated.includes('useinbandfec=')) updated += ';useinbandfec=1';
           if (!updated.includes('minptime=')) updated += ';minptime=10';
+          if (!updated.includes('stereo=')) updated += ';stereo=0';
+          if (!updated.includes('maxaveragebitrate=')) updated += ';maxaveragebitrate=32000';
+          if (!updated.includes('cbr=')) updated += ';cbr=1';
           return `a=fmtp:${pt} ${updated}`;
         });
       } else {
         newSdp = newSdp.replace(
           new RegExp(`(a=rtpmap:${pt}\\s+opus\\/48000[^\r\n]*)(\r?\n)`),
-          `$1$2a=fmtp:${pt} useinbandfec=1;minptime=10$2`
+          `$1$2a=fmtp:${pt} useinbandfec=1;minptime=10;stereo=0;maxaveragebitrate=32000;cbr=1$2`
         );
       }
+    }
+
+    // 3. Audio & Video Bandwidth Limits (Prevents cellular bufferbloat and lag)
+    if (!newSdp.includes('b=AS:800') && newSdp.includes('m=video')) {
+      newSdp = newSdp.replace(/(m=video [^\r\n]+[\r\n]+(c=IN [^\r\n]+[\r\n]+)?)/, '$1b=AS:800\r\n');
     }
   } catch (err) {
     console.warn('[WebRTC] optimizeSdp warn:', err);
@@ -5990,6 +6010,11 @@ async function createPeerConnection(forceFresh = false) {
       console.log('[WebRTC] Connection state:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'connected') {
         console.log('[WebRTC] P2P Video Call Connected Successfully!');
+        if (iceRestartWatchdog) {
+          clearTimeout(iceRestartWatchdog);
+          iceRestartWatchdog = null;
+        }
+        isIceRestarting = false;
         applySenderParameters();
         const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
@@ -6001,17 +6026,34 @@ async function createPeerConnection(forceFresh = false) {
           }
           remoteVid.play().catch(() => {});
         }
-      } else if (peerConnection.connectionState === 'failed') {
-        console.warn('[WebRTC] Connection failed, attempting ICE restart...');
-        if (peerConnection.restartIce) {
-          peerConnection.restartIce();
+      } else if (peerConnection.connectionState === 'disconnected') {
+        console.warn('[WebRTC] Connection state disconnected, starting auto-healing watchdog...');
+        if (!iceRestartWatchdog) {
+          iceRestartWatchdog = setTimeout(() => {
+            iceRestartWatchdog = null;
+            if (peerConnection && (peerConnection.connectionState === 'disconnected' || peerConnection.iceConnectionState === 'disconnected')) {
+              triggerIceRestart('connection_disconnected_watchdog');
+            }
+          }, 2500);
         }
+      } else if (peerConnection.connectionState === 'failed') {
+        console.warn('[WebRTC] Connection failed, immediately restarting ICE...');
+        if (iceRestartWatchdog) {
+          clearTimeout(iceRestartWatchdog);
+          iceRestartWatchdog = null;
+        }
+        triggerIceRestart('connection_failed');
       }
     };
 
     peerConnection.oniceconnectionstatechange = () => {
       console.log('[WebRTC] ICE connection state:', peerConnection.iceConnectionState);
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        if (iceRestartWatchdog) {
+          clearTimeout(iceRestartWatchdog);
+          iceRestartWatchdog = null;
+        }
+        isIceRestarting = false;
         const remoteVid = $('#remote-video');
         const fallbackBg = $('#camera-fallback-bg');
         if (remoteVid) {
@@ -6022,11 +6064,23 @@ async function createPeerConnection(forceFresh = false) {
           }
           remoteVid.play().catch(() => {});
         }
-      } else if (peerConnection.iceConnectionState === 'failed') {
-        console.warn('[WebRTC] ICE state failed, restarting ICE...');
-        if (peerConnection.restartIce) {
-          peerConnection.restartIce();
+      } else if (peerConnection.iceConnectionState === 'disconnected') {
+        console.warn('[WebRTC] ICE disconnected, starting auto-healing watchdog...');
+        if (!iceRestartWatchdog) {
+          iceRestartWatchdog = setTimeout(() => {
+            iceRestartWatchdog = null;
+            if (peerConnection && (peerConnection.iceConnectionState === 'disconnected' || peerConnection.connectionState === 'disconnected')) {
+              triggerIceRestart('ice_disconnected_watchdog');
+            }
+          }, 2500);
         }
+      } else if (peerConnection.iceConnectionState === 'failed') {
+        console.warn('[WebRTC] ICE state failed, immediately restarting ICE...');
+        if (iceRestartWatchdog) {
+          clearTimeout(iceRestartWatchdog);
+          iceRestartWatchdog = null;
+        }
+        triggerIceRestart('ice_failed');
       }
     };
 
@@ -6035,19 +6089,60 @@ async function createPeerConnection(forceFresh = false) {
   }
 }
 
-async function createAndSendOffer() {
+let iceRestartWatchdog = null;
+let isIceRestarting = false;
+
+function triggerIceRestart(reason = 'watchdog') {
+  if (!peerConnection || peerConnection.signalingState === 'closed') return;
+  if (isIceRestarting) return;
+  isIceRestarting = true;
+  console.log(`[WebRTC] 🔄 Proactive ICE restart triggered (reason: ${reason})`);
+
+  if (isInitiator) {
+    createAndSendOffer({ iceRestart: true }).finally(() => {
+      setTimeout(() => { isIceRestarting = false; }, 2500);
+    });
+  } else {
+    // Callee asks initiator to restart ICE
+    if (socket && socket.connected) {
+      socket.emit('request_ice_restart', {
+        partnerId: currentPartner ? currentPartner.id : null
+      });
+    }
+    // Fallback: If still disconnected/failed after 2s, callee initiates offer with iceRestart
+    setTimeout(() => {
+      if (peerConnection && (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected')) {
+        createAndSendOffer({ iceRestart: true }).finally(() => {
+          setTimeout(() => { isIceRestarting = false; }, 2500);
+        });
+      } else {
+        isIceRestarting = false;
+      }
+    }, 2000);
+  }
+}
+
+async function createAndSendOffer(options = {}) {
+  if (!peerConnection || peerConnection.signalingState === 'closed') return;
   try {
-    const offer = await peerConnection.createOffer({
+    const offerOptions = {
       offerToReceiveAudio: true,
       offerToReceiveVideo: true
-    });
+    };
+    if (options.iceRestart) {
+      offerOptions.iceRestart = true;
+      if (peerConnection.restartIce) {
+        try { peerConnection.restartIce(); } catch (e) {}
+      }
+    }
+    const offer = await peerConnection.createOffer(offerOptions);
     offer.sdp = optimizeSdp(offer.sdp);
     await peerConnection.setLocalDescription(offer);
     socket.emit('offer', { 
       offer: offer,
       partnerId: currentPartner ? currentPartner.id : null
     });
-    console.log('[WebRTC] Offer sent');
+    console.log('[WebRTC] Offer sent', options.iceRestart ? '(ICE Restart)' : '');
   } catch (err) {
     console.error('[WebRTC] Error creating offer:', err);
   }
@@ -6055,7 +6150,19 @@ async function createAndSendOffer() {
 
 async function handleOffer(offer) {
   try {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    if (!peerConnection || peerConnection.signalingState === 'closed') {
+      await createPeerConnection(false);
+    }
+    // Glare handling for seamless renegotiations and ICE restarts
+    if (peerConnection.signalingState !== 'stable') {
+      console.log('[WebRTC] State is ' + peerConnection.signalingState + ', executing rollback for offer');
+      await Promise.all([
+        peerConnection.setLocalDescription({ type: 'rollback' }).catch(() => {}),
+        peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+      ]);
+    } else {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    }
     await flushIceCandidateQueue();
     const answer = await peerConnection.createAnswer({
       offerToReceiveAudio: true,
@@ -6074,6 +6181,11 @@ async function handleOffer(offer) {
 }
 
 function cleanupPeerConnection() {
+  if (iceRestartWatchdog) {
+    clearTimeout(iceRestartWatchdog);
+    iceRestartWatchdog = null;
+  }
+  isIceRestarting = false;
   iceCandidateQueue = [];
   if (peerConnection) {
     peerConnection.ontrack = null;
